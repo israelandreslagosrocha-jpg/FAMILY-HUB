@@ -5,6 +5,9 @@ import OverviewSummaryView from '../components/finance/OverviewSummaryView.vue'
 import MovementsListView from '../components/finance/MovementsListView.vue'
 import BudgetsProgressView from '../components/finance/BudgetsProgressView.vue'
 import CreateMovementSheet from '../components/finance/CreateMovementSheet.vue'
+import ReceiptCaptureModal from '../components/receipts/ReceiptCaptureModal.vue'
+import ReceiptProcessingState from '../components/receipts/ReceiptProcessingState.vue'
+import ReceiptReviewSheet from '../components/receipts/ReceiptReviewSheet.vue'
 
 const financeStore = useFinanceStore()
 
@@ -41,6 +44,11 @@ function handleOpenCreateSheet() {
 
     <!-- Modal Sheet Táctil de Registro Financiero -->
     <CreateMovementSheet />
+
+    <!-- Modales y Sheets del Ciclo OCR -->
+    <ReceiptCaptureModal />
+    <ReceiptProcessingState />
+    <ReceiptReviewSheet />
   </div>
 </template>
 

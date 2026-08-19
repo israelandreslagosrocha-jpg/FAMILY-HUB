@@ -55,7 +55,7 @@ Supabase como fuente principal. Caché local para velocidad percibida. Responsab
 Variables de entorno para claves públicas, datos privados, políticas RLS en Supabase antes de dar por terminada la arquitectura de datos.
 
 ## 12. Desarrollo por etapas
-Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
+Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
 - Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). ✅ EJECUTADA
@@ -70,7 +70,10 @@ Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa s
 - Etapa 4D: Pruebas Reales de Integración de Tareas. ✅ COMPLETADA CON ÉXITO (100% PASS)
 - Etapa 5: Motor de Automatizaciones del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 6: Finanzas del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
-- Etapa 7: Boletas / OCR. ⏳ PRÓXIMA ETAPA
+- Etapa 7A: Arquitectura Funcional y UX de Boletas / Captura OCR. ✅ APROBADA CON PRECISIONES
+- Etapa 7B: Desarrollo Visual de Boletas y OCR en Vue 3 con Datos Mock. 🔄 EN CURSO
+- Etapa 7C: Integración de OCR y Supabase Storage.
+- Etapa 7D: Pruebas Reales de Integración de Boletas y OCR.
 - Etapa 8: PWA / Notificaciones / Offline avanzado.
 
 ## 13. Documentación

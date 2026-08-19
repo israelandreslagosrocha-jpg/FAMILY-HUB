@@ -135,6 +135,38 @@ export interface ExpenseItem {
   paidByMemberId: string
 }
 
+// TIPOS PARA BOLETAS Y CAPTURA OCR (ETAPA 7)
+export type OCRStatus = 
+  | 'idle'
+  | 'capturing'
+  | 'uploading'
+  | 'processing_ocr'
+  | 'review_ready'
+  | 'confirmed'
+  | 'saved'
+  | 'ocr_failed'
+
+export interface ExtractedReceiptData {
+  merchantName: string
+  merchantConfidence: number // 0-100%
+  totalAmount: number
+  amountConfidence: number   // 0-100%
+  date: string               // YYYY-MM-DD
+  dateConfidence: number     // 0-100%
+  suggestedCategory: string
+  categoryConfidence: number // 0-100%
+  isPossibleDuplicate?: boolean
+}
+
+export interface ReceiptScanSession {
+  id: string
+  imagePreviewUrl: string
+  status: OCRStatus
+  extractedData?: ExtractedReceiptData
+  errorMessage?: string
+  createdAt: string
+}
+
 export interface HistoryLog {
   id: string
   memberName: string

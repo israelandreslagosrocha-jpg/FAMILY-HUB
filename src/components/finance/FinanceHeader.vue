@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFinanceStore } from '../../stores/financeStore'
+import ReceiptScannerBtn from '../receipts/ReceiptScannerBtn.vue'
 import type { FinanceTabType, FinancialScope } from '../../types'
 
 const financeStore = useFinanceStore()
@@ -93,6 +94,9 @@ function handleScope(scope: FinancialScope | 'all') {
           👤 Personal
         </button>
       </div>
+
+      <!-- Escáner OCR de Boletas -->
+      <ReceiptScannerBtn />
     </div>
   </header>
 </template>
