@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00005: ESQUEMA DE PERSISTENCIA Y AUDITORÍA DE FINANZAS DEL HOGAR
+-- MIGRACIÓN 00005 (V2.0 HARDENED): PERSISTENCIA Y AUDITORÍA DE FINANZAS
 -- ============================================================================
 
 -- 1. TABLA DE TRANSFERENCIAS NEUTRAS ENTRE CUENTAS
@@ -20,25 +20,21 @@ CREATE TABLE IF NOT EXISTS public.transfers (
 -- HABILITAR RLS EN TRANSFERS
 ALTER TABLE public.transfers ENABLE ROW LEVEL SECURITY;
 
+-- 2. CONTROL ESTRICTO DE LECTURA (SELECT) RLS Y REVOCACIÓN DE ESCRITURA DIRECTA
+-- (Canal exclusivo de escritura controlado vía RPC SECURITY DEFINER)
+
+-- TRANSFERS: Solo SELECT para authenticated
 DROP POLICY IF EXISTS "Transfers SELECT" ON public.transfers;
 CREATE POLICY "Transfers SELECT" ON public.transfers FOR SELECT TO authenticated 
 USING (family_id = (SELECT private.get_auth_family_id()));
 
 DROP POLICY IF EXISTS "Transfers INSERT" ON public.transfers;
-CREATE POLICY "Transfers INSERT" ON public.transfers FOR INSERT TO authenticated 
-WITH CHECK (
-  family_id = (SELECT private.get_auth_family_id()) AND
-  registered_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
-);
-
+DROP POLICY IF EXISTS "Transfers UPDATE" ON public.transfers;
 DROP POLICY IF EXISTS "Transfers DELETE" ON public.transfers;
-CREATE POLICY "Transfers DELETE" ON public.transfers FOR DELETE TO authenticated 
-USING (family_id = (SELECT private.get_auth_family_id()));
 
+REVOKE INSERT, UPDATE, DELETE ON public.transfers FROM PUBLIC, authenticated;
 
--- 2. POLÍTICAS RLS EN EXPENSES, INCOMES Y BUDGETS (DEL ESQUEMA 00001)
-
--- EXPENSES RLS
+-- EXPENSES: Solo SELECT para authenticated
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Expenses SELECT" ON public.expenses;
@@ -46,27 +42,12 @@ CREATE POLICY "Expenses SELECT" ON public.expenses FOR SELECT TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()));
 
 DROP POLICY IF EXISTS "Expenses INSERT" ON public.expenses;
-CREATE POLICY "Expenses INSERT" ON public.expenses FOR INSERT TO authenticated 
-WITH CHECK (
-  family_id = (SELECT private.get_auth_family_id()) AND
-  registered_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
-  (belonging_to_member_id IS NULL OR belonging_to_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true))
-);
-
 DROP POLICY IF EXISTS "Expenses UPDATE" ON public.expenses;
-CREATE POLICY "Expenses UPDATE" ON public.expenses FOR UPDATE TO authenticated 
-USING (family_id = (SELECT private.get_auth_family_id()))
-WITH CHECK (
-  family_id = (SELECT private.get_auth_family_id()) AND
-  registered_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
-);
-
 DROP POLICY IF EXISTS "Expenses DELETE" ON public.expenses;
-CREATE POLICY "Expenses DELETE" ON public.expenses FOR DELETE TO authenticated 
-USING (family_id = (SELECT private.get_auth_family_id()));
 
+REVOKE INSERT, UPDATE, DELETE ON public.expenses FROM PUBLIC, authenticated;
 
--- INCOMES RLS
+-- INCOMES: Solo SELECT para authenticated
 ALTER TABLE public.incomes ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Incomes SELECT" ON public.incomes;
@@ -74,18 +55,12 @@ CREATE POLICY "Incomes SELECT" ON public.incomes FOR SELECT TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()));
 
 DROP POLICY IF EXISTS "Incomes INSERT" ON public.incomes;
-CREATE POLICY "Incomes INSERT" ON public.incomes FOR INSERT TO authenticated 
-WITH CHECK (
-  family_id = (SELECT private.get_auth_family_id()) AND
-  registered_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
-);
-
+DROP POLICY IF EXISTS "Incomes UPDATE" ON public.incomes;
 DROP POLICY IF EXISTS "Incomes DELETE" ON public.incomes;
-CREATE POLICY "Incomes DELETE" ON public.incomes FOR DELETE TO authenticated 
-USING (family_id = (SELECT private.get_auth_family_id()));
 
+REVOKE INSERT, UPDATE, DELETE ON public.incomes FROM PUBLIC, authenticated;
 
--- BUDGETS RLS
+-- BUDGETS: SELECT, INSERT, UPDATE para authenticated (Sin DELETE directo)
 ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Budgets SELECT" ON public.budgets;
@@ -101,8 +76,24 @@ CREATE POLICY "Budgets UPDATE" ON public.budgets FOR UPDATE TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()))
 WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
 
+DROP POLICY IF EXISTS "Budgets DELETE" ON public.budgets;
+REVOKE DELETE ON public.budgets FROM PUBLIC, authenticated;
 
--- 3. RPC TRANSACCIONAL PRINCIPAL: REGISTRAR MOVIMIENTO FINANCIERO UNIFICADO
+-- HISTORY_LOGS: INMUTABILIDAD GARANTIZADA (Solo SELECT para authenticated)
+ALTER TABLE public.history_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "History Logs SELECT" ON public.history_logs;
+CREATE POLICY "History Logs SELECT" ON public.history_logs FOR SELECT TO authenticated 
+USING (family_id = (SELECT private.get_auth_family_id()));
+
+DROP POLICY IF EXISTS "History Logs INSERT" ON public.history_logs;
+DROP POLICY IF EXISTS "History Logs UPDATE" ON public.history_logs;
+DROP POLICY IF EXISTS "History Logs DELETE" ON public.history_logs;
+
+REVOKE INSERT, UPDATE, DELETE ON public.history_logs FROM PUBLIC, authenticated;
+
+
+-- 3. RPC TRANSACCIONAL PRINCIPAL CON HARDENING V2.0 Y VALIDACIÓN CROSS-FAMILY DE CATEGORÍAS
 CREATE OR REPLACE FUNCTION public.create_financial_movement(
   p_movement_type text,            -- 'expense' | 'income' | 'transfer'
   p_title text,
@@ -163,12 +154,22 @@ BEGIN
     v_effective_belonging_to := NULL;
   END IF;
 
-  -- 5. Procesar según tipo de movimiento
-  IF p_movement_type = 'expense' THEN
+  -- 5. VALIDACIÓN CROSS-FAMILY DE CATEGORÍA
+  IF p_movement_type IN ('expense', 'income') THEN
     IF p_category_id IS NULL THEN
-      RAISE EXCEPTION 'Debe especificar una categoría para el gasto';
+      RAISE EXCEPTION 'Debe especificar una categoría para el movimiento financiero';
     END IF;
 
+    IF NOT EXISTS (
+      SELECT 1 FROM public.categories
+      WHERE id = p_category_id AND (family_id = v_family_id OR family_id IS NULL)
+    ) THEN
+      RAISE EXCEPTION 'La categoría especificada no pertenece a su familia o no existe';
+    END IF;
+  END IF;
+
+  -- 6. Procesar según tipo de movimiento
+  IF p_movement_type = 'expense' THEN
     INSERT INTO public.expenses (
       family_id, category_id, registered_by_member_id, belonging_to_member_id,
       title, amount, currency, date, is_family_expense, receipt_image_url
@@ -186,10 +187,6 @@ BEGIN
     );
 
   ELSIF p_movement_type = 'income' THEN
-    IF p_category_id IS NULL THEN
-      RAISE EXCEPTION 'Debe especificar una categoría para el ingreso';
-    END IF;
-
     INSERT INTO public.incomes (
       family_id, category_id, registered_by_member_id, belonging_to_member_id,
       title, amount, currency, date, is_family_income
