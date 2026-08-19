@@ -52,6 +52,7 @@ export const receiptService = {
       familyId
     )
 
+    parsedData.suggestedCategoryId = resolvedCat.suggestedCategoryId
     parsedData.suggestedCategory = resolvedCat.suggestedCategoryName
 
     // 7. Chequeo preventivo de duplicidad en la tabla de gastos
@@ -93,11 +94,19 @@ export const receiptService = {
       throw new Error('La sesión de boleta no cuenta con un storagePath válido')
     }
 
+    // Obtener categoría de la familia si no viene en finalData
+    let validCategoryId = finalData.suggestedCategoryId || session.extractedData?.suggestedCategoryId
+    if (!validCategoryId) {
+      const { data: cats } = await supabase.from('categories').select('id').limit(1)
+      if (cats && cats.length > 0) validCategoryId = cats[0].id
+    }
+
     // Canalización estricta al canal único financiero de la Etapa 6
     return await financeService.createMovement({
       movementType: 'expense',
       title: `${finalData.merchantName} (Boleta Escaneada)`,
       amount: finalData.totalAmount,
+      categoryId: validCategoryId,
       isFamilyScope,
       belongingToMemberId: isFamilyScope ? undefined : belongingToMemberId,
       date: finalData.date,

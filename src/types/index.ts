@@ -153,6 +153,7 @@ export interface ExtractedReceiptData {
   amountConfidence?: number     // Confianza legacy
   date: string                  // YYYY-MM-DD
   dateConfidence?: number       // Confianza legacy
+  suggestedCategoryId?: string  // UUID de la categoría real en Supabase
   suggestedCategory: string
   categoryConfidence?: number   // Confianza legacy
   
