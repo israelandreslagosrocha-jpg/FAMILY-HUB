@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00003 (V2 REFINADA): RPC DE TAREAS, HARDENING RLS Y AUDITORÍA REAL
+-- MIGRACIÓN 00003 (V2.1 CORREGIDA): RPC DE TAREAS, HARDENING RLS Y AUDITORÍA REAL
 -- ============================================================================
 
 -- 1. SOPORTE DE REFERENCIA A RESPONSABILIDADES EN INSTANCIAS DE TAREAS
@@ -146,7 +146,7 @@ CREATE OR REPLACE FUNCTION public.create_family_task(
   p_title text,
   p_description text,
   p_assigned_member_id uuid,
-  p_priority priority_level_enum,
+  p_priority priority_enum,
   p_due_date date,
   p_category_id uuid DEFAULT NULL,
   p_responsibility_id uuid DEFAULT NULL,
@@ -260,10 +260,10 @@ BEGIN
     -- Inserción de la Serie / Plantilla Maestra (asociando la responsabilidad si se especificó)
     INSERT INTO public.task_series (
       family_id, category_id, responsibility_id, recurrence_rule_id, default_assigned_member_id,
-      title, description, is_active
+      title, description, priority, is_active
     ) VALUES (
       v_family_id, p_category_id, p_responsibility_id, v_recurrence_id, p_assigned_member_id,
-      trim(p_title), p_description, true
+      trim(p_title), p_description, p_priority, true
     ) RETURNING id INTO v_series_id;
   END IF;
 
