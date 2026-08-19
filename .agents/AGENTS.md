@@ -71,8 +71,11 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 5: Motor de Automatizaciones del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 6: Finanzas del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 7A: Arquitectura Funcional y UX de Boletas / Captura OCR. ✅ APROBADA CON PRECISIONES
-- Etapa 7B: Desarrollo Visual de Boletas y OCR en Vue 3 con Datos Mock. 🔄 EN CURSO
-- Etapa 7C: Integración de OCR y Supabase Storage.
+- Etapa 7B: Desarrollo Visual de Boletas y OCR en Vue 3 con Datos Mock. ✅ COMPLETADA
+- Etapa 7C.1: Arquitectura de Storage, Seguridad y Selección del Motor OCR. ✅ APROBADA CON CORRECCIONES
+- Etapa 7C.2: Contrato de Integración y Definición de Tipos/Eventos. 🔄 EN REVISIÓN
+- Etapa 7C.3: Configuración de Storage Bucket & RLS.
+- Etapa 7C.4: Implementación de OCR Service & financeService.
 - Etapa 7D: Pruebas Reales de Integración de Boletas y OCR.
 - Etapa 8: PWA / Notificaciones / Offline avanzado.
 
@@ -127,4 +130,4 @@ Los componentes visuales (.vue) no deberán realizar directamente consultas comp
 Durante las primeras etapas, cuando una funcionalidad todavía no tenga implementado su backend, se utilizarán datos mock claramente identificados. No se crearán tablas, autenticación ni lógica de persistencia únicamente para hacer funcionar una pantalla en etapa de diseño.
 
 ## 29. Principio de diseño consciente e inspirado
-Antes de implementar componentes visuales importantes, presentar la propuesta de estructura visual y justificarla según los principios UX definidos. No asumir que "estilo Apple" significa copiar interfaces de Apple ni utilizar componentes genéricos con apariencia similar.
+Antes de implementar componentes visuales importants, presentar la propuesta de estructura visual y justificarla según los principios UX definidos. No asumir que "estilo Apple" significa copiar interfaces de Apple ni utilizar componentes genéricos con apariencia similar.
