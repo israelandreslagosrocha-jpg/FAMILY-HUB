@@ -12,120 +12,11 @@ export const useFinanceStore = defineStore('financeStore', () => {
   const isCreateSheetOpen = ref<boolean>(false)
   const isLoading = ref<boolean>(false)
 
-  // Movimientos Financieros
-  const movements = ref<FinancialMovement[]>([
-    {
-      id: 'mov-101',
-      title: 'Supermercado Mensual Lider',
-      amount: 145000,
-      currency: 'CLP',
-      type: 'expense',
-      scope: 'family',
-      categoryId: 'cat-super',
-      categoryName: 'Supermercado',
-      categoryIcon: '🛒',
-      categoryColor: '#ec4899',
-      registeredByMemberId: 'm-1',
-      date: '2026-08-18'
-    },
-    {
-      id: 'mov-102',
-      title: 'Sueldo Mensual Israel',
-      amount: 1850000,
-      currency: 'CLP',
-      type: 'income',
-      scope: 'family',
-      categoryId: 'cat-ingreso',
-      categoryName: 'Sueldos & Trabajo',
-      categoryIcon: '💼',
-      categoryColor: '#10b981',
-      registeredByMemberId: 'm-1',
-      date: '2026-08-01'
-    },
-    {
-      id: 'mov-103',
-      title: 'Cuenta de Luz Enel',
-      amount: 38500,
-      currency: 'CLP',
-      type: 'expense',
-      scope: 'family',
-      categoryId: 'cat-servicios',
-      categoryName: 'Servicios del Hogar',
-      categoryIcon: '💡',
-      categoryColor: '#3b82f6',
-      registeredByMemberId: 'm-2',
-      date: '2026-08-15'
-    },
-    {
-      id: 'mov-104',
-      title: 'Transferencia Banco -> Efectivo Caja',
-      amount: 50000,
-      currency: 'CLP',
-      type: 'transfer',
-      scope: 'family',
-      categoryId: 'cat-transfer',
-      categoryName: 'Transferencia Cuentas',
-      categoryIcon: '🔄',
-      categoryColor: '#8b5cf6',
-      registeredByMemberId: 'm-1',
-      date: '2026-08-16'
-    },
-    {
-      id: 'mov-105',
-      title: 'Zapatillas Escolares',
-      amount: 32990,
-      currency: 'CLP',
-      type: 'expense',
-      scope: 'personal',
-      categoryId: 'cat-ropa',
-      categoryName: 'Ropa & Personal',
-      categoryIcon: '👟',
-      categoryColor: '#f59e0b',
-      registeredByMemberId: 'm-1',
-      belongingToMemberId: 'm-3',
-      date: '2026-08-14'
-    }
-  ])
+  // Movimientos Financieros (Inicializa limpio)
+  const movements = ref<FinancialMovement[]>([])
 
-  // Presupuestos por Categoría
-  const budgets = ref<CategoryBudget[]>([
-    {
-      id: 'b-1',
-      categoryId: 'cat-super',
-      categoryName: 'Supermercado & Alimentos',
-      monthlyLimit: 350000,
-      spentAmount: 245000,
-      color: '#ec4899',
-      icon: '🛒'
-    },
-    {
-      id: 'b-2',
-      categoryId: 'cat-servicios',
-      categoryName: 'Servicios (Luz, Agua, Internet)',
-      monthlyLimit: 120000,
-      spentAmount: 88500,
-      color: '#3b82f6',
-      icon: '💡'
-    },
-    {
-      id: 'b-3',
-      categoryId: 'cat-ropa',
-      categoryName: 'Ropa & Artículos Personales',
-      monthlyLimit: 60000,
-      spentAmount: 32990,
-      color: '#f59e0b',
-      icon: '👟'
-    },
-    {
-      id: 'b-4',
-      categoryId: 'cat-entretencion',
-      categoryName: 'Entretención & Salidas',
-      monthlyLimit: 100000,
-      spentAmount: 98000,
-      color: '#a855f7',
-      icon: '🍕'
-    }
-  ])
+  // Presupuestos por Categoría (Inicializa limpio)
+  const budgets = ref<CategoryBudget[]>([])
 
   async function loadDataFromSupabase() {
     const { data: sessionData } = await supabase.auth.getSession()
@@ -209,6 +100,25 @@ export const useFinanceStore = defineStore('financeStore', () => {
     isCreateSheetOpen.value = false
   }
 
+  /**
+   * Elimina un movimiento financiero
+   */
+  async function deleteMovement(id: string) {
+    const idx = movements.value.findIndex(m => m.id === id)
+    if (idx !== -1) {
+      const mov = movements.value[idx]
+      movements.value.splice(idx, 1)
+
+      if (!id.startsWith('mov-') && !id.startsWith('temp-')) {
+        try {
+          await financeService.deleteMovement(id, mov.type)
+        } catch (err: any) {
+          console.error('❌ Error al eliminar movimiento de Supabase:', err.message)
+        }
+      }
+    }
+  }
+
   async function addMovement(payload: Omit<FinancialMovement, 'id'>) {
     const tempId = `mov-${Date.now()}`
     const tempMovement: FinancialMovement = {
@@ -272,6 +182,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
     setFilterMember,
     openCreateSheet,
     closeCreateSheet,
-    addMovement
+    addMovement,
+    deleteMovement
   }
 })

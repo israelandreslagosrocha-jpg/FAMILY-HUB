@@ -25,6 +25,13 @@ function handleReassign(taskId: string, newMemberId: string) {
   activeMenuTaskId.value = null
 }
 
+function handleDelete(taskId: string) {
+  if (confirm('¿Deseas eliminar esta tarea?')) {
+    taskStore.deleteTask(taskId)
+    activeMenuTaskId.value = null
+  }
+}
+
 function toggleOptionsMenu(taskId: string) {
   if (activeMenuTaskId.value === taskId) {
     activeMenuTaskId.value = null
@@ -98,6 +105,9 @@ function toggleOptionsMenu(taskId: string) {
               <div v-if="activeMenuTaskId === task.id" class="dropdown-menu glass-card">
                 <button class="menu-item" @click="handleSkip(task.id)">
                   ↷ Omitir tarea
+                </button>
+                <button class="menu-item delete-item" @click="handleDelete(task.id)">
+                  🗑️ Eliminar tarea
                 </button>
                 <div class="menu-divider"></div>
                 <div class="menu-header-text">Reasignar a:</div>

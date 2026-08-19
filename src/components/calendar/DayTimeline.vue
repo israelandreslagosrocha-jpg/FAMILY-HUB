@@ -18,6 +18,12 @@ function handleToggleTask(taskId: string) {
 function handleOpenContextSheet() {
   calendarStore.openCreateSheet(calendarStore.selectedDate)
 }
+
+function handleDeleteEvent(eventId: string) {
+  if (confirm('¿Deseas eliminar este evento del calendario?')) {
+    calendarStore.deleteEvent(eventId)
+  }
+}
 </script>
 
 <template>
@@ -64,6 +70,7 @@ function handleOpenContextSheet() {
                 <span v-if="event.statusUI === 'saving'" class="saving-pill">Guardando...</span>
                 <span v-else-if="event.statusUI === 'error'" class="error-pill">⚠️ Error al guardar</span>
                 <span class="category-badge">{{ event.category }}</span>
+                <button class="delete-event-btn" @click="handleDeleteEvent(event.id)" title="Eliminar Evento">🗑️</button>
               </div>
             </div>
 
@@ -330,6 +337,21 @@ function handleOpenContextSheet() {
   background: rgba(0, 0, 0, 0.05);
   padding: 0.15rem 0.5rem;
   border-radius: 8px;
+}
+
+.delete-event-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s, transform 0.15s;
+  padding: 2px 4px;
+}
+
+.delete-event-btn:hover {
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 .event-card-title {

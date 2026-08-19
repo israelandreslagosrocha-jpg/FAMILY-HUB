@@ -137,5 +137,20 @@ export const taskService = {
       console.error('❌ Error al reasignar encargado de tarea:', error.message)
       throw error
     }
+  },
+
+  /**
+   * Elimina una tarea de Supabase
+   */
+  async deleteTask(taskId: string): Promise<void> {
+    const { error } = await supabase
+      .from('task_instances')
+      .delete()
+      .eq('id', taskId)
+
+    if (error) {
+      console.error('❌ Error al eliminar tarea en Supabase:', error.message)
+      throw error
+    }
   }
 }
