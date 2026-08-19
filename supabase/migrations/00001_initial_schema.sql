@@ -659,9 +659,11 @@ $$;
 
 -- 10. ASIGNACIÓN EXPLÍCITA DE PRIVILEGIOS POSTGRESQL (GRANT & REVOKE)
 GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA private TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA private FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.get_auth_family_id() TO authenticated;
 REVOKE EXECUTE ON FUNCTION public.onboard_first_family(text, text, text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.onboard_first_family(text, text, text, text, text) TO authenticated;
