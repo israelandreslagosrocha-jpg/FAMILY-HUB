@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00007 (V2.1 HARDENED): IDEMPOTENCIA EN SERVIDOR Y PUSH SUBSCRIPTIONS
+-- MIGRACIÓN 00007 (V2.2 HARDENED): IDEMPOTENCIA EN SERVIDOR Y PUSH SUBSCRIPTIONS
 -- ============================================================================
 
 -- 1. PREPARACIÓN DE COLUMNAS Y RESTRICCIONES DE UNICIDAD POR FAMILIA
@@ -9,15 +9,27 @@ ALTER TABLE public.transfers ADD COLUMN IF NOT EXISTS idempotency_key text;
 
 DO $$ 
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_expenses_family_idempotency') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'unique_expenses_family_idempotency' 
+      AND conrelid = 'public.expenses'::regclass
+  ) THEN
     ALTER TABLE public.expenses ADD CONSTRAINT unique_expenses_family_idempotency UNIQUE (family_id, idempotency_key);
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_incomes_family_idempotency') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'unique_incomes_family_idempotency' 
+      AND conrelid = 'public.incomes'::regclass
+  ) THEN
     ALTER TABLE public.incomes ADD CONSTRAINT unique_incomes_family_idempotency UNIQUE (family_id, idempotency_key);
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_transfers_family_idempotency') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'unique_transfers_family_idempotency' 
+      AND conrelid = 'public.transfers'::regclass
+  ) THEN
     ALTER TABLE public.transfers ADD CONSTRAINT unique_transfers_family_idempotency UNIQUE (family_id, idempotency_key);
   END IF;
 END $$;
@@ -32,13 +44,15 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- Asegurar columna endpoint en ejecuciones defensivas
 ALTER TABLE public.push_subscriptions ADD COLUMN IF NOT EXISTS endpoint text;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_push_subscriptions_endpoint') THEN
-    -- Asegurar que sólo se cree si no existe la restricción
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'unique_push_subscriptions_endpoint'
+      AND conrelid = 'public.push_subscriptions'::regclass
+  ) THEN
     ALTER TABLE public.push_subscriptions ADD CONSTRAINT unique_push_subscriptions_endpoint UNIQUE (endpoint);
   END IF;
 END $$;
@@ -116,7 +130,7 @@ BEGIN
 
   -- 3. Validar monto estrictamente positivo
   IF p_amount IS NULL OR p_amount <= 0 THEN
-    RAISE EXCEPTION 'El monto del movimiento debe ser estrictamente mayor a 0';
+    RAISE EXCEPTION 'El monto del movimiento debe ser strictly mayor a 0';
   END IF;
 
   -- 4. Determinar o validar registered_by_member_id
