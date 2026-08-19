@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useFamilyStore } from '../../stores/familyStore'
+import { useAuthStore } from '../../stores/authStore'
 import AvatarImage from '../common/AvatarImage.vue'
 import NetworkStatusBadge from '../pwa/NetworkStatusBadge.vue'
 import NotificationBell from '../pwa/NotificationBell.vue'
 
 const store = useFamilyStore()
+const authStore = useAuthStore()
 const showMemberSelector = ref(false)
 
 function selectActiveMember(id: string) {
   store.setActiveMember(id)
   showMemberSelector.value = false
+}
+
+function handleLogout() {
+  if (confirm('¿Deseas cerrar sesión en FAMILY-HUB?')) {
+    authStore.logout()
+  }
 }
 </script>
 
@@ -76,6 +84,11 @@ function selectActiveMember(id: string) {
             </button>
           </div>
         </div>
+
+        <!-- Botón Cerrar Sesión -->
+        <button class="logout-btn" title="Cerrar Sesión" @click="handleLogout">
+          🚪
+        </button>
       </div>
     </div>
   </header>
@@ -202,10 +215,24 @@ function selectActiveMember(id: string) {
   font-weight: 600;
 }
 
-.role-tag {
-  margin-left: auto;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+.logout-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  font-size: 0.95rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+
+.logout-btn:hover {
+  transform: scale(1.08);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 @media (max-width: 640px) {

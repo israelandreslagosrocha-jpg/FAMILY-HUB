@@ -1,9 +1,18 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useAuthStore } from './stores/authStore'
 import AppHeader from './components/layout/AppHeader.vue'
 import AppNavigation from './components/layout/AppNavigation.vue'
 import StaleDataBanner from './components/pwa/StaleDataBanner.vue'
 import PWAInstallBanner from './components/pwa/PWAInstallBanner.vue'
 import NotificationDrawer from './components/notifications/NotificationDrawer.vue'
+import LoginView from './views/LoginView.vue'
+
+const authStore = useAuthStore()
+
+onMounted(async () => {
+  await authStore.initAuth()
+})
 </script>
 
 <template>
@@ -11,23 +20,29 @@ import NotificationDrawer from './components/notifications/NotificationDrawer.vu
     <!-- Banner Discreto de Datos Cacheados en Modo Offline -->
     <StaleDataBanner />
 
-    <!-- Encabezado Fijo Apple Style -->
-    <AppHeader />
+    <!-- Pantalla de Login Apple Style cuando NO está Autenticado -->
+    <LoginView v-if="!authStore.isAuthenticated" />
 
-    <!-- Contenido Principal con Navegación Responsive -->
-    <div class="app-body">
-      <AppNavigation />
+    <!-- Aplicación Principal Operativa cuando está Autenticado -->
+    <template v-else>
+      <!-- Encabezado Fijo Apple Style -->
+      <AppHeader />
 
-      <main class="main-content">
-        <!-- Banner Nativo de Instalación PWA -->
-        <PWAInstallBanner />
+      <!-- Contenido Principal con Navegación Responsive -->
+      <div class="app-body">
+        <AppNavigation />
 
-        <router-view />
-      </main>
-    </div>
+        <main class="main-content">
+          <!-- Banner Nativo de Instalación PWA -->
+          <PWAInstallBanner />
 
-    <!-- Panel Lateral de Notificaciones del Hogar -->
-    <NotificationDrawer />
+          <router-view />
+        </main>
+      </div>
+
+      <!-- Panel Lateral de Notificaciones del Hogar -->
+      <NotificationDrawer />
+    </template>
   </div>
 </template>
 

@@ -2,24 +2,27 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { FamilyMember, TaskItem, CalendarEvent, ExpenseItem, HistoryLog, ViewMode } from '../types'
 import { familyService } from '../services/familyService'
+import { useAuthStore } from './authStore'
 
 export const useFamilyStore = defineStore('family', () => {
+  const authStore = useAuthStore()
+
   // Estado de la Aplicación
-  const members = ref<FamilyMember[]>([])
   const tasks = ref<TaskItem[]>([])
   const events = ref<CalendarEvent[]>([])
   const expenses = ref<ExpenseItem[]>([])
   const history = ref<HistoryLog[]>([])
 
-  // Estado de UI y Selección (Reglas 20, 21, 22, 23)
-  const activeMemberId = ref<string>('m-1') // Por defecto: Israel (m-1)
+  // Estado de UI y Selección
   const selectedFilterMemberId = ref<string>('all') // 'all' o ID de miembro
   const viewMode = ref<ViewMode>('my_day') // 'my_day' o 'family'
 
-  // Getters Computados
-  const activeMember = computed(() => {
-    return members.value.find(m => m.id === activeMemberId.value) || members.value[0] || null
-  })
+  // Miembros provenientes del authStore (dinámicos según sesión Supabase)
+  const members = computed<FamilyMember[]>(() => authStore.familyMembers)
+
+  const activeMemberId = computed<string>(() => authStore.activeMemberId || authStore.familyMembers[0]?.id || '')
+
+  const activeMember = computed<FamilyMember | null>(() => authStore.activeMember)
 
   // Tareas filtradas por vista (Mi día vs Familia vs Filtro por Miembro)
   const displayedTasks = computed(() => {
@@ -44,7 +47,6 @@ export const useFamilyStore = defineStore('family', () => {
 
   // Acciones
   async function loadData() {
-    members.value = await familyService.getMembers()
     tasks.value = await familyService.getTasks()
     events.value = await familyService.getEvents()
     expenses.value = await familyService.getExpenses()
@@ -56,7 +58,7 @@ export const useFamilyStore = defineStore('family', () => {
   }
 
   function setActiveMember(id: string) {
-    activeMemberId.value = id
+    authStore.setActiveMember(id)
   }
 
   function setFilterMember(id: string) {
