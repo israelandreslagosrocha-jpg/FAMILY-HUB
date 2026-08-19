@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CalendarEvent, TaskItem, CalendarViewType, ViewMode, FamilyMember } from '../types'
-import { mockEvents, mockTasks, mockMembers } from '../mocks/familyData'
+import { mockMembers } from '../mocks/familyData'
 import { calendarService, type CreateEventPayload } from '../services/calendarService'
 import { supabase } from '../services/supabaseClient'
 
@@ -13,10 +13,10 @@ export const useCalendarStore = defineStore('calendar', () => {
   const activeMemberId = ref<string>('m-1')       // Papá (Israel) por defecto
   const filterMemberId = ref<string>('all')       // 'all' o ID de miembro
 
-  // Datos
+  // Datos (Inicializa limpio)
   const members = ref<FamilyMember[]>(mockMembers)
-  const events = ref<CalendarEvent[]>(mockEvents)
-  const tasks = ref<TaskItem[]>(mockTasks)
+  const events = ref<CalendarEvent[]>([])
+  const tasks = ref<TaskItem[]>([])
 
   // Estado de Carga
   const isLoading = ref<boolean>(false)
@@ -201,6 +201,24 @@ export const useCalendarStore = defineStore('calendar', () => {
     }
   }
 
+  /**
+   * Elimina un evento
+   */
+  async function deleteEvent(eventId: string) {
+    const idx = events.value.findIndex(e => e.id === eventId)
+    if (idx !== -1) {
+      events.value.splice(idx, 1)
+    }
+
+    if (!eventId.startsWith('e-') && !eventId.startsWith('temp-')) {
+      try {
+        await calendarService.deleteEvent(eventId)
+      } catch (err: any) {
+        console.error('❌ Error al eliminar evento de Supabase:', err.message)
+      }
+    }
+  }
+
   function toggleTask(taskId: string) {
     const t = tasks.value.find(item => item.id === taskId)
     if (t) {
@@ -233,6 +251,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     openCreateSheet,
     closeCreateSheet,
     addEventWithSupabase,
+    deleteEvent,
     toggleTask
   }
 })

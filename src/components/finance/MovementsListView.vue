@@ -11,6 +11,12 @@ function formatCurrency(val: number): string {
 function handleFilterMember(memberId: string) {
   financeStore.setFilterMember(memberId)
 }
+
+function handleDeleteMovement(movId: string) {
+  if (confirm('¿Deseas eliminar este movimiento financiero?')) {
+    financeStore.deleteMovement(movId)
+  }
+}
 </script>
 
 <template>
@@ -78,6 +84,9 @@ function handleFilterMember(memberId: string) {
           >
             {{ mov.type === 'income' ? '+' : (mov.type === 'expense' ? '-' : '🔄') }} {{ formatCurrency(mov.amount) }}
           </span>
+          <button class="delete-mov-btn" @click="handleDeleteMovement(mov.id)" title="Eliminar Movimiento">
+            🗑️
+          </button>
         </div>
       </div>
     </div>
@@ -212,7 +221,25 @@ function handleFilterMember(memberId: string) {
 }
 
 .mov-card-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   text-align: right;
+}
+
+.delete-mov-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s, transform 0.15s;
+  padding: 2px;
+}
+
+.delete-mov-btn:hover {
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 .mov-amount {

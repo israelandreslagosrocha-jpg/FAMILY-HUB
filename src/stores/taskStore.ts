@@ -23,114 +23,10 @@ export const useTaskStore = defineStore('taskStore', () => {
   const members = ref<FamilyMember[]>(mockMembers)
 
   // Datos de Responsabilidades Permanentes
-  const responsibilities = ref<ResponsibilityItem[]>([
-    {
-      id: 'resp-1',
-      title: 'Mantenimiento & Servicios',
-      description: 'Pago de cuentas de luz, agua, internet y reparaciones del hogar.',
-      defaultAssignedMemberId: 'm-1',
-      icon: '🛠️',
-      color: '#3b82f6'
-    },
-    {
-      id: 'resp-2',
-      title: 'Alimentación & Supermercado',
-      description: 'Planificación de menú semanal y compras de supermercado y feria.',
-      defaultAssignedMemberId: 'm-2',
-      icon: '🛒',
-      color: '#ec4899'
-    },
-    {
-      id: 'resp-3',
-      title: 'Cuidado de Mascotas & Orden',
-      description: 'Alimentar a la mascota, pasear y mantener ordenada la zona de juegos.',
-      defaultAssignedMemberId: 'm-3',
-      icon: '🐶',
-      color: '#10b981'
-    },
-    {
-      id: 'resp-4',
-      title: 'Escuela & Materiales',
-      description: 'Revisión de cuadernos, tareas escolares y uniformes de la semana.',
-      defaultAssignedMemberId: 'm-4',
-      icon: '📚',
-      color: '#f59e0b'
-    }
-  ])
+  const responsibilities = ref<ResponsibilityItem[]>([])
 
-  // Datos de Tareas Concretas
-  const tasks = ref<TaskItem[]>([
-    {
-      id: 't-101',
-      title: 'Comprar pan y verduras para el almuerzo',
-      description: 'Ir a la feria local o supermercado de la esquina',
-      assignedToMemberId: 'm-1',
-      createdByMemberId: 'm-2',
-      priority: 'alta',
-      dueDate: '2026-08-19',
-      status: 'pending',
-      completed: false,
-      completedAt: null,
-      category: 'Supermercado',
-      responsibilityId: 'resp-2'
-    },
-    {
-      id: 't-102',
-      title: 'Pagar cuenta de electricidad en Enel',
-      description: 'Vence hoy 19 de agosto',
-      assignedToMemberId: 'm-1',
-      createdByMemberId: 'm-1',
-      priority: 'alta',
-      dueDate: '2026-08-19',
-      status: 'pending',
-      completed: false,
-      completedAt: null,
-      category: 'Servicios',
-      responsibilityId: 'resp-1'
-    },
-    {
-      id: 't-103',
-      title: 'Revisar tarea de matemáticas de los niños',
-      description: 'Guía de fracciones del 4to básico',
-      assignedToMemberId: 'm-2',
-      createdByMemberId: 'm-2',
-      priority: 'media',
-      dueDate: '2026-08-19',
-      status: 'completed',
-      completed: true,
-      completedAt: '2026-08-19T14:30:00Z',
-      category: 'Escuela',
-      responsibilityId: 'resp-4'
-    },
-    {
-      id: 't-104',
-      title: 'Lavar y aspirar el auto familiar',
-      description: 'Limpieza interior y exterior previa al viaje',
-      assignedToMemberId: 'm-1',
-      createdByMemberId: 'm-1',
-      priority: 'baja',
-      dueDate: '2026-08-20',
-      status: 'pending',
-      completed: false,
-      completedAt: null,
-      category: 'Hogar',
-      responsibilityId: 'resp-1'
-    },
-    {
-      id: 't-105',
-      title: 'Alimentar a la mascota y limpiar su zona',
-      description: 'Poner comida seca y agua fresca',
-      assignedToMemberId: 'm-3',
-      createdByMemberId: 'm-1',
-      priority: 'media',
-      dueDate: '2026-08-19',
-      status: 'pending',
-      completed: false,
-      completedAt: null,
-      category: 'Mascotas',
-      responsibilityId: 'resp-3'
-    }
-  ])
+  // Datos de Tareas Concretas (Inicializa limpio)
+  const tasks = ref<TaskItem[]>([])
 
   // Computados
   const activeMember = computed(() => {
@@ -289,8 +185,23 @@ export const useTaskStore = defineStore('taskStore', () => {
   }
 
   /**
-   * Agrega una nueva tarea llamando a la RPC transaccional de Supabase
+   * Elimina una tarea
    */
+  async function deleteTask(taskId: string) {
+    const idx = tasks.value.findIndex(t => t.id === taskId)
+    if (idx !== -1) {
+      tasks.value.splice(idx, 1)
+    }
+
+    if (!taskId.startsWith('t-') && !taskId.startsWith('temp-')) {
+      try {
+        await taskService.deleteTask(taskId)
+      } catch (err: any) {
+        console.error('❌ Error al eliminar tarea de Supabase:', err.message)
+      }
+    }
+  }
+
   async function addTaskWithSupabase(payload: CreateTaskPayload) {
     const tempId = `temp-${Date.now()}`
     
@@ -350,6 +261,7 @@ export const useTaskStore = defineStore('taskStore', () => {
     toggleTaskStatus,
     skipTask,
     reassignTask,
+    deleteTask,
     addTaskWithSupabase
   }
 })
