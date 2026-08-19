@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00001: ESQUEMA INICIAL DE BASE DE DATOS FAMILY-HUB
+-- MIGRACIÓN 00001 (V4.1): ESQUEMA INICIAL DE BASE DE DATOS FAMILY-HUB
 -- ============================================================================
 
 -- 1. CREACIÓN DE ESQUEMA PRIVADO (Funciones de seguridad aisladas del Data API)
@@ -98,7 +98,7 @@ CREATE TABLE public.task_series (
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 3.8 Instancias Concretas de Tareas
+-- 3.8 Instancias Concretas de Tareas (Sin duplicidad de estado; status + completed_at)
 CREATE TABLE public.task_instances (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     family_id uuid NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
@@ -111,7 +111,6 @@ CREATE TABLE public.task_instances (
     priority priority_enum DEFAULT 'media' NOT NULL,
     status task_status_enum DEFAULT 'pending' NOT NULL,
     due_date timestamp with time zone NOT NULL,
-    completed boolean DEFAULT false NOT NULL,
     completed_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -187,7 +186,7 @@ CREATE TABLE public.history_logs (
     family_id uuid NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
     actor_profile_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
     family_member_id uuid REFERENCES public.family_members(id) ON DELETE SET NULL,
-    action_type text NOT NULL, -- 'created' | 'completed' | 'skipped' | 'reassigned' | 'updated' | 'deleted'
+    action_type text NOT NULL, -- 'created' | 'completed' | 'skipped' | 'reassigned' | 'deleted'
     entity_type text NOT NULL, -- 'task' | 'expense' | 'income' | 'event' | 'responsibility' | 'family_member'
     entity_id uuid NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
@@ -257,98 +256,127 @@ ALTER TABLE public.incomes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.history_logs ENABLE ROW LEVEL SECURITY;
 
--- 7. POLÍTICAS RLS EXPLÍCITAS CON (SELECT private.get_auth_family_id())
+-- 7. POLÍTICAS RLS EXPLÍCITAS CON VALIDACIÓN CROSS-FAMILY
 
 -- 7.1 PROFILES
-CREATE POLICY "Profiles visibles por miembros de la misma familia u propio usuario" 
-ON public.profiles FOR SELECT TO authenticated
+CREATE POLICY "Profiles SELECT" ON public.profiles FOR SELECT TO authenticated
 USING (id = auth.uid() OR id IN (
   SELECT profile_id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND profile_id IS NOT NULL
 ));
 
-CREATE POLICY "Usuarios solo actualizan su propio profile" 
-ON public.profiles FOR UPDATE TO authenticated
+CREATE POLICY "Profiles UPDATE" ON public.profiles FOR UPDATE TO authenticated
 USING (id = auth.uid()) WITH CHECK (id = auth.uid());
 
 -- 7.2 FAMILIES
-CREATE POLICY "Miembros ven su propia familia" 
-ON public.families FOR SELECT TO authenticated
+CREATE POLICY "Families SELECT" ON public.families FOR SELECT TO authenticated
 USING (id = (SELECT private.get_auth_family_id()));
 
-CREATE POLICY "Miembros actualizan su propia familia" 
-ON public.families FOR UPDATE TO authenticated
+CREATE POLICY "Families UPDATE" ON public.families FOR UPDATE TO authenticated
 USING (id = (SELECT private.get_auth_family_id())) WITH CHECK (id = (SELECT private.get_auth_family_id()));
 
 -- 7.3 FAMILY_MEMBERS
-CREATE POLICY "Miembros ven integrantes de su familia" 
-ON public.family_members FOR SELECT TO authenticated
+CREATE POLICY "Family Members SELECT" ON public.family_members FOR SELECT TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()));
 
-CREATE POLICY "Miembros agregan integrantes a su familia" 
-ON public.family_members FOR INSERT TO authenticated
+CREATE POLICY "Family Members INSERT" ON public.family_members FOR INSERT TO authenticated
 WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
 
-CREATE POLICY "Miembros actualizan integrantes de su familia" 
-ON public.family_members FOR UPDATE TO authenticated
+CREATE POLICY "Family Members UPDATE" ON public.family_members FOR UPDATE TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
 
 -- 7.4 CATEGORIES
-CREATE POLICY "Categorias visibles por la familia" 
-ON public.categories FOR SELECT TO authenticated
+CREATE POLICY "Categories SELECT" ON public.categories FOR SELECT TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()));
 
-CREATE POLICY "Insercion de categorias personalizadas" 
-ON public.categories FOR INSERT TO authenticated
+CREATE POLICY "Categories INSERT" ON public.categories FOR INSERT TO authenticated
 WITH CHECK (family_id = (SELECT private.get_auth_family_id()) AND is_system = false);
 
-CREATE POLICY "Edicion solo de categorias personalizadas" 
-ON public.categories FOR UPDATE TO authenticated
+CREATE POLICY "Categories UPDATE" ON public.categories FOR UPDATE TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()) AND is_system = false)
 WITH CHECK (family_id = (SELECT private.get_auth_family_id()) AND is_system = false);
 
-CREATE POLICY "Borrado solo de categorias personalizadas" 
-ON public.categories FOR DELETE TO authenticated
+CREATE POLICY "Categories DELETE" ON public.categories FOR DELETE TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()) AND is_system = false);
 
--- 7.5 RESPONSIBILITIES, RECURRENCE_RULES, TASK_SERIES, EXPENSES, INCOMES, BUDGETS, EVENTS
--- (Patrón estándar de aislamiento por family_id con SELECT / INSERT / UPDATE / DELETE)
-
+-- 7.5 RESPONSIBILITIES
 CREATE POLICY "Responsibilities SELECT" ON public.responsibilities FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Responsibilities INSERT" ON public.responsibilities FOR INSERT TO authenticated WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Responsibilities UPDATE" ON public.responsibilities FOR UPDATE TO authenticated USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
+CREATE POLICY "Responsibilities INSERT" ON public.responsibilities FOR INSERT TO authenticated 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  default_assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
+);
+CREATE POLICY "Responsibilities UPDATE" ON public.responsibilities FOR UPDATE TO authenticated 
+USING (family_id = (SELECT private.get_auth_family_id())) 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  default_assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
+);
 CREATE POLICY "Responsibilities DELETE" ON public.responsibilities FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
+-- 7.6 RECURRENCE_RULES
 CREATE POLICY "Recurrence Rules SELECT" ON public.recurrence_rules FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 CREATE POLICY "Recurrence Rules INSERT" ON public.recurrence_rules FOR INSERT TO authenticated WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
 CREATE POLICY "Recurrence Rules UPDATE" ON public.recurrence_rules FOR UPDATE TO authenticated USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
 CREATE POLICY "Recurrence Rules DELETE" ON public.recurrence_rules FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
+-- 7.7 TASK_SERIES
 CREATE POLICY "Task Series SELECT" ON public.task_series FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Task Series INSERT" ON public.task_series FOR INSERT TO authenticated WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Task Series UPDATE" ON public.task_series FOR UPDATE TO authenticated USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
+CREATE POLICY "Task Series INSERT" ON public.task_series FOR INSERT TO authenticated 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  (responsibility_id IS NULL OR responsibility_id IN (SELECT id FROM public.responsibilities WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (recurrence_rule_id IS NULL OR recurrence_rule_id IN (SELECT id FROM public.recurrence_rules WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  default_assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
+);
+CREATE POLICY "Task Series UPDATE" ON public.task_series FOR UPDATE TO authenticated 
+USING (family_id = (SELECT private.get_auth_family_id())) 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  (responsibility_id IS NULL OR responsibility_id IN (SELECT id FROM public.responsibilities WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (recurrence_rule_id IS NULL OR recurrence_rule_id IN (SELECT id FROM public.recurrence_rules WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  default_assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
+);
 CREATE POLICY "Task Series DELETE" ON public.task_series FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
--- 7.6 TASK_INSTANCES (Validación Cross-Family)
+-- 7.8 TASK_INSTANCES
 CREATE POLICY "Task Instances SELECT" ON public.task_instances FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 CREATE POLICY "Task Instances INSERT" ON public.task_instances FOR INSERT TO authenticated 
 WITH CHECK (
   family_id = (SELECT private.get_auth_family_id()) AND
+  (task_series_id IS NULL OR task_series_id IN (SELECT id FROM public.task_series WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  created_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
   assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
 );
 CREATE POLICY "Task Instances UPDATE" ON public.task_instances FOR UPDATE TO authenticated 
-USING (family_id = (SELECT private.get_auth_family_id()))
+USING (family_id = (SELECT private.get_auth_family_id())) 
 WITH CHECK (
   family_id = (SELECT private.get_auth_family_id()) AND
+  (task_series_id IS NULL OR task_series_id IN (SELECT id FROM public.task_series WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
   assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
 );
 CREATE POLICY "Task Instances DELETE" ON public.task_instances FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
+-- 7.9 EVENTS & EVENT_MEMBERS
 CREATE POLICY "Events SELECT" ON public.events FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Events INSERT" ON public.events FOR INSERT TO authenticated WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Events UPDATE" ON public.events FOR UPDATE TO authenticated USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
+CREATE POLICY "Events INSERT" ON public.events FOR INSERT TO authenticated 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (recurrence_rule_id IS NULL OR recurrence_rule_id IN (SELECT id FROM public.recurrence_rules WHERE family_id = (SELECT private.get_auth_family_id())))
+);
+CREATE POLICY "Events UPDATE" ON public.events FOR UPDATE TO authenticated 
+USING (family_id = (SELECT private.get_auth_family_id())) 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (recurrence_rule_id IS NULL OR recurrence_rule_id IN (SELECT id FROM public.recurrence_rules WHERE family_id = (SELECT private.get_auth_family_id())))
+);
 CREATE POLICY "Events DELETE" ON public.events FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
--- 7.7 EVENT_MEMBERS (Validación estricta de evento y miembro de mi familia)
 CREATE POLICY "Event Members SELECT" ON public.event_members FOR SELECT TO authenticated
 USING (event_id IN (SELECT id FROM public.events WHERE family_id = (SELECT private.get_auth_family_id())));
 
@@ -368,22 +396,59 @@ WITH CHECK (
 CREATE POLICY "Event Members DELETE" ON public.event_members FOR DELETE TO authenticated
 USING (event_id IN (SELECT id FROM public.events WHERE family_id = (SELECT private.get_auth_family_id())));
 
+-- 7.10 EXPENSES & INCOMES (Validación estricta de categorías y miembros de mi familia)
 CREATE POLICY "Expenses SELECT" ON public.expenses FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Expenses INSERT" ON public.expenses FOR INSERT TO authenticated WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Expenses UPDATE" ON public.expenses FOR UPDATE TO authenticated USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
+CREATE POLICY "Expenses INSERT" ON public.expenses FOR INSERT TO authenticated 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id())) AND
+  registered_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
+  (belonging_to_member_id IS NULL OR belonging_to_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true))
+);
+CREATE POLICY "Expenses UPDATE" ON public.expenses FOR UPDATE TO authenticated 
+USING (family_id = (SELECT private.get_auth_family_id())) 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id())) AND
+  registered_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
+  (belonging_to_member_id IS NULL OR belonging_to_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true))
+);
 CREATE POLICY "Expenses DELETE" ON public.expenses FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
 CREATE POLICY "Incomes SELECT" ON public.incomes FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Incomes INSERT" ON public.incomes FOR INSERT TO authenticated WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Incomes UPDATE" ON public.incomes FOR UPDATE TO authenticated USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
+CREATE POLICY "Incomes INSERT" ON public.incomes FOR INSERT TO authenticated 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id())) AND
+  registered_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
+  (belonging_to_member_id IS NULL OR belonging_to_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true))
+);
+CREATE POLICY "Incomes UPDATE" ON public.incomes FOR UPDATE TO authenticated 
+USING (family_id = (SELECT private.get_auth_family_id())) 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id())) AND
+  registered_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
+  (belonging_to_member_id IS NULL OR belonging_to_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true))
+);
 CREATE POLICY "Incomes DELETE" ON public.incomes FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
+-- 7.11 BUDGETS
 CREATE POLICY "Budgets SELECT" ON public.budgets FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Budgets INSERT" ON public.budgets FOR INSERT TO authenticated WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
-CREATE POLICY "Budgets UPDATE" ON public.budgets FOR UPDATE TO authenticated USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
+CREATE POLICY "Budgets INSERT" ON public.budgets FOR INSERT TO authenticated 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))
+);
+CREATE POLICY "Budgets UPDATE" ON public.budgets FOR UPDATE TO authenticated 
+USING (family_id = (SELECT private.get_auth_family_id())) 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))
+);
 CREATE POLICY "Budgets DELETE" ON public.budgets FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
--- 7.8 HISTORY_LOGS (Inalterable: Solo Lectura desde Cliente, Inserción por Triggers)
+-- 7.12 HISTORY_LOGS (Solo Lectura desde Cliente, Inserción por Triggers de BD)
 CREATE POLICY "History Logs SELECT" ON public.history_logs FOR SELECT TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()));
 
@@ -421,10 +486,14 @@ SET search_path = ''
 AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
+    IF NEW.status = 'completed' AND NEW.completed_at IS NULL THEN
+      NEW.completed_at := now();
+    END IF;
     INSERT INTO public.history_logs (family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata)
     VALUES (NEW.family_id, auth.uid(), NEW.assigned_member_id, 'created', 'task', NEW.id, jsonb_build_object('title', NEW.title));
   ELSIF TG_OP = 'UPDATE' THEN
     IF OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'completed' THEN
+      NEW.completed_at := now();
       INSERT INTO public.history_logs (family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata)
       VALUES (NEW.family_id, auth.uid(), NEW.assigned_member_id, 'completed', 'task', NEW.id, jsonb_build_object('title', NEW.title));
     ELSIF OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'skipped' THEN
@@ -437,16 +506,17 @@ BEGIN
   ELSIF TG_OP = 'DELETE' THEN
     INSERT INTO public.history_logs (family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata)
     VALUES (OLD.family_id, auth.uid(), OLD.assigned_member_id, 'deleted', 'task', OLD.id, jsonb_build_object('title', OLD.title));
+    RETURN OLD;
   END IF;
-  RETURN NULL;
+  RETURN NEW;
 END;
 $$;
 
 CREATE TRIGGER trg_audit_tasks_history
-  AFTER INSERT OR UPDATE OR DELETE ON public.task_instances
+  BEFORE INSERT OR UPDATE OR DELETE ON public.task_instances
   FOR EACH ROW EXECUTE FUNCTION private.audit_tasks_trigger_fn();
 
--- 8.3 Trigger Auditoría para Gastos (CREATE, UPDATE, DELETE)
+-- 8.3 Trigger Auditoría para Gastos (CREATE, DELETE)
 CREATE OR REPLACE FUNCTION private.audit_expenses_trigger_fn()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -460,8 +530,9 @@ BEGIN
   ELSIF TG_OP = 'DELETE' THEN
     INSERT INTO public.history_logs (family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata)
     VALUES (OLD.family_id, auth.uid(), OLD.registered_by_member_id, 'deleted', 'expense', OLD.id, jsonb_build_object('title', OLD.title, 'amount', OLD.amount));
+    RETURN OLD;
   END IF;
-  RETURN NULL;
+  RETURN NEW;
 END;
 $$;
 
@@ -483,8 +554,9 @@ BEGIN
   ELSIF TG_OP = 'DELETE' THEN
     INSERT INTO public.history_logs (family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata)
     VALUES (OLD.family_id, auth.uid(), OLD.registered_by_member_id, 'deleted', 'income', OLD.id, jsonb_build_object('title', OLD.title, 'amount', OLD.amount));
+    RETURN OLD;
   END IF;
-  RETURN NULL;
+  RETURN NEW;
 END;
 $$;
 
@@ -506,8 +578,9 @@ BEGIN
   ELSIF TG_OP = 'DELETE' THEN
     INSERT INTO public.history_logs (family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata)
     VALUES (OLD.family_id, auth.uid(), NULL, 'deleted', 'event', OLD.id, jsonb_build_object('title', OLD.title));
+    RETURN OLD;
   END IF;
-  RETURN NULL;
+  RETURN NEW;
 END;
 $$;
 
@@ -515,7 +588,7 @@ CREATE TRIGGER trg_audit_events_history
   AFTER INSERT OR DELETE ON public.events
   FOR EACH ROW EXECUTE FUNCTION private.audit_events_trigger_fn();
 
--- 9. FUNCIÓN RPC PÚBLICA DE ONBOARDING IDEMPOTENTE
+-- 9. FUNCIÓN RPC PÚBLICA DE ONBOARDING IDEMPOTENTE Y PROTEGIDA CONTRA CONCURRENCIA
 CREATE OR REPLACE FUNCTION public.onboard_first_family(
   p_family_name text,
   p_member_name text,
@@ -536,7 +609,10 @@ BEGIN
     RAISE EXCEPTION 'Usuario no autenticado';
   END IF;
 
-  -- Comprobación idempotente: Validar si el usuario ya pertenece a una familia activa
+  -- Bloqueo Transaccional Advisory para prevenir condiciones de carrera simultáneas del mismo usuario
+  PERFORM pg_advisory_xact_lock(hashtext(v_user_id::text));
+
+  -- Comprobación Idempotente
   v_existing_family_id := private.get_auth_family_id();
   IF v_existing_family_id IS NOT NULL THEN
     RAISE EXCEPTION 'El usuario ya pertenece a una familia activa';
@@ -563,6 +639,7 @@ BEGIN
 END;
 $$;
 
--- Restricción de Ejecución EXECUTE en la Función RPC de Onboarding
+-- 10. RESTRICCIÓN DE PERMISOS EXECUTE EN TODAS LAS FUNCIONES (Hardening de Seguridad)
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA private FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.onboard_first_family(text, text, text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.onboard_first_family(text, text, text, text, text) TO authenticated;

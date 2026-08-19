@@ -58,7 +58,7 @@ Variables de entorno para claves públicas, datos privados, políticas RLS en Su
 Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
-- Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). 🔄 EN REVISIÓN SQL
+- Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). 🔄 EN REVISIÓN V4.1
 - Etapa 3: Calendario.
 - Etapa 4: Tareas y responsabilidades.
 - Etapa 5: Automatizaciones.
