@@ -55,7 +55,7 @@ Supabase como fuente principal. Caché local para velocidad percibida. Responsab
 Variables de entorno para claves públicas, datos privados, políticas RLS en Supabase antes de dar por terminada la arquitectura de datos.
 
 ## 12. Desarrollo por etapas
-Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
+Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
 - Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). ✅ EJECUTADA
@@ -69,14 +69,8 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 4C: Integración de Tareas con Supabase (`00003_task_rpc_and_audit.sql` + `taskService.ts`). ✅ EJECUTADA Y COMPLETADA
 - Etapa 4D: Pruebas Reales de Integración de Tareas. ✅ COMPLETADA CON ÉXITO (100% PASS)
 - Etapa 5: Motor de Automatizaciones del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
-- Etapa 6A: Arquitectura Funcional y UX de Finanzas del Hogar. ✅ APROBADA CON PRECISIONES
-- Etapa 6B: Desarrollo Visual de Finanzas en Vue 3 con Datos Mock. ✅ COMPLETADA
-- Etapa 6C.1: Auditoría del Esquema Existente y Propuesta de Persistencia Financiera. 🔄 EN REVISIÓN
-- Etapa 6C.2: Generación del Script SQL `00005_finance_schema.sql`.
-- Etapa 6C.3: Ejecución en Supabase + Verificación.
-- Etapa 6C.4: Integración con `financeService.ts` y Pinia Store.
-- Etapa 6D: Pruebas Reales de Integración de Finanzas.
-- Etapa 7: Boletas / OCR.
+- Etapa 6: Finanzas del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
+- Etapa 7: Boletas / OCR. ⏳ PRÓXIMA ETAPA
 - Etapa 8: PWA / Notificaciones / Offline avanzado.
 
 ## 13. Documentación

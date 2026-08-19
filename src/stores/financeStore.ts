@@ -1,15 +1,18 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { FinancialMovement, CategoryBudget, FinanceTabType, FinancialScope } from '../types'
+import { financeService } from '../services/financeService'
+import { supabase } from '../services/supabaseClient'
 
 export const useFinanceStore = defineStore('financeStore', () => {
   // Estado Principal
-  const activeTab = ref<FinanceTabType>('overview') // 'overview' | 'movements' | 'budgets'
+  const activeTab = ref<FinanceTabType>('overview')
   const filterScope = ref<FinancialScope | 'all'>('all')
   const filterMemberId = ref<string>('all')
   const isCreateSheetOpen = ref<boolean>(false)
+  const isLoading = ref<boolean>(false)
 
-  // Datos Mock de Movimientos Financieros
+  // Movimientos Financieros
   const movements = ref<FinancialMovement[]>([
     {
       id: 'mov-101',
@@ -22,7 +25,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
       categoryName: 'Supermercado',
       categoryIcon: '🛒',
       categoryColor: '#ec4899',
-      registeredByMemberId: 'm-1', // Israel (Papá) pagó
+      registeredByMemberId: 'm-1',
       date: '2026-08-18'
     },
     {
@@ -50,7 +53,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
       categoryName: 'Servicios del Hogar',
       categoryIcon: '💡',
       categoryColor: '#3b82f6',
-      registeredByMemberId: 'm-2', // Esposa pagó
+      registeredByMemberId: 'm-2',
       date: '2026-08-15'
     },
     {
@@ -58,7 +61,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
       title: 'Transferencia Banco -> Efectivo Caja',
       amount: 50000,
       currency: 'CLP',
-      type: 'transfer', // MOVIMIENTO NEUTRO (No altera balance neto)
+      type: 'transfer',
       scope: 'family',
       categoryId: 'cat-transfer',
       categoryName: 'Transferencia Cuentas',
@@ -78,13 +81,13 @@ export const useFinanceStore = defineStore('financeStore', () => {
       categoryName: 'Ropa & Personal',
       categoryIcon: '👟',
       categoryColor: '#f59e0b',
-      registeredByMemberId: 'm-1', // Israel pagó
-      belongingToMemberId: 'm-3',  // Pertenece a Hijo
+      registeredByMemberId: 'm-1',
+      belongingToMemberId: 'm-3',
       date: '2026-08-14'
     }
   ])
 
-  // Datos Mock de Presupuestos por Categoría
+  // Presupuestos por Categoría
   const budgets = ref<CategoryBudget[]>([
     {
       id: 'b-1',
@@ -118,11 +121,39 @@ export const useFinanceStore = defineStore('financeStore', () => {
       categoryId: 'cat-entretencion',
       categoryName: 'Entretención & Salidas',
       monthlyLimit: 100000,
-      spentAmount: 98000, // Cerca del límite (Amarillo)
+      spentAmount: 98000,
       color: '#a855f7',
       icon: '🍕'
     }
   ])
+
+  async function loadDataFromSupabase() {
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (!sessionData.session) return
+
+    isLoading.value = true
+    try {
+      const dbMovements = await financeService.getMovements()
+      if (dbMovements.length > 0) {
+        movements.value = dbMovements
+      }
+
+      const dbBudgets = await financeService.getBudgets()
+      if (dbBudgets.length > 0) {
+        // Calcular gastado dinámicamente desde los movimientos
+        dbBudgets.forEach(b => {
+          b.spentAmount = movements.value
+            .filter(m => m.type === 'expense' && (m.categoryId === b.categoryId || m.categoryName === b.categoryName))
+            .reduce((sum, m) => sum + m.amount, 0)
+        })
+        budgets.value = dbBudgets
+      }
+    } catch (err: any) {
+      console.warn('⚠️ Error al cargar finanzas desde Supabase:', err.message)
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   // Movimientos filtrados por ámbito y miembro
   const displayedMovements = computed(() => {
@@ -137,7 +168,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
     })
   })
 
-  // Cómputo de Totales Financieros (Las transferencias neutras son excluidas de gastos e ingresos)
+  // Cómputo de Totales Financieros
   const totalIncome = computed(() => {
     return displayedMovements.value
       .filter(m => m.type === 'income')
@@ -157,6 +188,9 @@ export const useFinanceStore = defineStore('financeStore', () => {
   // Acciones
   function setTab(tab: FinanceTabType) {
     activeTab.value = tab
+    if (tab === 'movements' || tab === 'budgets') {
+      loadDataFromSupabase()
+    }
   }
 
   function setScope(scope: FinancialScope | 'all') {
@@ -175,20 +209,47 @@ export const useFinanceStore = defineStore('financeStore', () => {
     isCreateSheetOpen.value = false
   }
 
-  function addMovement(payload: Omit<FinancialMovement, 'id'>) {
-    const newMovement: FinancialMovement = {
+  async function addMovement(payload: Omit<FinancialMovement, 'id'>) {
+    const tempId = `mov-${Date.now()}`
+    const tempMovement: FinancialMovement = {
       ...payload,
-      id: `mov-${Date.now()}`
+      id: tempId
     }
 
-    movements.value.unshift(newMovement)
+    movements.value.unshift(tempMovement)
     isCreateSheetOpen.value = false
 
-    // Actualizar presupuestos si es un gasto de categoría existente
+    // Actualizar presupuesto si es gasto
     if (payload.type === 'expense') {
       const targetBudget = budgets.value.find(b => b.categoryId === payload.categoryId || b.categoryName === payload.categoryName)
       if (targetBudget) {
         targetBudget.spentAmount += payload.amount
+      }
+    }
+
+    // Persistir en Supabase vía RPC si hay sesión activa
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (sessionData.session) {
+      try {
+        const realId = await financeService.createMovement({
+          movementType: payload.type,
+          title: payload.title,
+          amount: payload.amount,
+          categoryId: payload.categoryId.startsWith('cat-') ? undefined : payload.categoryId,
+          registeredByMemberId: payload.registeredByMemberId,
+          belongingToMemberId: payload.belongingToMemberId,
+          isFamilyScope: payload.scope === 'family',
+          date: payload.date,
+          sourceAccount: payload.type === 'transfer' ? 'Cuenta Corriente' : undefined,
+          destinationAccount: payload.type === 'transfer' ? 'Caja Efectivo' : undefined
+        })
+
+        const target = movements.value.find(m => m.id === tempId)
+        if (target) {
+          target.id = realId
+        }
+      } catch (err: any) {
+        console.error('❌ Error al guardar movimiento en Supabase:', err.message)
       }
     }
   }
@@ -198,12 +259,14 @@ export const useFinanceStore = defineStore('financeStore', () => {
     filterScope,
     filterMemberId,
     isCreateSheetOpen,
+    isLoading,
     movements,
     budgets,
     displayedMovements,
     totalIncome,
     totalExpenses,
     netBalance,
+    loadDataFromSupabase,
     setTab,
     setScope,
     setFilterMember,
