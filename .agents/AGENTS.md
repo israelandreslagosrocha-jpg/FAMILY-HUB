@@ -55,7 +55,7 @@ Supabase como fuente principal. Caché local para velocidad percibida. Responsab
 Variables de entorno para claves públicas, datos privados, políticas RLS en Supabase antes de dar por terminada la arquitectura de datos.
 
 ## 12. Desarrollo por etapas
-Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
+Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
 - Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). ✅ EJECUTADA
@@ -68,7 +68,10 @@ Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa s
 - Etapa 4B: Desarrollo Visual de Tareas en Vue 3 con Datos Mock. ✅ COMPLETADA
 - Etapa 4C: Integración de Tareas con Supabase (`00003_task_rpc_and_audit.sql` + `taskService.ts`). ✅ EJECUTADA Y COMPLETADA
 - Etapa 4D: Pruebas Reales de Integración de Tareas. ✅ COMPLETADA CON ÉXITO (100% PASS)
-- Etapa 5: Automatizaciones. ⏳ PRÓXIMA ETAPA
+- Etapa 5A: Arquitectura Funcional y UX de Automatizaciones. ✅ APROBADA
+- Etapa 5B: Desarrollo Visual de Automatizaciones en Vue 3 con Datos Mock. 🔄 EN CURSO
+- Etapa 5C: Integración de Automatizaciones con Supabase.
+- Etapa 5D: Pruebas Reales de Integración de Automatizaciones.
 - Etapa 6: Finanzas.
 - Etapa 7: Boletas / OCR.
 - Etapa 8: PWA / Notificaciones / Offline avanzado.
@@ -107,7 +110,7 @@ Conmutador rápido e inmediato `[ Mi día ]` / `[ Familia ]` en la pantalla prin
 Filtro rápido por miembros (`Todos | Israel | Esposa | ...`) con avatar, nombre y distintivo de color.
 
 ## 24. Principio de contexto
-Priorización clara de información: 1. Qué tengo que hacer, 2. Qué viene después, 3. Pendiente, 4. Atención, 5. Estado de la familia, 6. Información secundaria.
+Priorización clara de información: 1. Qué tengo que me toca hacer, 2. Qué viene después, 3. Pendiente, 4. Atención, 5. Estado de la familia, 6. Información secundaria.
 
 ## 25. Personalización sin complejidad
 Valores predeterminados razonables sin menús de configuración abrumadores.

@@ -64,7 +64,6 @@ export async function runTestBattery4D(): Promise<Test4DItem[]> {
 
   // Si solo hay 1 miembro, creamos un 2do miembro temporal de prueba en la misma familia para evaluar reasignación
   let secondMemberId = members && members.length > 1 ? members[1].id : null
-  let createdTempMember = false
 
   if (!secondMemberId) {
     const { data: familyIdData } = await supabase.from('family_members').select('family_id').eq('id', validMemberId).single()
@@ -80,7 +79,6 @@ export async function runTestBattery4D(): Promise<Test4DItem[]> {
 
       if (tempMember) {
         secondMemberId = tempMember.id
-        createdTempMember = true
       }
     }
   }
@@ -250,7 +248,7 @@ export async function runTestBattery4D(): Promise<Test4DItem[]> {
           objective: 'Verificar cambio real de member_id asignado y generación de log "reassigned"',
           action: `taskService.reassignTask(taskId, "${secondMemberId}")`,
           expected: 'assigned_member_id actualizado y log "reassigned" en history_logs',
-          actual: `Reasignado con éxito a Member ID ${reassignedTask.assigned_member_id}`,
+          actual: `Reasignado con éxito a Member ID ${reassignedTask?.assigned_member_id}`,
           status: 'PASS'
         })
       } else {

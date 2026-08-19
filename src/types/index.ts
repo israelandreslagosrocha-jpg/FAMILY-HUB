@@ -55,6 +55,45 @@ export interface CalendarEvent {
   statusUI?: 'idle' | 'saving' | 'saved' | 'error'
 }
 
+// TIPOS PARA AUTOMATIZACIONES (ETAPA 5)
+export type TriggerCategory = 'data_event' | 'scheduled_time'
+export type ActionKindEnum = 'CREATE_TASK' | 'REASSIGN_TASK' | 'SKIP_TASK' | 'CREATE_EVENT' | 'SEND_NOTIFICATION' | 'ROTATE_MEMBER'
+
+export interface AutomationRule {
+  id: string
+  name: string
+  description: string
+  category: TriggerCategory
+  triggerText: string   // Texto "Cuando: Se completa la tarea 'Comprar alimentos'"
+  conditionText?: string // Texto "Si: Categoría es Alimentación"
+  actionText: string    // Texto "Entonces: Crear tarea 'Guardar mercadería'"
+  actionKind: ActionKindEnum
+  isActive: boolean
+  executionCount: number
+}
+
+export interface AutomationRecipe {
+  id: string
+  title: string
+  description: string
+  icon: string
+  category: string
+  triggerText: string
+  conditionText?: string
+  actionText: string
+  actionKind: ActionKindEnum
+}
+
+export interface AutomationLog {
+  id: string
+  ruleId: string
+  ruleName: string
+  triggeredAt: string
+  status: 'success' | 'failed'
+  details: string
+  isIdempotentVerified: boolean
+}
+
 export interface ExpenseItem {
   id: string
   title: string
@@ -76,3 +115,4 @@ export interface HistoryLog {
 export type ViewMode = 'my_day' | 'family'
 export type CalendarViewType = 'day' | 'week' | 'month'
 export type TaskFocusType = 'my_tasks' | 'family_tasks' | 'responsibilities'
+export type AutomationTabType = 'recipes' | 'active_rules' | 'execution_logs'
