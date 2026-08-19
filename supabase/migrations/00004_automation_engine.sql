@@ -1,20 +1,20 @@
 -- ============================================================================
--- MIGRACIÓN 00004 (V2.1 HARDENED): MOTOR DE AUTOMATIZACIONES DE FAMILY-HUB
+-- MIGRACIÓN 00004 (V2.2 HARDENED): MOTOR DE AUTOMATIZACIONES DE FAMILY-HUB
 -- ============================================================================
 
--- 1. TIPOS ENUMERADOS DEL MOTOR DE AUTOMATIZACIÓN
+-- 1. TIPOS ENUMERADOS DEL MOTOR DE AUTOMATIZACIÓN (EN ESQUEMA PUBLIC)
 DO $$ 
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trigger_type_enum') THEN
-    CREATE TYPE trigger_type_enum AS ENUM ('data_event', 'scheduled_time');
+    CREATE TYPE public.trigger_type_enum AS ENUM ('data_event', 'scheduled_time');
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_kind_enum') THEN
-    CREATE TYPE action_kind_enum AS ENUM ('CREATE_TASK', 'ROTATE_MEMBER', 'SEND_NOTIFICATION', 'REASSIGN_TASK', 'SKIP_TASK');
+    CREATE TYPE public.action_kind_enum AS ENUM ('CREATE_TASK', 'ROTATE_MEMBER', 'SEND_NOTIFICATION', 'REASSIGN_TASK', 'SKIP_TASK');
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'execution_status_enum') THEN
-    CREATE TYPE execution_status_enum AS ENUM ('running', 'success', 'failed', 'skipped_idempotent');
+    CREATE TYPE public.execution_status_enum AS ENUM ('running', 'success', 'failed', 'skipped_idempotent');
   END IF;
 END $$;
 
@@ -25,10 +25,10 @@ CREATE TABLE IF NOT EXISTS public.automation_rules (
     created_by_member_id uuid REFERENCES public.family_members(id) ON DELETE SET NULL,
     name text NOT NULL,
     description text,
-    trigger_type trigger_type_enum NOT NULL,
+    trigger_type public.trigger_type_enum NOT NULL,
     trigger_event text NOT NULL, -- ej: 'task.completed', 'expense.created', 'cron.weekly_sunday_1900'
     condition_config jsonb DEFAULT '{}'::jsonb,
-    action_type action_kind_enum NOT NULL,
+    action_type public.action_kind_enum NOT NULL,
     action_config jsonb NOT NULL DEFAULT '{}'::jsonb,
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS public.automation_executions (
     deduplication_key text UNIQUE NOT NULL, -- md5(rule_id || ':' || trigger_event_id || ':' || entity_id || ':' || action)
     target_entity_type text NOT NULL,
     target_entity_id uuid,
-    status execution_status_enum NOT NULL DEFAULT 'running',
+    status public.execution_status_enum NOT NULL DEFAULT 'running',
     error_message text,
     executed_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -177,7 +177,7 @@ END;
 $$;
 
 
--- 5. FUNCIÓN PRINCIPAL DE EJECUCIÓN DE UNA REGLA INDIVIDUAL (HARDENED V2.1)
+-- 5. FUNCIÓN PRINCIPAL DE EJECUCIÓN DE UNA REGLA INDIVIDUAL (HARDENED V2.2)
 CREATE OR REPLACE FUNCTION private.execute_single_automation_rule(
   p_rule_id uuid,
   p_trigger_event_id text,
@@ -193,7 +193,7 @@ DECLARE
   v_rule public.automation_rules%ROWTYPE;
   v_dedup_key text;
   v_existing_id uuid;
-  v_existing_status execution_status_enum;
+  v_existing_status public.execution_status_enum;
   v_execution_id uuid;
   v_assigned_target_id uuid;
   v_next_member_id uuid;
@@ -440,7 +440,7 @@ CREATE TRIGGER trg_process_task_automations
   EXECUTE FUNCTION private.trg_process_task_automations_fn();
 
 
--- 7. SCHEDULER PROGRAMADO SEPARADO Y PROTEGIDO CONTRA EJECUCIONES CROSS-FAMILY
+-- 7. SCHEDULER PROGRAMADO SEPARADO Y PROTEGIDO CONTRA EJECUCIÓN CROSS-FAMILY
 
 -- 7.1 RPC Pública para el Usuario Autenticado (SOLO ejecuta su propia familia)
 CREATE OR REPLACE FUNCTION public.execute_my_scheduled_automations()
@@ -513,7 +513,7 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.execute_my_scheduled_automations FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.execute_my_scheduled_automations TO authenticated;
 
--- 7.2 Función Privada del Sistema para el Scheduler de Fondo / Worker (RESTRUCTURADA Y SEGURA)
+-- 7.2 Función Privada del Sistema para el Scheduler de Fondo / Worker
 CREATE OR REPLACE FUNCTION private.process_system_scheduled_automations()
 RETURNS jsonb
 LANGUAGE plpgsql
