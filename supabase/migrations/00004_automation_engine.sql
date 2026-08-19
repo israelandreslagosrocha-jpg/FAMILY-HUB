@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00004 (V1.0): MOTOR DE AUTOMATIZACIONES DEL HOGAR (ETAPA 5C.3)
+-- MIGRACIÓN 00004 (V2.0 HARDENED): MOTOR DE AUTOMATIZACIONES DE FAMILY-HUB
 -- ============================================================================
 
 -- 1. TIPOS ENUMERADOS DEL MOTOR DE AUTOMATIZACIÓN
@@ -82,12 +82,108 @@ CREATE POLICY "Automation Executions SELECT" ON public.automation_executions FOR
 USING (family_id = (SELECT private.get_auth_family_id()));
 
 
--- 4. FUNCIÓN INTERNA DE PROCESAMIENTO DE UNA REGLA INDIVIDUAL (SECURITY DEFINER)
+-- 4. FUNCIONES HELPER PRIVADAS DE VALIDACIÓN Y NAVEGACIÓN DE MIEMBROS
+
+-- 4.1 Validar que un member_id pertenezca activamente a la misma family_id
+CREATE OR REPLACE FUNCTION private.validate_family_member(p_family_id uuid, p_member_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF p_member_id IS NULL THEN RETURN false; END IF;
+  RETURN EXISTS (
+    SELECT 1 FROM public.family_members
+    WHERE id = p_member_id AND family_id = p_family_id AND is_active = true
+  );
+END;
+$$;
+
+-- 4.2 Obtener deterministamente el siguiente miembro activo en rotación circular
+CREATE OR REPLACE FUNCTION private.get_next_rotated_member(p_family_id uuid, p_current_member_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_members uuid[];
+  v_idx integer;
+  v_next_idx integer;
+BEGIN
+  SELECT array_agg(id ORDER BY created_at ASC) INTO v_members
+  FROM public.family_members
+  WHERE family_id = p_family_id AND is_active = true;
+
+  IF v_members IS NULL OR array_length(v_members, 1) = 0 THEN
+    RETURN NULL;
+  END IF;
+
+  IF p_current_member_id IS NULL THEN
+    RETURN v_members[1];
+  END IF;
+
+  v_idx := array_position(v_members, p_current_member_id);
+  IF v_idx IS NULL OR v_idx >= array_length(v_members, 1) THEN
+    v_next_idx := 1;
+  ELSE
+    v_next_idx := v_idx + 1;
+  END IF;
+
+  RETURN v_members[v_next_idx];
+END;
+$$;
+
+-- 4.3 Evaluador Real de Condiciones Booleanas (condition_config vs event_payload)
+CREATE OR REPLACE FUNCTION private.evaluate_automation_condition(
+  p_condition_config jsonb,
+  p_event_payload jsonb
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  -- Si no hay condiciones definidas, la regla aplica automáticamente
+  IF p_condition_config IS NULL OR p_condition_config = '{}'::jsonb THEN
+    RETURN true;
+  END IF;
+
+  -- 1. Filtro por Categoría
+  IF p_condition_config ? 'category_id' AND p_condition_config->>'category_id' IS NOT NULL THEN
+    IF p_event_payload->>'category_id' IS DISTINCT FROM (p_condition_config->>'category_id') THEN
+      RETURN false;
+    END IF;
+  END IF;
+
+  -- 2. Filtro por Encargado Asignado
+  IF p_condition_config ? 'assigned_member_id' AND p_condition_config->>'assigned_member_id' IS NOT NULL THEN
+    IF p_event_payload->>'assigned_member_id' IS DISTINCT FROM (p_condition_config->>'assigned_member_id') THEN
+      RETURN false;
+    END IF;
+  END IF;
+
+  -- 3. Filtro por Prioridad
+  IF p_condition_config ? 'priority' AND p_condition_config->>'priority' IS NOT NULL THEN
+    IF p_event_payload->>'priority' IS DISTINCT FROM (p_condition_config->>'priority') THEN
+      RETURN false;
+    END IF;
+  END IF;
+
+  RETURN true;
+END;
+$$;
+
+
+-- 5. FUNCIÓN PRINCIPAL DE EJECUCIÓN DE UNA REGLA INDIVIDUAL (HARDENED V2)
 CREATE OR REPLACE FUNCTION private.execute_single_automation_rule(
   p_rule_id uuid,
   p_trigger_event_id text,
   p_target_entity_type text,
-  p_target_entity_id uuid
+  p_target_entity_id uuid,
+  p_event_payload jsonb DEFAULT '{}'::jsonb
 ) RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -96,14 +192,17 @@ AS $$
 DECLARE
   v_rule public.automation_rules%ROWTYPE;
   v_dedup_key text;
+  v_existing_id uuid;
   v_existing_status execution_status_enum;
   v_execution_id uuid;
+  v_assigned_target_id uuid;
   v_next_member_id uuid;
+  v_current_assigned_id uuid;
   v_new_task_title text;
   v_actor_profile_id uuid := auth.uid();
   v_actor_member_id uuid;
 BEGIN
-  -- 1. Obtener datos de la regla y validar que esté activa
+  -- 1. Obtener datos de la regla y validar activa
   SELECT * INTO v_rule
   FROM public.automation_rules
   WHERE id = p_rule_id AND is_active = true;
@@ -112,7 +211,23 @@ BEGIN
     RETURN 'rule_not_found_or_inactive';
   END IF;
 
-  -- 2. Construcción determinista de la Clave Hash de Idempotencia por Evento Concreto
+  -- 2. EVALUACIÓN EXPLÍCITA DE CONDICIONES (condition_config)
+  IF NOT private.evaluate_automation_condition(v_rule.condition_config, p_event_payload) THEN
+    RETURN 'condition_not_met';
+  END IF;
+
+  -- 3. VALIDACIÓN CROSS-FAMILY DE ENTIDAD DESTINO (si aplica)
+  IF p_target_entity_id IS NOT NULL AND p_target_entity_type = 'task' THEN
+    SELECT assigned_member_id INTO v_current_assigned_id
+    FROM public.task_instances
+    WHERE id = p_target_entity_id AND family_id = v_rule.family_id;
+
+    IF NOT FOUND THEN
+      RETURN 'target_entity_cross_family_mismatch';
+    END IF;
+  END IF;
+
+  -- 4. Construcción determinista de la Clave Hash de Idempotencia por Evento Concreto
   v_dedup_key := md5(
     v_rule.id::text || ':' || 
     coalesce(p_trigger_event_id, 'no_event') || ':' || 
@@ -120,46 +235,58 @@ BEGIN
     v_rule.action_type::text
   );
 
-  -- 3. Verificación Explícita de Idempotencia para no confundir la clave deduplication_key con otros errores UNIQUE
-  SELECT status INTO v_existing_status
-  FROM public.automation_executions
-  WHERE deduplication_key = v_dedup_key
-  LIMIT 1;
-
-  IF v_existing_status IS NOT NULL THEN
-    IF v_existing_status IN ('success', 'running', 'skipped_idempotent') THEN
-      RETURN 'skipped_idempotent';
-    END IF;
-  END IF;
-
-  -- 4. Registrar la Ejecución en Estado 'running'
+  -- 5. MANEJO ATÓMICO DE CONFLICTO E IDEMPOTENCIA Y RETRY CONTROLADO
   INSERT INTO public.automation_executions (
     family_id, rule_id, deduplication_key, target_entity_type, target_entity_id, status
   ) VALUES (
     v_rule.family_id, v_rule.id, v_dedup_key, p_target_entity_type, p_target_entity_id, 'running'
-  ) RETURNING id INTO v_execution_id;
+  ) ON CONFLICT (deduplication_key) DO NOTHING
+  RETURNING id INTO v_execution_id;
 
-  -- 5. Activar la variable local de transacción para prohibir cascadas re-entrantes (Stack Depth = 1)
+  -- Si v_execution_id es NULL, la deduplication_key ya existía
+  IF v_execution_id IS NULL THEN
+    SELECT id, status INTO v_existing_id, v_existing_status
+    FROM public.automation_executions
+    WHERE deduplication_key = v_dedup_key;
+
+    IF v_existing_status IN ('success', 'running', 'skipped_idempotent') THEN
+      RETURN 'skipped_idempotent';
+    ELSIF v_existing_status = 'failed' THEN
+      -- Reintento controlado de ejecución fallida previa
+      UPDATE public.automation_executions
+      SET status = 'running', error_message = NULL, executed_at = now()
+      WHERE id = v_existing_id;
+      v_execution_id := v_existing_id;
+    END IF;
+  END IF;
+
+  -- 6. Activar variable local de transacción para prohibir cascadas re-entrantes (Stack Depth = 1)
   PERFORM set_config('family_hub.automation_depth', '1', true);
 
-  -- Obtener member_id del actor autenticado para auditoría si existe
+  -- Obtener member_id del actor autenticado si existe
   SELECT id INTO v_actor_member_id
   FROM public.family_members
   WHERE family_id = v_rule.family_id AND profile_id = v_actor_profile_id AND is_active = true
   LIMIT 1;
 
-  -- 6. Ejecución Determinista del Catálogo Cerrado de Acciones
+  -- 7. EJECUCIÓN DEL CATÁLOGO CERRADO DE ACCIONES CON VALIDACIÓN RIGUROSA DE MIEMBROS
   BEGIN
     IF v_rule.action_type = 'CREATE_TASK' THEN
       v_new_task_title := coalesce(v_rule.action_config->>'task_title', 'Tarea Automática Derivada');
-      
+      v_assigned_target_id := (v_rule.action_config->>'assigned_member_id')::uuid;
+
+      -- Validar que el miembro asignado pertenezca a la familia; si no, usar el creador o primer miembro activo
+      IF NOT private.validate_family_member(v_rule.family_id, v_assigned_target_id) THEN
+        v_assigned_target_id := coalesce(v_actor_member_id, v_rule.created_by_member_id);
+      END IF;
+
       INSERT INTO public.task_instances (
         family_id, created_by_member_id, assigned_member_id, title,
         description, priority, status, due_date
       ) VALUES (
         v_rule.family_id,
         coalesce(v_actor_member_id, v_rule.created_by_member_id),
-        coalesce((v_rule.action_config->>'assigned_member_id')::uuid, v_rule.created_by_member_id),
+        v_assigned_target_id,
         v_new_task_title,
         'Creada automáticamente por la regla: ' || v_rule.name,
         coalesce((v_rule.action_config->>'priority')::public.priority_enum, 'media'),
@@ -169,12 +296,8 @@ BEGIN
 
     ELSIF v_rule.action_type = 'ROTATE_MEMBER' THEN
       IF p_target_entity_id IS NOT NULL THEN
-        -- Obtener el siguiente miembro activo de la familia para rotación
-        SELECT id INTO v_next_member_id
-        FROM public.family_members
-        WHERE family_id = v_rule.family_id AND is_active = true
-        ORDER BY created_at ASC
-        LIMIT 1;
+        -- Obtener rotación determinista circular entre miembros activos
+        v_next_member_id := private.get_next_rotated_member(v_rule.family_id, v_current_assigned_id);
 
         IF v_next_member_id IS NOT NULL THEN
           UPDATE public.task_instances
@@ -189,13 +312,15 @@ BEGIN
         family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
       ) VALUES (
         v_rule.family_id, v_actor_profile_id, v_actor_member_id, 'notification_created', 'automation', v_rule.id,
-        jsonb_build_object('rule_name', v_rule.name, 'message', coalesce(v_rule.action_config->>'message', 'Notificación automática enviada'))
+        jsonb_build_object('rule_name', v_rule.name, 'message', coalesce(v_rule.action_config->>'message', 'Notificación automática generada'))
       );
 
     ELSIF v_rule.action_type = 'REASSIGN_TASK' THEN
-      IF p_target_entity_id IS NOT NULL AND v_rule.action_config->>'new_assigned_member_id' IS NOT NULL THEN
+      v_assigned_target_id := (v_rule.action_config->>'new_assigned_member_id')::uuid;
+
+      IF p_target_entity_id IS NOT NULL AND private.validate_family_member(v_rule.family_id, v_assigned_target_id) THEN
         UPDATE public.task_instances
-        SET assigned_member_id = (v_rule.action_config->>'new_assigned_member_id')::uuid
+        SET assigned_member_id = v_assigned_target_id
         WHERE id = p_target_entity_id AND family_id = v_rule.family_id;
       END IF;
 
@@ -207,7 +332,7 @@ BEGIN
       END IF;
     END IF;
 
-    -- Actualizar Estado a 'success'
+    -- Actualizar Estado de Bitácora a 'success'
     UPDATE public.automation_executions
     SET status = 'success'
     WHERE id = v_execution_id;
@@ -223,7 +348,7 @@ BEGIN
     RETURN 'success';
 
   EXCEPTION WHEN OTHERS THEN
-    -- Resiliencia: Registrar fallo en la bitácora sin hacer caer la transacción principal del usuario
+    -- Resiliencia: Registrar fallo en la bitácora sin tumbar la transacción principal del usuario
     UPDATE public.automation_executions
     SET status = 'failed', error_message = SQLERRM
     WHERE id = v_execution_id;
@@ -234,7 +359,7 @@ END;
 $$;
 
 
--- 5. DISPARADOR EN BD PARA AUTOMATIZACIONES DE EVENTOS DE DATOS (TASK COMPLETED)
+-- 6. DISPARADOR DE BD CON MATCHING EXPLÍCITO DE TRIGGER_EVENT
 CREATE OR REPLACE FUNCTION private.trg_process_task_automations_fn()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -243,6 +368,7 @@ SET search_path = ''
 AS $$
 DECLARE
   v_rule_row public.automation_rules%ROWTYPE;
+  v_payload jsonb;
 BEGIN
   -- Anti-Cascada: Si la transacción actual fue iniciada por el motor de automatización, RETORNAR INMEDIATAMENTE
   IF current_setting('family_hub.automation_depth', true) = '1' THEN
@@ -251,15 +377,25 @@ BEGIN
 
   -- Procesar solo si la tarea pasó a 'completed'
   IF NEW.status = 'completed' AND (OLD.status IS DISTINCT FROM 'completed') THEN
+    v_payload := jsonb_build_object(
+      'category_id', NEW.category_id,
+      'assigned_member_id', NEW.assigned_member_id,
+      'priority', NEW.priority
+    );
+
     FOR v_rule_row IN
       SELECT * FROM public.automation_rules
-      WHERE family_id = NEW.family_id AND trigger_type = 'data_event' AND is_active = true
+      WHERE family_id = NEW.family_id 
+        AND trigger_type = 'data_event' 
+        AND trigger_event = 'task.completed' -- COINCIDENCIA DE EVENTO EXPLÍCITA
+        AND is_active = true
     LOOP
       PERFORM private.execute_single_automation_rule(
         v_rule_row.id,
         'task.completed:' || NEW.id::text,
         'task',
-        NEW.id
+        NEW.id,
+        v_payload
       );
     END LOOP;
   END IF;
@@ -275,44 +411,78 @@ CREATE TRIGGER trg_process_task_automations
   EXECUTE FUNCTION private.trg_process_task_automations_fn();
 
 
--- 6. RPC PÚBLICA PARA EJECUCIÓN DE AUTOMATIZACIONES TEMPORALES PROGRAMADAS (SCHEDULED)
-CREATE OR REPLACE FUNCTION public.execute_scheduled_automations()
+-- 7. SCHEDULER PROGRAMADO DESACOPLADO CON MATCHING DE FRECUENCIA Y HORARIO
+CREATE OR REPLACE FUNCTION public.execute_scheduled_automations(
+  p_family_id uuid DEFAULT NULL
+)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_family_id uuid := private.get_auth_family_id();
+  v_effective_family_id uuid;
   v_rule_row public.automation_rules%ROWTYPE;
+  v_dow integer := extract(dow from now())::integer; -- 0=Domingo
+  v_hhmm text := to_char(now(), 'HH24:MI');
   v_window text := to_char(now(), 'YYYY-MM-DD:HH24');
   v_processed_count integer := 0;
   v_result_status text;
+  v_should_run boolean;
 BEGIN
-  IF v_family_id IS NULL THEN
-    RAISE EXCEPTION 'Usuario no pertenece a una familia activa';
+  -- Si no se pasa p_family_id, intentar tomar la del usuario autenticado; si es null, procesar todas las activas (modo sistema)
+  IF p_family_id IS NOT NULL THEN
+    v_effective_family_id := p_family_id;
+  ELSE
+    v_effective_family_id := private.get_auth_family_id();
   END IF;
 
   FOR v_rule_row IN
     SELECT * FROM public.automation_rules
-    WHERE family_id = v_family_id AND trigger_type = 'scheduled_time' AND is_active = true
+    WHERE trigger_type = 'scheduled_time' 
+      AND is_active = true
+      AND (v_effective_family_id IS NULL OR family_id = v_effective_family_id)
   LOOP
-    v_result_status := private.execute_single_automation_rule(
-      v_rule_row.id,
-      'cron:' || v_window,
-      'cron',
-      NULL
-    );
+    v_should_run := false;
 
-    IF v_result_status = 'success' THEN
-      v_processed_count := v_processed_count + 1;
+    -- Evaluador de coincidencia de evento temporal programado
+    IF v_rule_row.trigger_event = 'cron.weekly_sunday_1900' THEN
+      IF v_dow = 0 AND v_hhmm >= '19:00' AND v_hhmm < '20:00' THEN
+        v_should_run := true;
+      END IF;
+    ELSIF v_rule_row.trigger_event = 'cron.daily_0800' THEN
+      IF v_hhmm >= '08:00' AND v_hhmm < '09:00' THEN
+        v_should_run := true;
+      END IF;
+    ELSIF v_rule_row.trigger_event = 'cron.every_hour' OR v_rule_row.trigger_event = 'cron.custom' THEN
+      v_should_run := true;
+    END IF;
+
+    IF v_should_run THEN
+      v_result_status := private.execute_single_automation_rule(
+        v_rule_row.id,
+        'cron:' || v_window,
+        'cron',
+        NULL,
+        '{}'::jsonb
+      );
+
+      IF v_result_status = 'success' THEN
+        v_processed_count := v_processed_count + 1;
+      END IF;
     END IF;
   END LOOP;
 
-  RETURN jsonb_build_object('status', 'success', 'executed_count', v_processed_count, 'window', v_window);
+  RETURN jsonb_build_object(
+    'status', 'success',
+    'executed_count', v_processed_count,
+    'window', v_window,
+    'dow', v_dow,
+    'time', v_hhmm
+  );
 END;
 $$;
 
--- RESTRICCIÓN DE PERMISOS EXECUTE
+-- PERMISOS EXECUTE
 REVOKE EXECUTE ON FUNCTION public.execute_scheduled_automations FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.execute_scheduled_automations TO authenticated;
