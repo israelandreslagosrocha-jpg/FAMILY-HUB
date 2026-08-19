@@ -13,6 +13,7 @@ export interface CreateMovementParams {
   sourceAccount?: string
   destinationAccount?: string
   receiptImageUrl?: string
+  idempotencyKey?: string
 }
 
 export const financeService = {
@@ -151,7 +152,8 @@ export const financeService = {
       p_date: params.date || new Date().toISOString().split('T')[0],
       p_source_account: params.sourceAccount || null,
       p_destination_account: params.destinationAccount || null,
-      p_receipt_image_url: params.receiptImageUrl || null
+      p_receipt_image_url: params.receiptImageUrl || null,
+      p_idempotency_key: params.idempotencyKey || null
     })
 
     if (error) {
