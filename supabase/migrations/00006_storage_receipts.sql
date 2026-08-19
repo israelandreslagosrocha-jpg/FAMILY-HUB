@@ -1,8 +1,8 @@
 -- ============================================================================
--- MIGRACIÓN 00006: CONFIGURACIÓN DE STORAGE BUCKET 'RECEIPTS' Y POLÍTICAS RLS
+-- MIGRACIÓN 00006 (V2.4 HARDENED): BUCKET PRIVADO 'RECEIPTS' Y POLÍTICAS RLS
 -- ============================================================================
 
--- 1. REGISTRO DEL BUCKET PRIVADO 'RECEIPTS' EN STORAGE.BUCKETS
+-- 1. REGISTRO Y CONFIGURACIÓN DEL BUCKET PRIVADO 'RECEIPTS' EN STORAGE.BUCKETS
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'receipts',
@@ -27,7 +27,7 @@ USING (
   (storage.foldername(name))[1] = (SELECT private.get_auth_family_id()::text)
 );
 
--- 2.2 Política INSERT: Permitir carga solo en la carpeta asignada a la familia del usuario
+-- 2.2 Política INSERT: Permitir carga solo en la carpeta asignada a la familia del usuario (Sin Upsert / No Sobrescribir)
 DROP POLICY IF EXISTS "Receipts Storage INSERT" ON storage.objects;
 CREATE POLICY "Receipts Storage INSERT" ON storage.objects FOR INSERT TO authenticated
 WITH CHECK (
@@ -35,8 +35,7 @@ WITH CHECK (
   (storage.foldername(name))[1] = (SELECT private.get_auth_family_id()::text)
 );
 
--- 2.3 Bloqueo Estricto de UPDATE y DELETE directo para clientes (Preservar trazabilidad del comprobante)
+-- 2.3 Ausencia de políticas UPDATE y DELETE para los comprobantes del bucket receipts
+-- (Al estar RLS habilitado y no crearse políticas UPDATE/DELETE, el cliente authenticated no puede modificar ni borrar comprobantes)
 DROP POLICY IF EXISTS "Receipts Storage UPDATE" ON storage.objects;
 DROP POLICY IF EXISTS "Receipts Storage DELETE" ON storage.objects;
-
-REVOKE UPDATE, DELETE ON storage.objects FROM PUBLIC, authenticated;
