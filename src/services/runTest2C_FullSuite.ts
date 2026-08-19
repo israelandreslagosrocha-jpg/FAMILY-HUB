@@ -262,7 +262,6 @@ export async function runFullTestBattery(email: string, password: string): Promi
   })
 
   // 7. TEST 2C.5: Verificación Ataques Cross-Family (Usando IDs Falsos de otra familia)
-  const fakeFamilyId = '00000000-0000-0000-0000-000000000000'
   const fakeMemberId = '00000000-0000-0000-0000-000000000001'
 
   const { error: crossFamilyErr } = await supabase.from('task_instances').insert({

@@ -141,7 +141,7 @@ function getMemberColor(id: string) {
             class="event-item-row"
           >
             <div class="event-time-badge">
-              <span class="event-time">{{ event.time }}</span>
+              <span class="event-time">{{ event.isAllDay ? 'Todo el día' : event.startTime }}</span>
               <span class="event-date text-muted">{{ event.eventDate }}</span>
             </div>
             <div class="event-details">
@@ -149,9 +149,10 @@ function getMemberColor(id: string) {
               <span class="event-cat text-muted">{{ event.category }}</span>
             </div>
             <AvatarImage 
-              :avatarId="getMemberAvatarId(event.memberId)" 
+              v-if="event.memberIds && event.memberIds[0]"
+              :avatarId="getMemberAvatarId(event.memberIds[0])" 
               :size="24" 
-              :borderColor="getMemberColor(event.memberId)"
+              :borderColor="getMemberColor(event.memberIds[0])"
             />
           </div>
         </div>

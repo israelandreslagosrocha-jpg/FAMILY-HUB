@@ -38,42 +38,52 @@ export const mockMembers: FamilyMember[] = [
 export const mockTasks: TaskItem[] = [
   {
     id: 't-1',
-    title: 'Comprar alimentos de la semana',
-    description: 'Leche, verduras, pan y frutas frescas',
+    title: 'Comprar pan y verduras',
+    description: 'Feria local o supermercado',
     assignedToMemberId: 'm-1',
     priority: 'alta',
-    dueDate: 'Hoy, 18:00',
+    dueDate: '2026-08-19',
     completed: false,
     category: 'Supermercado'
   },
   {
     id: 't-2',
-    title: 'Pagar cuenta de electricidad',
-    description: 'Vence el 20 de agosto',
+    title: 'Pagar cuenta de luz',
+    description: 'Vence hoy en Enel',
     assignedToMemberId: 'm-1',
     priority: 'alta',
-    dueDate: 'Hoy, 20:00',
+    dueDate: '2026-08-19',
     completed: false,
     category: 'Servicios'
   },
   {
     id: 't-3',
     title: 'Revisar tarea de matemáticas',
-    description: 'Guía de fracciones',
+    description: 'Guía de fracciones del colegio',
     assignedToMemberId: 'm-2',
     priority: 'media',
-    dueDate: 'Mañana, 17:00',
-    completed: false,
+    dueDate: '2026-08-19',
+    completed: true,
     category: 'Escuela'
   },
   {
     id: 't-4',
-    title: 'Ordenar dormitorio y juguetes',
-    description: 'Dejar limpia la zona de juegos',
+    title: 'Lavar el auto familiar',
+    description: 'Limpiar interior y exterior',
+    assignedToMemberId: 'm-1',
+    priority: 'baja',
+    dueDate: '2026-08-20',
+    completed: false,
+    category: 'Hogar'
+  },
+  {
+    id: 't-5',
+    title: 'Ordenar habitación',
+    description: 'Juguetes y mochila escolar',
     assignedToMemberId: 'm-3',
     priority: 'media',
-    dueDate: 'Hoy, 19:30',
-    completed: true,
+    dueDate: '2026-08-19',
+    completed: false,
     category: 'Hogar'
   }
 ]
@@ -81,27 +91,73 @@ export const mockTasks: TaskItem[] = [
 export const mockEvents: CalendarEvent[] = [
   {
     id: 'e-1',
-    title: 'Cita Médica Familiar',
+    title: 'Cita Médica Pediatra',
+    description: 'Control de rutina en clínica San María',
     eventDate: '2026-08-19',
-    time: '11:00',
+    startTime: '10:30',
+    endTime: '11:30',
+    isAllDay: false,
     category: 'Salud',
-    memberId: 'm-2'
+    color: '#ec4899',
+    memberIds: ['m-1', 'm-2', 'm-3'],
+    isFamilyEvent: true,
+    recurrence: 'never'
   },
   {
     id: 'e-2',
-    title: 'Cena de Cumpleaños Abuela',
-    eventDate: '2026-08-21',
-    time: '20:00',
-    category: 'Celebración',
-    memberId: 'm-1'
+    title: 'Reunión de Apoderados',
+    description: 'Reunión de coordinación del 4to básico',
+    eventDate: '2026-08-19',
+    startTime: '18:30',
+    endTime: '19:45',
+    isAllDay: false,
+    category: 'Escuela',
+    color: '#3b82f6',
+    memberIds: ['m-1', 'm-2'],
+    isFamilyEvent: true,
+    recurrence: 'monthly'
   },
   {
     id: 'e-3',
-    title: 'Reunión de Apoderados',
-    eventDate: '2026-08-22',
-    time: '18:30',
-    category: 'Escuela',
-    memberId: 'm-2'
+    title: 'Cumpleaños Abuela Ana',
+    description: 'Cena familiar en la casa de la abuela',
+    eventDate: '2026-08-21',
+    startTime: '19:30',
+    endTime: '22:30',
+    isAllDay: false,
+    category: 'Celebración',
+    color: '#f59e0b',
+    memberIds: ['m-1', 'm-2', 'm-3', 'm-4'],
+    isFamilyEvent: true,
+    recurrence: 'yearly'
+  },
+  {
+    id: 'e-4',
+    title: 'Día Libre / Feriado Familiar',
+    description: 'Paseo al parque o descanso',
+    eventDate: '2026-08-23',
+    startTime: '09:00',
+    endTime: '20:00',
+    isAllDay: true,
+    category: 'Paseo',
+    color: '#10b981',
+    memberIds: ['m-1', 'm-2', 'm-3', 'm-4'],
+    isFamilyEvent: true,
+    recurrence: 'never'
+  },
+  {
+    id: 'e-5',
+    title: 'Entrenamiento de Fútbol',
+    description: 'Cancha municipal',
+    eventDate: '2026-08-20',
+    startTime: '16:00',
+    endTime: '17:30',
+    isAllDay: false,
+    category: 'Deporte',
+    color: '#10b981',
+    memberIds: ['m-3'],
+    isFamilyEvent: false,
+    recurrence: 'weekly'
   }
 ]
 

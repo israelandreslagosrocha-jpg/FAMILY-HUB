@@ -3,7 +3,7 @@
 export interface FamilyMember {
   id: string
   name: string
-  avatarId: string // Referencia al SVG en src/assets/avatars/
+  avatarId: string // Referencia al SVG local
   color: string    // Color identificador del miembro (Regla 17)
   role: string
   isActive: boolean
@@ -18,18 +18,26 @@ export interface TaskItem {
   description?: string
   assignedToMemberId: string
   priority: PriorityLevel
-  dueDate: string
+  dueDate: string // ISO string o formato amigable "2026-08-19"
   completed: boolean
   category: string
 }
 
+export type CalendarRecurrence = 'never' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+
 export interface CalendarEvent {
   id: string
   title: string
-  eventDate: string
-  time: string
+  description?: string
+  eventDate: string // YYYY-MM-DD
+  startTime: string // "10:30"
+  endTime?: string  // "11:30"
+  isAllDay: boolean
   category: string
-  memberId: string
+  color?: string
+  memberIds: string[] // IDs de los participantes
+  isFamilyEvent: boolean
+  recurrence?: CalendarRecurrence
 }
 
 export interface ExpenseItem {
@@ -51,3 +59,4 @@ export interface HistoryLog {
 }
 
 export type ViewMode = 'my_day' | 'family'
+export type CalendarViewType = 'day' | 'week' | 'month'
