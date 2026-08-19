@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00005 (V2.0 HARDENED): PERSISTENCIA Y AUDITORÍA DE FINANZAS
+-- MIGRACIÓN 00005 (V2.1 HARDENED): PERSISTENCIA Y AUDITORÍA DE FINANZAS
 -- ============================================================================
 
 -- 1. TABLA DE TRANSFERENCIAS NEUTRAS ENTRE CUENTAS
@@ -79,7 +79,7 @@ WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
 DROP POLICY IF EXISTS "Budgets DELETE" ON public.budgets;
 REVOKE DELETE ON public.budgets FROM PUBLIC, authenticated;
 
--- HISTORY_LOGS: INMUTABILIDAD GARANTIZADA (Solo SELECT para authenticated)
+-- HISTORY_LOGS: INMUTABILIDAD DESDE CLIENTE (Solo SELECT para authenticated)
 ALTER TABLE public.history_logs ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "History Logs SELECT" ON public.history_logs;
@@ -93,7 +93,7 @@ DROP POLICY IF EXISTS "History Logs DELETE" ON public.history_logs;
 REVOKE INSERT, UPDATE, DELETE ON public.history_logs FROM PUBLIC, authenticated;
 
 
--- 3. RPC TRANSACCIONAL PRINCIPAL CON HARDENING V2.0 Y VALIDACIÓN CROSS-FAMILY DE CATEGORÍAS
+-- 3. RPC TRANSACCIONAL PRINCIPAL CON HARDENING V2.1 Y VALIDACIÓN CROSS-FAMILY DE CATEGORÍAS
 CREATE OR REPLACE FUNCTION public.create_financial_movement(
   p_movement_type text,            -- 'expense' | 'income' | 'transfer'
   p_title text,
@@ -241,6 +241,6 @@ BEGIN
 END;
 $$;
 
--- PERMISOS DE EJECUCIÓN RPC
-REVOKE EXECUTE ON FUNCTION public.create_financial_movement FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.create_financial_movement TO authenticated;
+-- PERMISOS DE EJECUCIÓN RPC CON FIRMA DE PARÁMETROS COMPLETA
+REVOKE EXECUTE ON FUNCTION public.create_financial_movement(text, text, numeric, uuid, uuid, uuid, boolean, date, text, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.create_financial_movement(text, text, numeric, uuid, uuid, uuid, boolean, date, text, text, text) TO authenticated;
