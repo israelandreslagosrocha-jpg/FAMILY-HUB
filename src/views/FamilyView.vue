@@ -78,10 +78,24 @@ async function handleAddMember() {
 async function handleDeleteMember(memberId: string, memberName: string) {
   if (confirm(`¿Deseas eliminar a "${memberName}" de la familia?`)) {
     try {
-      await supabase.from('family_members').delete().eq('id', memberId)
+      // 1. Intentar eliminación física en Supabase
+      const { error } = await supabase.from('family_members').delete().eq('id', memberId)
+      
+      // 2. Si falla por claves foráneas, desactivar el perfil
+      if (error) {
+        console.warn('Desactivando miembro por FK:', error.message)
+        await supabase.from('family_members').update({ is_active: false }).eq('id', memberId)
+      }
+      
+      // 3. Quitar localmente
+      const idx = authStore.familyMembers.findIndex(m => m.id === memberId)
+      if (idx !== -1) {
+        authStore.familyMembers.splice(idx, 1)
+      }
+
       await authStore.loadFamilyMembers()
     } catch (err: any) {
-      alert('Error al eliminar: ' + err.message)
+      console.error('Error al procesar eliminación:', err.message)
     }
   }
 }

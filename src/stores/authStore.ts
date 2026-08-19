@@ -58,6 +58,7 @@ export const useAuthStore = defineStore('authStore', () => {
       const { data, error } = await supabase
         .from('family_members')
         .select('*')
+        .eq('is_active', true)
         .order('created_at', { ascending: true })
 
       if (error) {

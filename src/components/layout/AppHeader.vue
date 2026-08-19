@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useFamilyStore } from '../../stores/familyStore'
 import { useAuthStore } from '../../stores/authStore'
 import AvatarImage from '../common/AvatarImage.vue'
@@ -9,6 +9,20 @@ import NotificationBell from '../pwa/NotificationBell.vue'
 const store = useFamilyStore()
 const authStore = useAuthStore()
 const showMemberSelector = ref(false)
+const currentTheme = ref<'dark' | 'light'>('dark')
+
+onMounted(() => {
+  const savedTheme = (localStorage.getItem('family_hub_theme') as 'dark' | 'light') || 'dark'
+  currentTheme.value = savedTheme
+  document.documentElement.setAttribute('data-theme', savedTheme)
+})
+
+function toggleTheme() {
+  const nextTheme = currentTheme.value === 'dark' ? 'light' : 'dark'
+  currentTheme.value = nextTheme
+  document.documentElement.setAttribute('data-theme', nextTheme)
+  localStorage.setItem('family_hub_theme', nextTheme)
+}
 
 function selectActiveMember(id: string) {
   store.setActiveMember(id)
@@ -52,10 +66,20 @@ function handleLogout() {
         </button>
       </div>
 
-      <!-- Selector de Miembro Autenticado + PWA Badges -->
+      <!-- Selector de Miembro Autenticado + PWA Badges + Modo Claro/Oscuro -->
       <div class="header-right-controls">
         <NetworkStatusBadge />
         <NotificationBell />
+
+        <!-- Botón Conmutador Modo Claro / Modo Oscuro -->
+        <button 
+          class="theme-toggle-btn" 
+          :title="currentTheme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'" 
+          @click="toggleTheme"
+        >
+          <span v-if="currentTheme === 'dark'">☀️</span>
+          <span v-else>🌙</span>
+        </button>
 
         <div class="member-selector-relative">
           <button 
@@ -229,6 +253,25 @@ function handleLogout() {
 .dropdown-item.selected {
   background: rgba(59, 130, 246, 0.15);
   font-weight: 600;
+}
+
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  font-size: 1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .logout-btn {
