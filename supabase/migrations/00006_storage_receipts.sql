@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00006 (V2.4 HARDENED): BUCKET PRIVADO 'RECEIPTS' Y POLÍTICAS RLS
+-- MIGRACIÓN 00006 (V2.5 HARDENED): BUCKET PRIVADO 'RECEIPTS' Y POLÍTICAS RLS
 -- ============================================================================
 
 -- 1. REGISTRO Y CONFIGURACIÓN DEL BUCKET PRIVADO 'RECEIPTS' EN STORAGE.BUCKETS
@@ -17,7 +17,7 @@ ON CONFLICT (id) DO UPDATE SET
   allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
 -- 2. POLÍTICAS DE SEGURIDAD RLS EN STORAGE.OBJECTS PARA EL BUCKET RECEIPTS
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- (Nota: RLS viene habilitado por defecto en la tabla storage.objects por el sistema de Supabase)
 
 -- 2.1 Política SELECT: Permitir lectura solo si el primer segmento del path coincide con la familia del usuario
 DROP POLICY IF EXISTS "Receipts Storage SELECT" ON storage.objects;
