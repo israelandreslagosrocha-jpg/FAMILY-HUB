@@ -55,7 +55,7 @@ Supabase como fuente principal. Caché local para velocidad percibida. Responsab
 Variables de entorno para claves públicas, datos privados, políticas RLS en Supabase antes de dar por terminada la arquitectura de datos.
 
 ## 12. Desarrollo por etapas (Roadmap v1.0 Family Stable)
-Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
+Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
 - Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). ✅ EJECUTADA
@@ -73,8 +73,8 @@ Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa s
 - Etapa 7: Boletas / Captura OCR. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 8A: Arquitectura Funcional y UX de PWA / Notificaciones / Offline avanzado. ✅ APROBADA CON 10 PRECISIONES
 - Etapa 8B: Desarrollo Visual de PWA, Alertas Offline y Centro de Notificaciones. ✅ COMPLETADA (0 ERRORES)
-- Etapa 8C: Propuesta Técnica e Integración de Service Worker, IndexedDB Sync Queue, Idempotencia Servidor y WebPush API. 🔄 EN REVISIÓN (7 CORRECCIONES INCORPORADAS)
-- Etapa 8D: Pruebas Reales de PWA, Notificaciones y Comportamiento Offline.
+- Etapa 8C: Propuesta Técnica, Idempotencia en Servidor (`00007_idempotency_and_push.sql` V2.3) y WebPush. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA (9/9 PASS).
+- Etapa 8D: Pruebas Reales de PWA, Notificaciones y Comportamiento Offline (ÚLTIMA SUB-ETAPA). 🔄 EN CURSO
 - 🎯 **FAMILY-HUB v1.0 FAMILY STABLE**: CONGELACIÓN DE FUNCIONALIDADES (FEATURE FREEZE) Y DESPLIEGUE PARA USO FAMILIAR COTIDIANO REAL.
 
 ## 13. Documentación
