@@ -74,7 +74,7 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 8A: Arquitectura Funcional y UX de PWA / Notificaciones / Offline avanzado. ✅ APROBADA CON 10 PRECISIONES
 - Etapa 8B: Desarrollo Visual de PWA, Alertas Offline y Centro de Notificaciones. ✅ COMPLETADA (0 ERRORES)
 - Etapa 8C: Propuesta Técnica, Idempotencia en Servidor (`00007_idempotency_and_push.sql` V2.3) y WebPush. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA (9/9 PASS).
-- Etapa 8D: Pruebas Reales de PWA, Notificaciones y Comportamiento Offline (ÚLTIMA SUB-ETAPA). 🔄 EN CURSO
+- Etapa 8D: Pruebas Reales de PWA, Notificaciones y Comportamiento Offline. ✅ COMPLETADA CON ÉXITO (10/10 PASS).
 - 🎯 **FAMILY-HUB v1.0 FAMILY STABLE**: CONGELACIÓN DE FUNCIONALIDADES (FEATURE FREEZE) Y DESPLIEGUE PARA USO FAMILIAR COTIDIANO REAL.
 
 ## 13. Documentación
@@ -127,5 +127,5 @@ Los componentes visuales (.vue) no deberán realizar directamente consultas comp
 ## 28. Desarrollo visual con datos simulados (Mock Data)
 Durante las primeras etapas, cuando una funcionalidad todavía no tenga implementado su backend, se utilizarán datos mock claramente identificados. No se crearán tablas, autenticación ni lógica de persistencia únicamente para hacer funcionar una pantalla en etapa de diseño.
 
-## 29. Principio de diseño consciente e inspirado
+## 29. Principio de diseño consciente e inspired
 Antes de implementar componentes visuales importantes, presentar la propuesta de estructura visual y justificarla según los principios UX definidos. No asumir que "estilo Apple" significa copiar interfaces de Apple ni utilizar componentes genéricos con apariencia similar.
