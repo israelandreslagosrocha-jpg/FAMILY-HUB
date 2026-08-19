@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00001 (V4.1): ESQUEMA INICIAL DE BASE DE DATOS FAMILY-HUB
+-- MIGRACIÓN 00001 (V4.2 FINAL): ESQUEMA INICIAL DE BASE DE DATOS FAMILY-HUB
 -- ============================================================================
 
 -- 1. CREACIÓN DE ESQUEMA PRIVADO (Funciones de seguridad aisladas del Data API)
@@ -98,7 +98,7 @@ CREATE TABLE public.task_series (
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- 3.8 Instancias Concretas de Tareas (Sin duplicidad de estado; status + completed_at)
+-- 3.8 Instancias Concretas de Tareas (Fuente de verdad: status + completed_at)
 CREATE TABLE public.task_instances (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     family_id uuid NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
@@ -256,7 +256,7 @@ ALTER TABLE public.incomes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.history_logs ENABLE ROW LEVEL SECURITY;
 
--- 7. POLÍTICAS RLS EXPLÍCITAS CON VALIDACIÓN CROSS-FAMILY
+-- 7. POLÍTICAS RLS EXPLÍCITAS CON VALIDACIÓN CROSS-FAMILY Y RESTRICCIÓN DE PROFILE PROPIO
 
 -- 7.1 PROFILES
 CREATE POLICY "Profiles SELECT" ON public.profiles FOR SELECT TO authenticated
@@ -274,15 +274,22 @@ USING (id = (SELECT private.get_auth_family_id()));
 CREATE POLICY "Families UPDATE" ON public.families FOR UPDATE TO authenticated
 USING (id = (SELECT private.get_auth_family_id())) WITH CHECK (id = (SELECT private.get_auth_family_id()));
 
--- 7.3 FAMILY_MEMBERS
+-- 7.3 FAMILY_MEMBERS (Protección: profile_id solo puede ser NULL o el propio auth.uid())
 CREATE POLICY "Family Members SELECT" ON public.family_members FOR SELECT TO authenticated
 USING (family_id = (SELECT private.get_auth_family_id()));
 
 CREATE POLICY "Family Members INSERT" ON public.family_members FOR INSERT TO authenticated
-WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  (profile_id IS NULL OR profile_id = auth.uid())
+);
 
 CREATE POLICY "Family Members UPDATE" ON public.family_members FOR UPDATE TO authenticated
-USING (family_id = (SELECT private.get_auth_family_id())) WITH CHECK (family_id = (SELECT private.get_auth_family_id()));
+USING (family_id = (SELECT private.get_auth_family_id())) 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  (profile_id IS NULL OR profile_id = auth.uid())
+);
 
 -- 7.4 CATEGORIES
 CREATE POLICY "Categories SELECT" ON public.categories FOR SELECT TO authenticated
@@ -340,7 +347,7 @@ WITH CHECK (
 );
 CREATE POLICY "Task Series DELETE" ON public.task_series FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 
--- 7.8 TASK_INSTANCES
+-- 7.8 TASK_INSTANCES (Validación creada_por y asignada_a de mi familia)
 CREATE POLICY "Task Instances SELECT" ON public.task_instances FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 CREATE POLICY "Task Instances INSERT" ON public.task_instances FOR INSERT TO authenticated 
 WITH CHECK (
@@ -356,6 +363,7 @@ WITH CHECK (
   family_id = (SELECT private.get_auth_family_id()) AND
   (task_series_id IS NULL OR task_series_id IN (SELECT id FROM public.task_series WHERE family_id = (SELECT private.get_auth_family_id()))) AND
   (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  created_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
   assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
 );
 CREATE POLICY "Task Instances DELETE" ON public.task_instances FOR DELETE TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
@@ -396,7 +404,7 @@ WITH CHECK (
 CREATE POLICY "Event Members DELETE" ON public.event_members FOR DELETE TO authenticated
 USING (event_id IN (SELECT id FROM public.events WHERE family_id = (SELECT private.get_auth_family_id())));
 
--- 7.10 EXPENSES & INCOMES (Validación estricta de categorías y miembros de mi familia)
+-- 7.10 EXPENSES & INCOMES
 CREATE POLICY "Expenses SELECT" ON public.expenses FOR SELECT TO authenticated USING (family_id = (SELECT private.get_auth_family_id()));
 CREATE POLICY "Expenses INSERT" ON public.expenses FOR INSERT TO authenticated 
 WITH CHECK (
@@ -477,7 +485,7 @@ CREATE TRIGGER trg_protect_family_member_structure
   FOR EACH ROW
   EXECUTE FUNCTION private.prevent_family_member_mutation();
 
--- 8.2 Trigger Auditoría para Tareas (CREATE, COMPLETE, SKIP, REASSIGN, DELETE)
+-- 8.2 Trigger Auditoría y Manejo Coherente de completed_at en Tareas (CREATE, COMPLETE, SKIP, REASSIGN, DELETE)
 CREATE OR REPLACE FUNCTION private.audit_tasks_trigger_fn()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -486,14 +494,24 @@ SET search_path = ''
 AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    IF NEW.status = 'completed' AND NEW.completed_at IS NULL THEN
-      NEW.completed_at := now();
+    IF NEW.status = 'completed' THEN
+      NEW.completed_at := COALESCE(NEW.completed_at, now());
+    ELSE
+      NEW.completed_at := NULL;
     END IF;
     INSERT INTO public.history_logs (family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata)
     VALUES (NEW.family_id, auth.uid(), NEW.assigned_member_id, 'created', 'task', NEW.id, jsonb_build_object('title', NEW.title));
   ELSIF TG_OP = 'UPDATE' THEN
+    -- Coherencia Inequívoca de completed_at
+    IF NEW.status = 'completed' THEN
+      IF OLD.status IS DISTINCT FROM NEW.status OR NEW.completed_at IS NULL THEN
+        NEW.completed_at := now();
+      END IF;
+    ELSE
+      NEW.completed_at := NULL;
+    END IF;
+
     IF OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'completed' THEN
-      NEW.completed_at := now();
       INSERT INTO public.history_logs (family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata)
       VALUES (NEW.family_id, auth.uid(), NEW.assigned_member_id, 'completed', 'task', NEW.id, jsonb_build_object('title', NEW.title));
     ELSIF OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'skipped' THEN
@@ -639,7 +657,11 @@ BEGIN
 END;
 $$;
 
--- 10. RESTRICCIÓN DE PERMISOS EXECUTE EN TODAS LAS FUNCIONES (Hardening de Seguridad)
+-- 10. ASIGNACIÓN EXPLÍCITA DE PRIVILEGIOS POSTGRESQL (GRANT & REVOKE)
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA private FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.onboard_first_family(text, text, text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.onboard_first_family(text, text, text, text, text) TO authenticated;

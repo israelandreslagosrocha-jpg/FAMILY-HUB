@@ -58,7 +58,8 @@ Variables de entorno para claves públicas, datos privados, políticas RLS en Su
 Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
-- Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). 🔄 EN REVISIÓN V4.1
+- Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). ✅ LISTO PARA EJECUCIÓN (V4.2)
+- Etapa 2C: Ejecución en Supabase + Pruebas y Verificación de Seguridad.
 - Etapa 3: Calendario.
 - Etapa 4: Tareas y responsabilidades.
 - Etapa 5: Automatizaciones.
@@ -117,4 +118,4 @@ Los componentes visuales (.vue) no deberán realizar directamente consultas comp
 Durante las primeras etapas, cuando una funcionalidad todavía no tenga implementado su backend, se utilizarán datos mock claramente identificados. No se crearán tablas, autenticación ni lógica de persistencia únicamente para hacer funcionar una pantalla en etapa de diseño.
 
 ## 29. Principio de diseño consciente e inspirado
-Antes de implementar componentes visuales importantes, presentar la propuesta de estructura visual y justificarla según los principios UX definidos. No asumir que "estilo Apple" significa copiar interfaces de Apple ni utilizar componentes genéricos con apariencia similar.
+Antes de implementar componentes visuales inteligentes, presentar la propuesta de estructura visual y justificarla según los principios UX definidos. No asumir que "estilo Apple" significa copiar interfaces de Apple ni utilizar componentes genéricos con apariencia similar.
