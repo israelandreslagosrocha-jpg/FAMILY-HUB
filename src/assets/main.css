@@ -1,0 +1,166 @@
+/* Sistema de Diseño FAMILY-HUB inspirado en Apple HIG (iOS / macOS) */
+
+:root {
+  /* Tipografía de Sistema */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+
+  /* Paleta Base */
+  --bg-dark: #090d16;
+  --bg-card: #131b2e;
+  --bg-card-hover: #1c273e;
+  --bg-glass: rgba(19, 27, 46, 0.75);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(59, 130, 246, 0.5);
+
+  /* Texto */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Identidades de Miembros (Regla 17) */
+  --member-blue: #3b82f6;
+  --member-pink: #ec4899;
+  --member-green: #10b981;
+  --member-amber: #f59e0b;
+  --member-purple: #a855f7;
+
+  /* Sistema Semántico de Colores de Estado (Regla 18) */
+  --status-green: #22c55e;   /* Completado / Correcto */
+  --status-yellow: #eab308;  /* Pendiente / Atención */
+  --status-red: #ef4444;     /* Urgente / Vencido */
+  --status-blue: #3b82f6;    /* Info / Programación */
+  --status-gray: #64748b;    /* Neutral / Archivada */
+
+  /* Transiciones y Sombras */
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset Global */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tipografía y Jerarquía */
+h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+p, span {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+/* Badges de Estado Semántico */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-green { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.badge-yellow { background: rgba(234, 179, 8, 0.15); color: #fde047; }
+.badge-red { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+.badge-blue { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
+.badge-gray { background: rgba(100, 116, 139, 0.15); color: #cbd5e1; }
+
+/* Botón Conmutador / Pill Toggle (Mi día | Familia) */
+.toggle-pill-container {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 3px;
+  border-radius: 24px;
+  border: 1px solid var(--border-subtle);
+}
+
+.toggle-pill-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.toggle-pill-btn.active {
+  background: var(--text-primary);
+  color: var(--bg-dark);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Contenedor Glassmorphism Card */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Scrollbar Discreta */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
