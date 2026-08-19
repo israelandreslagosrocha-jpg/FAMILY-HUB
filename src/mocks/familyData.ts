@@ -42,49 +42,54 @@ export const mockTasks: TaskItem[] = [
     description: 'Feria local o supermercado',
     assignedToMemberId: 'm-1',
     priority: 'alta',
-    dueDate: '2026-08-19',
+    dueDate: 'Hoy, 18:00',
+    status: 'pending',
     completed: false,
     category: 'Supermercado'
   },
   {
     id: 't-2',
     title: 'Pagar cuenta de luz',
-    description: 'Vence hoy en Enel',
+    description: 'Enel - vence hoy',
     assignedToMemberId: 'm-1',
     priority: 'alta',
-    dueDate: '2026-08-19',
+    dueDate: 'Hoy, 20:00',
+    status: 'pending',
     completed: false,
     category: 'Servicios'
   },
   {
     id: 't-3',
     title: 'Revisar tarea de matemáticas',
-    description: 'Guía de fracciones del colegio',
+    description: 'Guía de fracciones',
     assignedToMemberId: 'm-2',
     priority: 'media',
-    dueDate: '2026-08-19',
+    dueDate: 'Hoy',
+    status: 'completed',
     completed: true,
     category: 'Escuela'
   },
   {
     id: 't-4',
-    title: 'Lavar el auto familiar',
-    description: 'Limpiar interior y exterior',
+    title: 'Lavar el auto',
+    description: 'Limpieza interior y exterior',
     assignedToMemberId: 'm-1',
     priority: 'baja',
-    dueDate: '2026-08-20',
+    dueDate: 'Mañana',
+    status: 'pending',
     completed: false,
     category: 'Hogar'
   },
   {
     id: 't-5',
-    title: 'Ordenar habitación',
-    description: 'Juguetes y mochila escolar',
+    title: 'Pasear a la mascota',
+    description: '30 minutos en el parque',
     assignedToMemberId: 'm-3',
     priority: 'media',
-    dueDate: '2026-08-19',
+    dueDate: 'Hoy, 19:00',
+    status: 'pending',
     completed: false,
-    category: 'Hogar'
+    category: 'Mascotas'
   }
 ]
 

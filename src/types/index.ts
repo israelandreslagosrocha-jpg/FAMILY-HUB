@@ -11,16 +11,30 @@ export interface FamilyMember {
 
 export type PriorityLevel = 'alta' | 'media' | 'baja'
 export type StatusSemantic = 'completed' | 'pending' | 'urgent' | 'info' | 'archived'
+export type TaskStatusEnum = 'pending' | 'completed' | 'skipped'
 
 export interface TaskItem {
   id: string
   title: string
   description?: string
   assignedToMemberId: string
+  createdByMemberId?: string
   priority: PriorityLevel
-  dueDate: string // ISO string o formato amigable "2026-08-19"
-  completed: boolean
+  dueDate: string // YYYY-MM-DD o formato amigable
+  status: TaskStatusEnum
+  completed: boolean // Mantener retrocompatibilidad UI
+  completedAt?: string | null
   category: string
+  responsibilityId?: string
+}
+
+export interface ResponsibilityItem {
+  id: string
+  title: string
+  description: string
+  defaultAssignedMemberId: string
+  icon: string
+  color: string
 }
 
 export type CalendarRecurrence = 'never' | 'daily' | 'weekly' | 'monthly' | 'yearly'
@@ -61,3 +75,4 @@ export interface HistoryLog {
 
 export type ViewMode = 'my_day' | 'family'
 export type CalendarViewType = 'day' | 'week' | 'month'
+export type TaskFocusType = 'my_tasks' | 'family_tasks' | 'responsibilities'
