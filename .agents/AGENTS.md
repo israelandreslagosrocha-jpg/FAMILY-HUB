@@ -55,9 +55,10 @@ Supabase como fuente principal. Caché local para velocidad percibida. Responsab
 Variables de entorno para claves públicas, datos privados, políticas RLS en Supabase antes de dar por terminada la arquitectura de datos.
 
 ## 12. Desarrollo por etapas
-Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
-- Etapa 1: Carcasa técnica y visual (Shell con datos mock).
-- Etapa 2: Supabase + Auth + Modelo de datos.
+Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
+- Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
+- Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
+- Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). 🔄 EN REVISIÓN SQL
 - Etapa 3: Calendario.
 - Etapa 4: Tareas y responsabilidades.
 - Etapa 5: Automatizaciones.
@@ -72,10 +73,10 @@ Mantener la documentación del proyecto actualizada (arquitectura, modelo de dat
 Optimizar por **utilidad + rapidez + claridad + confiabilidad + facilidad de uso**. Preferir siempre la solución simple.
 
 ## 15. Usuarios, miembros y perfiles familiares
-Cada miembro tiene un perfil propio: Nombre, Avatar (`avatarId` catalogado localmente), Color identificador, Preferencias, Cuenta y Estado activo/inactivo.
+Distinción clave: `Auth User` (cuenta de acceso) ≠ `Family Member` (perfil en el hogar). Cada miembro tiene un perfil propio: Nombre, Avatar (`avatarId` catalogado localmente), Color identificador, Preferencias, Cuenta opcional y Estado activo/inactivo.
 
 ## 16. Avatares
-Catálogo local de avatares SVG modernos y consistentes referenciados por `avatarId`. Sin dependencia de APIs externas.
+Catálogo local de 8 avatares SVG modernos y consistentes referenciados por `avatarId`. Sin dependencia de APIs externas.
 
 ## 17. Identidad visual de cada miembro
 Color identificador único por miembro, usado como identificador secundario acompañado siempre de avatar y nombre (accesible para daltonismo).
@@ -84,7 +85,7 @@ Color identificador único por miembro, usado como identificador secundario acom
 Separación clara entre colores personales de miembros y colores de estado (Verde=completado, Amarillo=pendiente, Rojo=urgente/atención, Azul=info, Gris=archivado).
 
 ## 19. Histórico
-Registro histórico legible por personas: Quién → qué hizo → cuándo → sobre qué elemento.
+Registro histórico estructurado e inalterable generado exclusivamente por triggers de PostgreSQL: Actor (`auth.uid()`) → Acción → Entidad → Metadatos → Fecha. La UI formatea el texto dinámicamente.
 
 ## 20. Dashboard personalizado
 Visión principal "Mi día" personalizada para el miembro autenticado (tareas personales, responsabilidades, próximos eventos).

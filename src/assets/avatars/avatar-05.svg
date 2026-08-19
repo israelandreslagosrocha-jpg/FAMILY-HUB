@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="60" fill="url(#bg5)"/>
+  <!-- Head -->
+  <circle cx="60" cy="52" r="22" fill="#fde047"/>
+  <!-- Hair (Grandmother/Short Cut) -->
+  <path d="M35 48 C35 28, 85 28, 85 48 C85 36, 35 36, 35 48 Z" fill="#94a3b8"/>
+  <!-- Glasses -->
+  <circle cx="50" cy="50" r="6" stroke="#0f172a" stroke-width="2" fill="none"/>
+  <circle cx="70" cy="50" r="6" stroke="#0f172a" stroke-width="2" fill="none"/>
+  <line x1="56" y1="50" x2="64" y2="50" stroke="#0f172a" stroke-width="2"/>
+  <!-- Smile -->
+  <path d="M52 64 Q60 70 68 64" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Body -->
+  <path d="M30 102 C30 82, 90 82, 90 102 Z" fill="#4c1d95"/>
+</svg>
