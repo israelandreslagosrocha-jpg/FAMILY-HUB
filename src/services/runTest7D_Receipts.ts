@@ -1,7 +1,6 @@
 import { supabase } from './supabaseClient'
 import { receiptService } from './receiptService'
 import { storageService } from './storageService'
-import { financeService } from './financeService'
 
 export async function runTest7DReceipts() {
   console.log('===================================================================================')

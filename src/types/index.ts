@@ -175,6 +175,35 @@ export interface ReceiptScanSession {
   createdAt: string
 }
 
+// TIPOS PARA PWA / NOTIFICACIONES / OFFLINE (ETAPA 8)
+export type SyncStateEnum = 'synced' | 'pending_sync' | 'syncing' | 'sync_error'
+export type MutationEntityEnum = 'task' | 'calendar_event' | 'expense' | 'income' | 'transfer'
+export type RiskLevelEnum = 'low' | 'medium' | 'high'
+
+export interface OfflineQueueItem {
+  id: string
+  operation: 'CREATE' | 'UPDATE' | 'DELETE'
+  entity: MutationEntityEnum
+  riskLevel: RiskLevelEnum
+  payload: any
+  createdAt: string
+  attempts: number
+  status: 'pending' | 'syncing' | 'synced' | 'failed'
+  idempotencyKey: string
+  lastError?: string
+  syncedAt?: string
+}
+
+export interface AppNotification {
+  id: string
+  title: string
+  message: string
+  type: 'info' | 'warning' | 'urgent' | 'success'
+  entityType?: 'task' | 'event' | 'finance' | 'system'
+  createdAt: string
+  isRead: boolean
+}
+
 export interface HistoryLog {
   id: string
   memberName: string

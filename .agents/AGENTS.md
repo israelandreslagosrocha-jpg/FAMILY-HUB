@@ -71,7 +71,10 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 5: Motor de Automatizaciones del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 6: Finanzas del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 7: Boletas / Captura OCR. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
-- Etapa 8: PWA / Notificaciones / Offline avanzado. ⏭️ SIGUIENTE ETAPA
+- Etapa 8A: Arquitectura Funcional y UX de PWA / Notificaciones / Offline avanzado. ✅ APROBADA CON 10 PRECISIONES
+- Etapa 8B: Desarrollo Visual de PWA, Alertas Offline y Centro de Notificaciones. 🔄 EN CURSO
+- Etapa 8C: Integración de Service Worker, IndexedDB Sync Queue y WebPush API.
+- Etapa 8D: Pruebas Reales de PWA, Notificaciones y Comportamiento Offline.
 
 ## 13. Documentación
 Mantener la documentación del proyecto actualizada (arquitectura, modelo de datos, componentes, decisiones).
@@ -123,5 +126,5 @@ Los componentes visuales (.vue) no deberán realizar directamente consultas comp
 ## 28. Desarrollo visual con datos simulados (Mock Data)
 Durante las primeras etapas, cuando una funcionalidad todavía no tenga implementado su backend, se utilizarán datos mock claramente identificados. No se crearán tablas, autenticación ni lógica de persistencia únicamente para hacer funcionar una pantalla en etapa de diseño.
 
-## 29. Principio de diseño consciente en inspirado
+## 29. Principio de diseño consciente e inspirado
 Antes de implementar componentes visuales importantes, presentar la propuesta de estructura visual y justificarla según los principios UX definidos. No asumir que "estilo Apple" significa copiar interfaces de Apple ni utilizar componentes genéricos con apariencia similar.

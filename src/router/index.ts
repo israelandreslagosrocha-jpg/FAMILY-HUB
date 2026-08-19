@@ -5,6 +5,8 @@ import TasksView from '../views/TasksView.vue'
 import FinanceView from '../views/FinanceView.vue'
 import FamilyView from '../views/FamilyView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import ReceiptsView from '../views/ReceiptsView.vue'
+import OfflineCenterView from '../views/OfflineCenterView.vue'
 
 const router = createRouter({
   history: createWebHistory('/'),
@@ -28,6 +30,16 @@ const router = createRouter({
       path: '/finance',
       name: 'finance',
       component: FinanceView
+    },
+    {
+      path: '/receipts',
+      name: 'receipts',
+      component: ReceiptsView
+    },
+    {
+      path: '/offline',
+      name: 'offline',
+      component: OfflineCenterView
     },
     {
       path: '/family',

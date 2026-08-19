@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { useFamilyStore } from '../../stores/familyStore'
 import AvatarImage from '../common/AvatarImage.vue'
+import NetworkStatusBadge from '../pwa/NetworkStatusBadge.vue'
+import NotificationBell from '../pwa/NotificationBell.vue'
 
 const store = useFamilyStore()
 const showMemberSelector = ref(false)
@@ -39,35 +41,40 @@ function selectActiveMember(id: string) {
         </button>
       </div>
 
-      <!-- Selector de Miembro Autenticado (Simulado) -->
-      <div class="member-selector-relative">
-        <button 
-          class="active-member-btn" 
-          @click="showMemberSelector = !showMemberSelector"
-          v-if="store.activeMember"
-        >
-          <AvatarImage 
-            :avatarId="store.activeMember.avatarId" 
-            :size="34" 
-            :borderColor="store.activeMember.color"
-          />
-          <span class="member-name-label">{{ store.activeMember.name }}</span>
-        </button>
+      <!-- Selector de Miembro Autenticado + PWA Badges -->
+      <div class="header-right-controls">
+        <NetworkStatusBadge />
+        <NotificationBell />
 
-        <!-- Dropdown de Miembros -->
-        <div v-if="showMemberSelector" class="member-dropdown">
-          <div class="dropdown-header">Cambiar Miembro Activo:</div>
+        <div class="member-selector-relative">
           <button 
-            v-for="m in store.members" 
-            :key="m.id"
-            class="dropdown-item"
-            :class="{ selected: m.id === store.activeMemberId }"
-            @click="selectActiveMember(m.id)"
+            class="active-member-btn" 
+            @click="showMemberSelector = !showMemberSelector"
+            v-if="store.activeMember"
           >
-            <AvatarImage :avatarId="m.avatarId" :size="28" :borderColor="m.color" />
-            <span>{{ m.name }}</span>
-            <span class="role-tag">{{ m.role }}</span>
+            <AvatarImage 
+              :avatarId="store.activeMember.avatarId" 
+              :size="34" 
+              :borderColor="store.activeMember.color"
+            />
+            <span class="member-name-label">{{ store.activeMember.name }}</span>
           </button>
+
+          <!-- Dropdown de Miembros -->
+          <div v-if="showMemberSelector" class="member-dropdown">
+            <div class="dropdown-header">Cambiar Miembro Activo:</div>
+            <button 
+              v-for="m in store.members" 
+              :key="m.id"
+              class="dropdown-item"
+              :class="{ selected: m.id === store.activeMemberId }"
+              @click="selectActiveMember(m.id)"
+            >
+              <AvatarImage :avatarId="m.avatarId" :size="28" :borderColor="m.color" />
+              <span>{{ m.name }}</span>
+              <span class="role-tag">{{ m.role }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -121,8 +128,10 @@ function selectActiveMember(id: string) {
   letter-spacing: -0.02em;
 }
 
-.member-selector-relative {
-  position: relative;
+.header-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .active-member-btn {
