@@ -69,8 +69,13 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 4C: Integración de Tareas con Supabase (`00003_task_rpc_and_audit.sql` + `taskService.ts`). ✅ EJECUTADA Y COMPLETADA
 - Etapa 4D: Pruebas Reales de Integración de Tareas. ✅ COMPLETADA CON ÉXITO (100% PASS)
 - Etapa 5A: Arquitectura Funcional y UX de Automatizaciones. ✅ APROBADA
-- Etapa 5B: Desarrollo Visual de Automatizaciones en Vue 3 con Datos Mock. 🔄 EN CURSO
-- Etapa 5C: Integración de Automatizaciones con Supabase.
+- Etapa 5B: Desarrollo Visual de Automatizaciones en Vue 3 con Datos Mock. ✅ COMPLETADA
+- Etapa 5C.1: Auditoría de Esquema y Diseño del Motor (Aprobada con Correcciones). ✅
+- Etapa 5C.2: Refinar `implementation_plan.md` con las 6 Correcciones de Hardening. 🔄 EN CURSO
+- Etapa 5C.3: Generar Script SQL `00004_automation_engine.sql`.
+- Etapa 5C.4: Revisar SQL.
+- Etapa 5C.5: Ejecución en Supabase + Verificación.
+- Etapa 5C.6: Integración con `automationService.ts` y Pinia Store.
 - Etapa 5D: Pruebas Reales de Integración de Automatizaciones.
 - Etapa 6: Finanzas.
 - Etapa 7: Boletas / OCR.
@@ -110,7 +115,7 @@ Conmutador rápido e inmediato `[ Mi día ]` / `[ Familia ]` en la pantalla prin
 Filtro rápido por miembros (`Todos | Israel | Esposa | ...`) con avatar, nombre y distintivo de color.
 
 ## 24. Principio de contexto
-Priorización clara de información: 1. Qué tengo que me toca hacer, 2. Qué viene después, 3. Pendiente, 4. Atención, 5. Estado de la familia, 6. Información secundaria.
+Priorización clara de información: 1. Qué tengo que hacer, 2. Qué viene después, 3. Pendiente, 4. Atención, 5. Estado de la familia, 6. Información secundaria.
 
 ## 25. Personalización sin complejidad
 Valores predeterminados razonables sin menús de configuración abrumadores.
