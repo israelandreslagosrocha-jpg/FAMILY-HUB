@@ -62,9 +62,9 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 2C: Ejecución en Supabase + Pruebas y Verificación de Seguridad. ✅ COMPLETADA CON ÉXITO (100% PASS)
 - Etapa 3A: Arquitectura Funcional y UX del Calendario. ✅ APROBADA
 - Etapa 3B: Desarrollo Visual del Calendario en Vue 3 con Datos Mock. ✅ COMPLETADA
-- Etapa 3C: Integración del Calendario con Supabase. 🔄 IMPLEMENTACIÓN DE MIGRACIÓN 00002 & SERVICIOS
-- Etapa 3D: Pruebas Reales de Integración del Calendario.
-- Etapa 4: Tareas y responsabilidades.
+- Etapa 3C: Integración del Calendario con Supabase (`00002_calendar_event_rpc.sql` + `calendarService.ts`). ✅ EJECUTADA Y COMPLETADA
+- Etapa 3D: Pruebas Reales de Integración del Calendario. ✅ COMPLETADA CON ÉXITO (100% PASS)
+- Etapa 4: Tareas y responsabilidades. ⏳ PRÓXIMA ETAPA
 - Etapa 5: Automatizaciones.
 - Etapa 6: Finanzas.
 - Etapa 7: Boletas / OCR.
