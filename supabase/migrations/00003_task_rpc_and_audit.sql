@@ -1,12 +1,36 @@
 -- ============================================================================
--- MIGRACIÓN 00003: RPC TRANSACCIONAL DE TAREAS Y AUDITORÍA DE ESTADOS
+-- MIGRACIÓN 00003 (V2 REFINADA): RPC DE TAREAS, HARDENING RLS Y AUDITORÍA REAL
 -- ============================================================================
 
 -- 1. SOPORTE DE REFERENCIA A RESPONSABILIDADES EN INSTANCIAS DE TAREAS
 ALTER TABLE public.task_instances 
   ADD COLUMN IF NOT EXISTS responsibility_id uuid REFERENCES public.responsibilities(id) ON DELETE SET NULL;
 
--- 2. FUNCIÓN PRIVADA DE AUDITORÍA AUTOMÁTICA E INALTERABLE DE TAREAS
+-- 2. HARDENING DE POLÍTICAS RLS EN TASK_INSTANCES PARA LA NUEVA COLUMNA RESPONSIBILITY_ID
+DROP POLICY IF EXISTS "Task Instances INSERT" ON public.task_instances;
+CREATE POLICY "Task Instances INSERT" ON public.task_instances FOR INSERT TO authenticated 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  (task_series_id IS NULL OR task_series_id IN (SELECT id FROM public.task_series WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (responsibility_id IS NULL OR responsibility_id IN (SELECT id FROM public.responsibilities WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  created_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
+  assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
+);
+
+DROP POLICY IF EXISTS "Task Instances UPDATE" ON public.task_instances;
+CREATE POLICY "Task Instances UPDATE" ON public.task_instances FOR UPDATE TO authenticated 
+USING (family_id = (SELECT private.get_auth_family_id())) 
+WITH CHECK (
+  family_id = (SELECT private.get_auth_family_id()) AND
+  (task_series_id IS NULL OR task_series_id IN (SELECT id FROM public.task_series WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (category_id IS NULL OR category_id IN (SELECT id FROM public.categories WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  (responsibility_id IS NULL OR responsibility_id IN (SELECT id FROM public.responsibilities WHERE family_id = (SELECT private.get_auth_family_id()))) AND
+  created_by_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true) AND
+  assigned_member_id IN (SELECT id FROM public.family_members WHERE family_id = (SELECT private.get_auth_family_id()) AND is_active = true)
+);
+
+-- 3. FUNCIÓN PRIVADA DE AUDITORÍA AUTOMÁTICA E INALTERABLE DE TAREAS (ESQUEMA EXACTO 00001)
 CREATE OR REPLACE FUNCTION private.audit_task_instance_fn()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -14,7 +38,8 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_actor_auth_id uuid := auth.uid();
+  v_actor_profile_id uuid := auth.uid();
+  v_family_member_id uuid;
   v_family_id uuid;
   v_old_assigned_name text;
   v_new_assigned_name text;
@@ -26,11 +51,18 @@ BEGIN
     v_family_id := NEW.family_id;
   END IF;
 
+  -- Obtener el family_member_id del actor autenticado si existe
+  SELECT id INTO v_family_member_id
+  FROM public.family_members
+  WHERE profile_id = v_actor_profile_id AND family_id = v_family_id AND is_active = true
+  LIMIT 1;
+
   -- 1. AUDITORÍA DE CREACIÓN
   IF TG_OP = 'INSERT' THEN
-    INSERT INTO public.history_logs (family_id, actor_auth_id, action, entity_type, entity_id, metadata)
-    VALUES (
-      v_family_id, v_actor_auth_id, 'created', 'task_instance', NEW.id,
+    INSERT INTO public.history_logs (
+      family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
+    ) VALUES (
+      v_family_id, v_actor_profile_id, v_family_member_id, 'created', 'task', NEW.id,
       jsonb_build_object('title', NEW.title, 'priority', NEW.priority, 'assigned_member_id', NEW.assigned_member_id)
     );
     RETURN NEW;
@@ -40,23 +72,26 @@ BEGIN
   IF TG_OP = 'UPDATE' THEN
     -- A. Transición de Estado: Completada
     IF OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'completed' THEN
-      INSERT INTO public.history_logs (family_id, actor_auth_id, action, entity_type, entity_id, metadata)
-      VALUES (
-        v_family_id, v_actor_auth_id, 'completed', 'task_instance', NEW.id,
+      INSERT INTO public.history_logs (
+        family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
+      ) VALUES (
+        v_family_id, v_actor_profile_id, v_family_member_id, 'completed', 'task', NEW.id,
         jsonb_build_object('title', NEW.title, 'completed_at', NEW.completed_at)
       );
     -- B. Transición de Estado: Omitida
     ELSIF OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'skipped' THEN
-      INSERT INTO public.history_logs (family_id, actor_auth_id, action, entity_type, entity_id, metadata)
-      VALUES (
-        v_family_id, v_actor_auth_id, 'skipped', 'task_instance', NEW.id,
+      INSERT INTO public.history_logs (
+        family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
+      ) VALUES (
+        v_family_id, v_actor_profile_id, v_family_member_id, 'skipped', 'task', NEW.id,
         jsonb_build_object('title', NEW.title)
       );
     -- C. Transición de Estado: Reabierta (Completada -> Pendiente)
     ELSIF OLD.status IS DISTINCT FROM NEW.status AND OLD.status = 'completed' AND NEW.status = 'pending' THEN
-      INSERT INTO public.history_logs (family_id, actor_auth_id, action, entity_type, entity_id, metadata)
-      VALUES (
-        v_family_id, v_actor_auth_id, 'reopened', 'task_instance', NEW.id,
+      INSERT INTO public.history_logs (
+        family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
+      ) VALUES (
+        v_family_id, v_actor_profile_id, v_family_member_id, 'reopened', 'task', NEW.id,
         jsonb_build_object('title', NEW.title)
       );
     END IF;
@@ -66,9 +101,10 @@ BEGIN
       SELECT name INTO v_old_assigned_name FROM public.family_members WHERE id = OLD.assigned_member_id;
       SELECT name INTO v_new_assigned_name FROM public.family_members WHERE id = NEW.assigned_member_id;
 
-      INSERT INTO public.history_logs (family_id, actor_auth_id, action, entity_type, entity_id, metadata)
-      VALUES (
-        v_family_id, v_actor_auth_id, 'reassigned', 'task_instance', NEW.id,
+      INSERT INTO public.history_logs (
+        family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
+      ) VALUES (
+        v_family_id, v_actor_profile_id, v_family_member_id, 'reassigned', 'task', NEW.id,
         jsonb_build_object(
           'title', NEW.title,
           'old_assigned_member_id', OLD.assigned_member_id,
@@ -84,9 +120,10 @@ BEGIN
 
   -- 3. AUDITORÍA DE ELIMINACIÓN
   IF TG_OP = 'DELETE' THEN
-    INSERT INTO public.history_logs (family_id, actor_auth_id, action, entity_type, entity_id, metadata)
-    VALUES (
-      v_family_id, v_actor_auth_id, 'deleted', 'task_instance', OLD.id,
+    INSERT INTO public.history_logs (
+      family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
+    ) VALUES (
+      v_family_id, v_actor_profile_id, v_family_member_id, 'deleted', 'task', OLD.id,
       jsonb_build_object('title', OLD.title)
     );
     RETURN OLD;
@@ -104,7 +141,7 @@ CREATE TRIGGER trg_audit_task_instance
   EXECUTE FUNCTION private.audit_task_instance_fn();
 
 
--- 3. FUNCIÓN RPC TRANSACCIONAL HARDENED PARA CREACIÓN DE TAREAS Y SERIES
+-- 4. FUNCIÓN RPC TRANSACCIONAL HARDENED PARA CREACIÓN DE TAREAS Y SERIES
 CREATE OR REPLACE FUNCTION public.create_family_task(
   p_title text,
   p_description text,
@@ -182,11 +219,32 @@ BEGIN
     END IF;
   END IF;
 
-  -- 7. Inserción de Serie y Regla de Recurrencia (si aplica)
-  IF p_recurrence_frequency IS NOT NULL THEN
-    -- Validaciones de Recurrencia
+  -- 7. Validación Estricta de Coherencia de Parámetros de Recurrencia
+  IF p_recurrence_frequency IS NULL THEN
+    IF p_recurrence_days_of_week IS NOT NULL OR 
+       p_recurrence_day_of_month IS NOT NULL OR 
+       p_recurrence_monthly_pattern IS NOT NULL OR 
+       p_recurrence_end_date IS NOT NULL THEN
+      RAISE EXCEPTION 'No se permiten parámetros de recurrencia si la frecuencia es nula';
+    END IF;
+  ELSE
+    -- Validaciones de Recurrencia Activa
     IF p_recurrence_end_date IS NOT NULL AND p_recurrence_end_date < p_due_date THEN
       RAISE EXCEPTION 'La fecha de fin de la recurrencia debe ser mayor o igual a la fecha límite';
+    END IF;
+
+    IF p_recurrence_day_of_month IS NOT NULL AND (p_recurrence_day_of_month < 1 OR p_recurrence_day_of_month > 31) THEN
+      RAISE EXCEPTION 'El día del mes para la recurrencia debe estar entre 1 y 31';
+    END IF;
+
+    IF p_recurrence_days_of_week IS NOT NULL AND EXISTS (
+      SELECT 1 FROM unnest(p_recurrence_days_of_week) d WHERE d < 1 OR d > 7
+    ) THEN
+      RAISE EXCEPTION 'Los días de la semana deben estar entre 1 (Lunes) y 7 (Domingo)';
+    END IF;
+
+    IF p_recurrence_frequency = 'weekly' AND (p_recurrence_days_of_week IS NULL OR cardinality(p_recurrence_days_of_week) = 0) THEN
+      RAISE EXCEPTION 'La frecuencia semanal requiere especificar al menos un día de la semana';
     END IF;
 
     -- Inserción de la Regla de Recurrencia
@@ -199,12 +257,12 @@ BEGIN
       p_due_date, p_recurrence_end_date
     ) RETURNING id INTO v_recurrence_id;
 
-    -- Inserción de la Serie / Plantilla Maestra
+    -- Inserción de la Serie / Plantilla Maestra (asociando la responsabilidad si se especificó)
     INSERT INTO public.task_series (
-      family_id, category_id, recurrence_rule_id, default_assigned_member_id,
+      family_id, category_id, responsibility_id, recurrence_rule_id, default_assigned_member_id,
       title, description, is_active
     ) VALUES (
-      v_family_id, p_category_id, v_recurrence_id, p_assigned_member_id,
+      v_family_id, p_category_id, p_responsibility_id, v_recurrence_id, p_assigned_member_id,
       trim(p_title), p_description, true
     ) RETURNING id INTO v_series_id;
   END IF;
@@ -224,6 +282,6 @@ BEGIN
 END;
 $$;
 
--- 4. RESTRICCIÓN ESTRICTA DE PERMISOS EXECUTE
+-- 5. RESTRICCIÓN ESTRICTA DE PERMISOS EXECUTE
 REVOKE EXECUTE ON FUNCTION public.create_family_task FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_family_task TO authenticated;
