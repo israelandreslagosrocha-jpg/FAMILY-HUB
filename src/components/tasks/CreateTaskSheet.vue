@@ -32,14 +32,12 @@ function handleClose() {
 function handleSubmit() {
   if (!title.value.trim()) return
 
-  taskStore.addTask({
+  taskStore.addTaskWithSupabase({
     title: title.value.trim(),
     description: description.value.trim() || undefined,
-    assignedToMemberId: assignedToMemberId.value,
-    createdByMemberId: taskStore.activeMemberId,
+    assignedMemberId: assignedToMemberId.value,
     priority: priority.value,
     dueDate: dueDate.value,
-    category: category.value,
     responsibilityId: responsibilityId.value
   })
 }

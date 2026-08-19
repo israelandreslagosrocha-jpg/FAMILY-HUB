@@ -55,7 +55,7 @@ Supabase como fuente principal. Caché local para velocidad percibida. Responsab
 Variables de entorno para claves públicas, datos privados, políticas RLS en Supabase antes de dar por terminada la arquitectura de datos.
 
 ## 12. Desarrollo por etapas
-Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
+Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
 - Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). ✅ EJECUTADA
@@ -66,9 +66,9 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 3D: Pruebas Reales de Integración del Calendario. ✅ COMPLETADA CON ÉXITO (100% PASS)
 - Etapa 4A: Arquitectura Funcional y UX de Tareas y Responsabilidades. ✅ APROBADA
 - Etapa 4B: Desarrollo Visual de Tareas en Vue 3 con Datos Mock. ✅ COMPLETADA
-- Etapa 4C: Integración de Tareas con Supabase (4C.2 Generación del Script SQL 00003). 🔄 EN REVISIÓN DE CÓDIGO SQL
-- Etapa 4D: Pruebas Reales de Integración de Tareas.
-- Etapa 5: Automatizaciones.
+- Etapa 4C: Integración de Tareas con Supabase (`00003_task_rpc_and_audit.sql` + `taskService.ts`). ✅ EJECUTADA Y COMPLETADA
+- Etapa 4D: Pruebas Reales de Integración de Tareas. ✅ COMPLETADA CON ÉXITO (100% PASS)
+- Etapa 5: Automatizaciones. ⏳ PRÓXIMA ETAPA
 - Etapa 6: Finanzas.
 - Etapa 7: Boletas / OCR.
 - Etapa 8: PWA / Notificaciones / Offline avanzado.

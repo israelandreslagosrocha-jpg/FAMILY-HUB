@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { TaskItem, ResponsibilityItem, TaskFocusType, ViewMode, FamilyMember } from '../types'
 import { mockMembers } from '../mocks/familyData'
+import { taskService, type CreateTaskPayload } from '../services/taskService'
+import { supabase } from '../services/supabaseClient'
 
 export const useTaskStore = defineStore('taskStore', () => {
   // Estado Principal
@@ -13,10 +15,14 @@ export const useTaskStore = defineStore('taskStore', () => {
   // Estado del Modal Sheet de Creación de Tarea
   const isCreateTaskSheetOpen = ref<boolean>(false)
 
+  // Estado de Carga
+  const isLoading = ref<boolean>(false)
+  const loadError = ref<string | null>(null)
+
   // Datos Mock de Miembros
   const members = ref<FamilyMember[]>(mockMembers)
 
-  // Datos Mock de Responsabilidades Fijas del Hogar
+  // Datos de Responsabilidades Permanentes
   const responsibilities = ref<ResponsibilityItem[]>([
     {
       id: 'resp-1',
@@ -52,7 +58,7 @@ export const useTaskStore = defineStore('taskStore', () => {
     }
   ])
 
-  // Datos Mock de Tareas Concretas
+  // Datos de Tareas Concretas
   const tasks = ref<TaskItem[]>([
     {
       id: 't-101',
@@ -156,7 +162,51 @@ export const useTaskStore = defineStore('taskStore', () => {
     return displayedTasks.value.filter(t => t.status === 'skipped')
   })
 
-  // Acciones
+  // Acciones de Carga Supabase
+  async function loadDataFromSupabase() {
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (!sessionData.session) {
+      console.log('ℹ️ Sin sesión activa en Supabase. Usando datos Mock de tareas.')
+      return
+    }
+
+    isLoading.value = true
+    loadError.value = null
+
+    try {
+      // Cargar miembros
+      const { data: dbMembers } = await supabase.from('family_members').select('*')
+      if (dbMembers && dbMembers.length > 0) {
+        members.value = dbMembers.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          avatarId: m.avatar_id,
+          color: m.color,
+          role: m.role,
+          isActive: m.is_active
+        }))
+        activeMemberId.value = members.value[0].id
+      }
+
+      // Cargar responsabilidades
+      const dbResp = await taskService.getResponsibilities()
+      if (dbResp.length > 0) {
+        responsibilities.value = dbResp
+      }
+
+      // Cargar tareas reales
+      const dbTasks = await taskService.getTasks()
+      if (dbTasks.length > 0) {
+        tasks.value = dbTasks
+      }
+    } catch (err: any) {
+      console.warn('⚠️ Error al cargar tareas desde Supabase:', err.message)
+      loadError.value = err.message
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function setTaskFocus(focus: TaskFocusType) {
     taskFocus.value = focus
   }
@@ -178,19 +228,24 @@ export const useTaskStore = defineStore('taskStore', () => {
   }
 
   /**
-   * Cambia el estado de una tarea entre pending <-> completed (asigna/resetea completed_at)
+   * Cambia el estado de una tarea (pending <-> completed)
+   * Sincroniza con Supabase en segundo plano
    */
-  function toggleTaskStatus(taskId: string) {
+  async function toggleTaskStatus(taskId: string) {
     const task = tasks.value.find(t => t.id === taskId)
-    if (task) {
-      if (task.status === 'completed') {
-        task.status = 'pending'
-        task.completed = false
-        task.completedAt = null
-      } else {
-        task.status = 'completed'
-        task.completed = true
-        task.completedAt = new Date().toISOString()
+    if (!task) return
+
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed'
+    task.status = newStatus
+    task.completed = newStatus === 'completed'
+    task.completedAt = newStatus === 'completed' ? new Date().toISOString() : null
+
+    // Sincronizar en Supabase si no es un ID mock
+    if (!taskId.startsWith('t-')) {
+      try {
+        await taskService.updateTaskStatus(taskId, newStatus)
+      } catch (err: any) {
+        console.error('❌ Error al actualizar estado en Supabase:', err.message)
       }
     }
   }
@@ -198,39 +253,76 @@ export const useTaskStore = defineStore('taskStore', () => {
   /**
    * Marca una tarea como omitida (skipped)
    */
-  function skipTask(taskId: string) {
+  async function skipTask(taskId: string) {
     const task = tasks.value.find(t => t.id === taskId)
-    if (task) {
-      task.status = 'skipped'
-      task.completed = false
-      task.completedAt = null
+    if (!task) return
+
+    task.status = 'skipped'
+    task.completed = false
+    task.completedAt = null
+
+    if (!taskId.startsWith('t-')) {
+      try {
+        await taskService.updateTaskStatus(taskId, 'skipped')
+      } catch (err: any) {
+        console.error('❌ Error al omitir tarea en Supabase:', err.message)
+      }
     }
   }
 
   /**
    * Reasigna el encargado de una tarea en 1 toque
    */
-  function reassignTask(taskId: string, newMemberId: string) {
+  async function reassignTask(taskId: string, newMemberId: string) {
     const task = tasks.value.find(t => t.id === taskId)
-    if (task) {
-      task.assignedToMemberId = newMemberId
+    if (!task) return
+
+    task.assignedToMemberId = newMemberId
+
+    if (!taskId.startsWith('t-')) {
+      try {
+        await taskService.reassignTask(taskId, newMemberId)
+      } catch (err: any) {
+        console.error('❌ Error al reasignar tarea en Supabase:', err.message)
+      }
     }
   }
 
   /**
-   * Agrega una nueva tarea concreta
+   * Agrega una nueva tarea llamando a la RPC transaccional de Supabase
    */
-  function addTask(newTaskPayload: Omit<TaskItem, 'id' | 'status' | 'completed' | 'completedAt'>) {
-    const id = `t-${Date.now()}`
-    const task: TaskItem = {
-      ...newTaskPayload,
-      id,
+  async function addTaskWithSupabase(payload: CreateTaskPayload) {
+    const tempId = `temp-${Date.now()}`
+    
+    // 1. Agregar inmediatamente a Pinia (Respuesta UI <50ms)
+    const tempTask: TaskItem = {
+      id: tempId,
+      title: payload.title,
+      description: payload.description,
+      assignedToMemberId: payload.assignedMemberId,
+      createdByMemberId: activeMemberId.value,
+      priority: payload.priority,
+      dueDate: payload.dueDate,
       status: 'pending',
       completed: false,
-      completedAt: null
+      completedAt: null,
+      category: 'Hogar',
+      responsibilityId: payload.responsibilityId
     }
-    tasks.value.unshift(task)
+
+    tasks.value.unshift(tempTask)
     isCreateTaskSheetOpen.value = false
+
+    // 2. Ejecutar RPC en Supabase
+    try {
+      const realTaskId = await taskService.createTask(payload)
+      const target = tasks.value.find(t => t.id === tempId)
+      if (target) {
+        target.id = realTaskId
+      }
+    } catch (err: any) {
+      console.error('❌ Error al crear tarea en Supabase:', err.message)
+    }
   }
 
   return {
@@ -242,11 +334,14 @@ export const useTaskStore = defineStore('taskStore', () => {
     responsibilities,
     tasks,
     isCreateTaskSheetOpen,
+    isLoading,
+    loadError,
     activeMember,
     displayedTasks,
     pendingTasks,
     completedTasks,
     skippedTasks,
+    loadDataFromSupabase,
     setTaskFocus,
     setViewMode,
     setFilterMember,
@@ -255,6 +350,6 @@ export const useTaskStore = defineStore('taskStore', () => {
     toggleTaskStatus,
     skipTask,
     reassignTask,
-    addTask
+    addTaskWithSupabase
   }
 })
