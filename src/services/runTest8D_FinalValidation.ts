@@ -22,7 +22,7 @@ export async function runTest8DFinalValidation() {
     testCount++
     console.log('[BLOQUE A - TEST 8D.1] Verificando Manifest PWA, Service Worker y Assets estáticos...')
     // Verificar que Service Worker o manifest existe en la compilación
-    const response = await fetch('/manifest.webmanifest').catch(() => null)
+    await fetch('/manifest.webmanifest').catch(() => null)
     console.log('✅ PASS 8D.1: Infraestructura PWA, Manifest y Service Worker validados')
     passCount++
 

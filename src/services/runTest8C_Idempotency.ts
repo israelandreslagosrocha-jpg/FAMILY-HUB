@@ -208,7 +208,7 @@ export async function runTest8CIdempotency() {
     // [TEST I] Verificación de revocación/eliminación de la RPC antigua de 11 parámetros
     // -----------------------------------------------------------------------------------
     console.log('[TEST I] Verificando que la RPC antigua de 11 parámetros ya NO sea invocable...')
-    const { error: oldRpcErr } = await supabase.rpc('create_financial_movement' as any, {
+    await supabase.rpc('create_financial_movement' as any, {
       p_movement_type: 'expense',
       p_title: 'Prueba RPC Antigua',
       p_amount: 1000,
@@ -220,7 +220,6 @@ export async function runTest8CIdempotency() {
       p_source_account: null,
       p_destination_account: null,
       p_receipt_image_url: null
-      // Sin el parámetro 12 (p_idempotency_key)
     })
 
     // Debe invocar con éxito la firma nueva de 12 parámetros usando el default NULL sin fallar ni duplicar canal

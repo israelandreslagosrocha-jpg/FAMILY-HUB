@@ -9,7 +9,7 @@ import ReceiptsView from '../views/ReceiptsView.vue'
 import OfflineCenterView from '../views/OfflineCenterView.vue'
 
 const router = createRouter({
-  history: createWebHistory('/'),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
