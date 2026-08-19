@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useTaskStore } from '../../stores/taskStore'
+import { useAuthStore } from '../../stores/authStore'
 import type { TaskFocusType, ViewMode } from '../../types'
 
 const taskStore = useTaskStore()
+const authStore = useAuthStore()
 
 function handleFocus(focus: TaskFocusType) {
   taskStore.setTaskFocus(focus)
@@ -76,7 +78,7 @@ function handleFilterMember(memberId: string) {
       </button>
 
       <button 
-        v-for="member in taskStore.members" 
+        v-for="member in authStore.familyMembers" 
         :key="member.id"
         class="filter-chip member-chip"
         :class="{ active: taskStore.filterMemberId === member.id }"

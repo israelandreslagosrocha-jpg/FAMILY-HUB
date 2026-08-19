@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCalendarStore } from '../../stores/calendarStore'
+import { useAuthStore } from '../../stores/authStore'
 import type { CalendarViewType, ViewMode } from '../../types'
 
 const calendarStore = useCalendarStore()
+const authStore = useAuthStore()
 
 // Formateador de Fecha según la vista
 const formattedDateTitle = computed(() => {
@@ -129,7 +131,7 @@ function handleFilterMember(memberId: string) {
       </button>
 
       <button 
-        v-for="member in calendarStore.members" 
+        v-for="member in authStore.familyMembers" 
         :key="member.id"
         class="filter-chip member-chip"
         :class="{ active: calendarStore.filterMemberId === member.id }"

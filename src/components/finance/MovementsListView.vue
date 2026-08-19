@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useFinanceStore } from '../../stores/financeStore'
-import { mockMembers } from '../../mocks/familyData'
+import { useAuthStore } from '../../stores/authStore'
 
 const financeStore = useFinanceStore()
+const authStore = useAuthStore()
 
 function formatCurrency(val: number): string {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(val)
@@ -32,7 +33,7 @@ function handleDeleteMovement(movId: string) {
       </button>
 
       <button 
-        v-for="member in mockMembers" 
+        v-for="member in authStore.familyMembers" 
         :key="member.id"
         class="member-chip"
         :class="{ active: financeStore.filterMemberId === member.id }"
