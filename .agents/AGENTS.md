@@ -70,8 +70,11 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 4D: Pruebas Reales de Integración de Tareas. ✅ COMPLETADA CON ÉXITO (100% PASS)
 - Etapa 5: Motor de Automatizaciones del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 6A: Arquitectura Funcional y UX de Finanzas del Hogar. ✅ APROBADA CON PRECISIONES
-- Etapa 6B: Desarrollo Visual de Finanzas en Vue 3 con Datos Mock. 🔄 EN CURSO
-- Etapa 6C: Integración de Finanzas con Supabase.
+- Etapa 6B: Desarrollo Visual de Finanzas en Vue 3 con Datos Mock. ✅ COMPLETADA
+- Etapa 6C.1: Auditoría del Esquema Existente y Propuesta de Persistencia Financiera. 🔄 EN REVISIÓN
+- Etapa 6C.2: Generación del Script SQL `00005_finance_schema.sql`.
+- Etapa 6C.3: Ejecución en Supabase + Verificación.
+- Etapa 6C.4: Integración con `financeService.ts` y Pinia Store.
 - Etapa 6D: Pruebas Reales de Integración de Finanzas.
 - Etapa 7: Boletas / OCR.
 - Etapa 8: PWA / Notificaciones / Offline avanzado.
