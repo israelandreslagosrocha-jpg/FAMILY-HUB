@@ -8,6 +8,12 @@ function formatCurrency(val: number): string {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(val)
 }
 
+function handleDeleteMovement(movId: string) {
+  if (confirm('¿Deseas eliminar este movimiento financiero?')) {
+    financeStore.deleteMovement(movId)
+  }
+}
+
 // Cómputo de gastos por categoría para gráficos de distribución
 const categoryBreakdown = computed(() => {
   const map = new Map<string, { name: string; icon: string; color: string; total: number }>()
@@ -100,6 +106,9 @@ const categoryBreakdown = computed(() => {
             >
               {{ mov.type === 'income' ? '+' : (mov.type === 'expense' ? '-' : '🔄') }} {{ formatCurrency(mov.amount) }}
             </span>
+            <button class="delete-mov-btn" @click="handleDeleteMovement(mov.id)" title="Eliminar Movimiento">
+              🗑️
+            </button>
           </div>
         </div>
       </div>
@@ -151,6 +160,27 @@ const categoryBreakdown = computed(() => {
   font-weight: 600;
   color: #3b82f6;
   cursor: pointer;
+}
+
+.categories.mov-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.delete-mov-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s, transform 0.15s;
+  padding: 2px;
+}
+
+.delete-mov-btn:hover {
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 .categories-list {

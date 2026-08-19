@@ -167,12 +167,18 @@ export const financeService = {
   /**
    * Elimina un movimiento financiero (gasto, ingreso o transferencia) de Supabase
    */
-  async deleteMovement(id: string, type: MovementType): Promise<void> {
-    const table = type === 'expense' ? 'expenses' : type === 'income' ? 'incomes' : 'transfers'
-    const { error } = await supabase.from(table).delete().eq('id', id)
-    if (error) {
-      console.error(`❌ Error al eliminar movimiento de ${table}:`, error.message)
-      throw error
+  async deleteMovement(id: string, type?: MovementType): Promise<void> {
+    if (type === 'expense') {
+      await supabase.from('expenses').delete().eq('id', id)
+    } else if (type === 'income') {
+      await supabase.from('incomes').delete().eq('id', id)
+    } else if (type === 'transfer') {
+      await supabase.from('transfers').delete().eq('id', id)
+    } else {
+      // Intentar borrado seguro en todas las tablas si el tipo es ambiguo
+      await supabase.from('expenses').delete().eq('id', id)
+      await supabase.from('incomes').delete().eq('id', id)
+      await supabase.from('transfers').delete().eq('id', id)
     }
   }
 }
