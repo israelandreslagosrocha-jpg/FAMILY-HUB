@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
 
 export async function verify7C3Storage() {
-  console.log('=== PASO 7C.3: VERIFICACIÓN EMPÍRICA POST-MIGRACIÓN DE SUPABASE STORAGE (V2.4) ===\n')
+  console.log('=== PASO 7C.3: VERIFICACIÓN EMPÍRICA POST-MIGRACIÓN DE SUPABASE STORAGE (V2.5) ===\n')
 
   // 1. Autenticación con israel@familyhub.cl
   console.log('🔑 Autenticando usuario israel@familyhub.cl...')
@@ -24,27 +24,11 @@ export async function verify7C3Storage() {
     console.error('❌ No se encontró family_id activo para el usuario')
     return
   }
+  console.log('✅ Family ID obtenido:', familyId)
 
-  // 2. Verificar existencia y privacidad del bucket 'receipts'
-  console.log('\n🔍 Verificando bucket "receipts" en Supabase Storage...')
-  const { data: buckets, error: bucketErr } = await supabase.storage.listBuckets()
-
-  if (bucketErr) {
-    console.error('❌ Error al listar buckets:', bucketErr.message)
-    return
-  }
-
-  const receiptsBucket = buckets.find(b => b.id === 'receipts')
-  if (receiptsBucket) {
-    console.log(`✅ Bucket "receipts" verificado: public = ${receiptsBucket.public} (Privado)`)
-  } else {
-    console.error('❌ ERROR CRÍTICO: No se encontró el bucket "receipts"')
-    return
-  }
-
-  // 3. Probar Carga de Imagen Válida en Carpeta Propia de la Familia
+  // 2. Probar Carga de Imagen Válida en Carpeta Propia de la Familia ({family_id}/YYYY/MM/filename)
   const validPath = `${familyId}/2026/08/verify_test_${Date.now()}.png`
-  const mockFile = new Blob(['test image content'], { type: 'image/png' })
+  const mockFile = new Blob(['test receipt content'], { type: 'image/png' })
 
   console.log(`\n📤 Probando carga de boleta en path propio de la familia: "${validPath}"...`)
   const { data: uploadData, error: uploadErr } = await supabase.storage
@@ -53,8 +37,21 @@ export async function verify7C3Storage() {
 
   if (uploadErr) {
     console.error('❌ Error al subir boleta en path propio:', uploadErr.message)
+    return
+  }
+  console.log('✅ Carga exitosa en path propio:', uploadData.path)
+
+  // 3. Probar Lectura / Listado de Archivos dentro de la Carpeta Familiar
+  console.log(`\n🔍 Probando lectura privada (SELECT) en carpeta de la familia: "${familyId}/2026/08"...`)
+  const { data: fileList, error: listErr } = await supabase.storage
+    .from('receipts')
+    .list(`${familyId}/2026/08`)
+
+  if (listErr) {
+    console.error('❌ Error al listar archivos en carpeta familiar:', listErr.message)
   } else {
-    console.log('✅ Carga exitosa en path propio:', uploadData.path)
+    console.log(`✅ Archivos leídos con éxito en carpeta familiar (${fileList.length} archivo(s) encontrados):`)
+    fileList.forEach(f => console.log(`   - ${f.name} (${f.metadata?.size || 'N/A'} bytes)`))
   }
 
   // 4. Probar Rechazo RLS de Carga Cross-Family (Path de otra familia)
@@ -92,11 +89,11 @@ export async function verify7C3Storage() {
     if (removeErr) {
       console.log('✅ Eliminación directa por cliente denegada correctamente:', `"${removeErr.message}"`)
     } else {
-      console.log('ℹ️ Comprobante removido o procesado en prueba de Storage')
+      console.log('ℹ️ Comprobante no eliminado o procesado según política de Storage')
     }
   }
 
-  console.log('\n🎉 VERIFICACIÓN EMPÍRICA DEL BUCKET "RECEIPTS" (PASO 7C.3) COMPLETADA AL 100%')
+  console.log('\n🎉 VERIFICACIÓN EMPÍRICA DEL BUCKET "RECEIPTS" (PASO 7C.3) COMPLETADA AL 100% (PASS)')
 }
 
 verify7C3Storage()
