@@ -57,16 +57,16 @@ export interface CalendarEvent {
 
 // TIPOS PARA AUTOMATIZACIONES (ETAPA 5)
 export type TriggerCategory = 'data_event' | 'scheduled_time'
-export type ActionKindEnum = 'CREATE_TASK' | 'REASSIGN_TASK' | 'SKIP_TASK' | 'CREATE_EVENT' | 'SEND_NOTIFICATION' | 'ROTATE_MEMBER'
+export type ActionKindEnum = 'CREATE_TASK' | 'ROTATE_MEMBER' | 'SEND_NOTIFICATION' | 'REASSIGN_TASK' | 'SKIP_TASK'
 
 export interface AutomationRule {
   id: string
   name: string
   description: string
   category: TriggerCategory
-  triggerText: string   // Texto "Cuando: Se completa la tarea 'Comprar alimentos'"
-  conditionText?: string // Texto "Si: Categoría es Alimentación"
-  actionText: string    // Texto "Entonces: Crear tarea 'Guardar mercadería'"
+  triggerText: string
+  conditionText?: string
+  actionText: string
   actionKind: ActionKindEnum
   isActive: boolean
   executionCount: number
@@ -92,6 +92,38 @@ export interface AutomationLog {
   status: 'success' | 'failed'
   details: string
   isIdempotentVerified: boolean
+}
+
+// TIPOS PARA FINANZAS (ETAPA 6)
+export type MovementType = 'expense' | 'income' | 'transfer'
+export type FinancialScope = 'family' | 'personal'
+export type FinanceTabType = 'overview' | 'movements' | 'budgets'
+
+export interface FinancialMovement {
+  id: string
+  title: string
+  amount: number
+  currency: 'CLP'
+  type: MovementType
+  scope: FinancialScope
+  categoryId: string
+  categoryName: string
+  categoryIcon: string
+  categoryColor: string
+  registeredByMemberId: string  // Quién pagó/registró
+  belongingToMemberId?: string  // A quién pertenece si es personal
+  date: string                  // YYYY-MM-DD
+  receiptImageUrl?: string
+}
+
+export interface CategoryBudget {
+  id: string
+  categoryId: string
+  categoryName: string
+  monthlyLimit: number
+  spentAmount: number
+  color: string
+  icon: string
 }
 
 export interface ExpenseItem {

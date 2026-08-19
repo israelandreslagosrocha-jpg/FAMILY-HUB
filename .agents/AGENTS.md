@@ -68,11 +68,11 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 4B: Desarrollo Visual de Tareas en Vue 3 con Datos Mock. ✅ COMPLETADA
 - Etapa 4C: Integración de Tareas con Supabase (`00003_task_rpc_and_audit.sql` + `taskService.ts`). ✅ EJECUTADA Y COMPLETADA
 - Etapa 4D: Pruebas Reales de Integración de Tareas. ✅ COMPLETADA CON ÉXITO (100% PASS)
-- Etapa 5A: Arquitectura Funcional y UX de Automatizaciones. ✅ APROBADA
-- Etapa 5B: Desarrollo Visual de Automatizaciones en Vue 3 con Datos Mock. ✅ COMPLETADA
-- Etapa 5C: Integración de Automatizaciones con Supabase (`00004_automation_engine.sql` + `automationService.ts`). ✅ EJECUTADA Y COMPLETADA
-- Etapa 5D: Pruebas Reales de Integración de Automatizaciones. ✅ COMPLETADA CON ÉXITO (100% PASS)
-- Etapa 6: Finanzas. ⏳ PRÓXIMA ETAPA
+- Etapa 5: Motor de Automatizaciones del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
+- Etapa 6A: Arquitectura Funcional y UX de Finanzas del Hogar. ✅ APROBADA CON PRECISIONES
+- Etapa 6B: Desarrollo Visual de Finanzas en Vue 3 con Datos Mock. 🔄 EN CURSO
+- Etapa 6C: Integración de Finanzas con Supabase.
+- Etapa 6D: Pruebas Reales de Integración de Finanzas.
 - Etapa 7: Boletas / OCR.
 - Etapa 8: PWA / Notificaciones / Offline avanzado.
 

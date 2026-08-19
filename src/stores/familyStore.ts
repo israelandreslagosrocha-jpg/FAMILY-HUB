@@ -39,7 +39,7 @@ export const useFamilyStore = defineStore('family', () => {
 
   // Gastos totales de la familia
   const totalFamilyExpenses = computed(() => {
-    return expenses.value.reduce((acc, curr) => acc + curr.amount, 0)
+    return expenses.value.reduce((acc: number, curr: ExpenseItem) => acc + curr.amount, 0)
   })
 
   // Acciones
