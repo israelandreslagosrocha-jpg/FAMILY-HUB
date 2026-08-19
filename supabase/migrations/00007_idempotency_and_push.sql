@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRACIÓN 00007 (V2.2 HARDENED): IDEMPOTENCIA EN SERVIDOR Y PUSH SUBSCRIPTIONS
+-- MIGRACIÓN 00007 (V2.3 HARDENED): IDEMPOTENCIA EN SERVIDOR Y PUSH SUBSCRIPTIONS
 -- ============================================================================
 
 -- 1. PREPARACIÓN DE COLUMNAS Y RESTRICCIONES DE UNICIDAD POR FAMILIA
@@ -116,7 +116,7 @@ BEGIN
       SELECT id INTO v_existing_id FROM public.transfers WHERE family_id = v_family_id AND idempotency_key = p_idempotency_key LIMIT 1;
     END IF;
 
-    -- SI YA EXISTE: Devolver resultado existente atómicamente SIN MODIFICAR DATOS Y SIN CREAR HISTORY_LOG
+    -- SI YA EXISTE: Devolver resultado existente atómicamente SIN MODIFICAR DATOS Y SIN DUPLICAR AUDITORÍA
     IF v_existing_id IS NOT NULL THEN
       RETURN jsonb_build_object(
         'status', 'reconciled',
@@ -130,7 +130,7 @@ BEGIN
 
   -- 3. Validar monto estrictamente positivo
   IF p_amount IS NULL OR p_amount <= 0 THEN
-    RAISE EXCEPTION 'El monto del movimiento debe ser strictly mayor a 0';
+    RAISE EXCEPTION 'El monto del movimiento debe ser estrictamente mayor a 0';
   END IF;
 
   -- 4. Determinar o validar registered_by_member_id
@@ -172,6 +172,8 @@ BEGIN
   END IF;
 
   -- 7. PROCESAMIENTO ATÓMICO CON ON CONFLICT DO NOTHING SOBRE LA RESTRICCIÓN DE IDEMPOTENCIA
+  -- Nota: La auditoría inalterable para expenses e incomes se genera automáticamente mediante los triggers
+  -- nativos PostgreSQL AFTER INSERT (trg_audit_expenses_history / trg_audit_incomes_history).
   IF p_movement_type = 'expense' THEN
     INSERT INTO public.expenses (
       family_id, category_id, registered_by_member_id, belonging_to_member_id,
@@ -189,14 +191,6 @@ BEGIN
       RETURN jsonb_build_object('status', 'reconciled', 'id', v_existing_id, 'movement_type', p_movement_type, 'amount', p_amount, 'is_reconciled', true);
     END IF;
 
-    -- Auditoría PostgreSQL inalterable (Solo para inserción exitosa)
-    INSERT INTO public.history_logs (
-      family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
-    ) VALUES (
-      v_family_id, v_actor_profile_id, v_effective_registered_by, 'expense_registered', 'expense', v_new_id,
-      jsonb_build_object('title', p_title, 'amount', p_amount, 'scope', CASE WHEN p_is_family_scope THEN 'family' ELSE 'personal' END)
-    );
-
   ELSIF p_movement_type = 'income' THEN
     INSERT INTO public.incomes (
       family_id, category_id, registered_by_member_id, belonging_to_member_id,
@@ -212,14 +206,6 @@ BEGIN
       SELECT id INTO v_existing_id FROM public.incomes WHERE family_id = v_family_id AND idempotency_key = p_idempotency_key LIMIT 1;
       RETURN jsonb_build_object('status', 'reconciled', 'id', v_existing_id, 'movement_type', p_movement_type, 'amount', p_amount, 'is_reconciled', true);
     END IF;
-
-    -- Auditoría PostgreSQL inalterable (Solo para inserción exitosa)
-    INSERT INTO public.history_logs (
-      family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
-    ) VALUES (
-      v_family_id, v_actor_profile_id, v_effective_registered_by, 'income_registered', 'income', v_new_id,
-      jsonb_build_object('title', p_title, 'amount', p_amount)
-    );
 
   ELSIF p_movement_type = 'transfer' THEN
     IF coalesce(p_source_account, '') = '' OR coalesce(p_destination_account, '') = '' THEN
@@ -245,7 +231,7 @@ BEGIN
       RETURN jsonb_build_object('status', 'reconciled', 'id', v_existing_id, 'movement_type', p_movement_type, 'amount', p_amount, 'is_reconciled', true);
     END IF;
 
-    -- Auditoría PostgreSQL inalterable (Solo para inserción exitosa)
+    -- Auditoría PostgreSQL para transferencias
     INSERT INTO public.history_logs (
       family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
     ) VALUES (
