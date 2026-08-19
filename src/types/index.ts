@@ -38,6 +38,7 @@ export interface CalendarEvent {
   memberIds: string[] // IDs de los participantes
   isFamilyEvent: boolean
   recurrence?: CalendarRecurrence
+  statusUI?: 'idle' | 'saving' | 'saved' | 'error'
 }
 
 export interface ExpenseItem {

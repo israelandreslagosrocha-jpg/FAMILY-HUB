@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CalendarEvent, TaskItem, CalendarViewType, ViewMode, FamilyMember } from '../types'
 import { mockEvents, mockTasks, mockMembers } from '../mocks/familyData'
+import { calendarService, type CreateEventPayload } from '../services/calendarService'
+import { supabase } from '../services/supabaseClient'
 
 export const useCalendarStore = defineStore('calendar', () => {
   // Estado Principal
@@ -11,10 +13,14 @@ export const useCalendarStore = defineStore('calendar', () => {
   const activeMemberId = ref<string>('m-1')       // Papá (Israel) por defecto
   const filterMemberId = ref<string>('all')       // 'all' o ID de miembro
 
-  // Datos Mock
+  // Datos
   const members = ref<FamilyMember[]>(mockMembers)
   const events = ref<CalendarEvent[]>(mockEvents)
   const tasks = ref<TaskItem[]>(mockTasks)
+
+  // Estado de Carga
+  const isLoading = ref<boolean>(false)
+  const loadError = ref<string | null>(null)
 
   // Estado del Modal Sheet de Creación
   const isSheetOpen = ref<boolean>(false)
@@ -64,7 +70,51 @@ export const useCalendarStore = defineStore('calendar', () => {
     })
   })
 
-  // Acciones
+  // Acciones de Supabase & Persistencia
+
+  /**
+   * Carga los miembros reales y eventos reales desde Supabase si hay sesión activa
+   */
+  async function loadDataFromSupabase() {
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (!sessionData.session) {
+      console.log('ℹ️ Sin sesión activa en Supabase. Usando datos Mock locales.')
+      return
+    }
+
+    isLoading.value = true
+    loadError.value = null
+
+    try {
+      // Cargar miembros reales
+      const { data: dbMembers } = await supabase.from('family_members').select('*')
+      if (dbMembers && dbMembers.length > 0) {
+        members.value = dbMembers.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          avatarId: m.avatar_id,
+          color: m.color,
+          role: m.role,
+          isActive: m.is_active
+        }))
+        if (members.value.length > 0) {
+          activeMemberId.value = members.value[0].id
+        }
+      }
+
+      // Cargar eventos reales
+      const dbEvents = await calendarService.getEvents()
+      if (dbEvents.length > 0) {
+        events.value = dbEvents
+      }
+    } catch (err: any) {
+      console.warn('⚠️ Error al cargar desde Supabase, manteniendo fallback local:', err.message)
+      loadError.value = err.message
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function setViewType(type: CalendarViewType) {
     viewType.value = type
   }
@@ -90,14 +140,65 @@ export const useCalendarStore = defineStore('calendar', () => {
     isSheetOpen.value = false
   }
 
-  function addEvent(newEvent: Omit<CalendarEvent, 'id'>) {
-    const id = `e-${Date.now()}`
-    const event: CalendarEvent = {
-      ...newEvent,
-      id
+  /**
+   * Agrega un evento utilizando la RPC de Supabase con Estado Optimista Sutil (saving -> saved/error)
+   */
+  async function addEventWithSupabase(payload: CreateEventPayload) {
+    const tempId = `temp-${Date.now()}`
+    
+    // Extraer YYYY-MM-DD de la fecha ISO de inicio
+    const startDateObj = new Date(payload.startTime)
+    const yyyy = startDateObj.getFullYear()
+    const mm = String(startDateObj.getMonth() + 1).padStart(2, '0')
+    const dd = String(startDateObj.getDate()).padStart(2, '0')
+    const eventDate = `${yyyy}-${mm}-${dd}`
+
+    const startTimeStr = startDateObj.toLocaleTimeString('es-CL', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+
+    // 1. Agregar inmediatamente a Pinia con estado visual 'saving' (Respuesta en UI en <50ms)
+    const tempEvent: CalendarEvent = {
+      id: tempId,
+      title: payload.title,
+      description: payload.description,
+      eventDate,
+      startTime: startTimeStr,
+      isAllDay: payload.isAllDay,
+      category: 'General',
+      color: '#3b82f6',
+      memberIds: payload.memberIds,
+      isFamilyEvent: payload.isFamilyEvent,
+      recurrence: payload.recurrenceFrequency || 'never',
+      statusUI: 'saving'
     }
-    events.value.push(event)
+
+    events.value.push(tempEvent)
     isSheetOpen.value = false
+
+    // 2. Ejecutar RPC en Supabase en segundo plano
+    try {
+      const realEventId = await calendarService.createEvent(payload)
+      
+      // Actualizar ID y cambiar a estado 'saved'
+      const target = events.value.find(e => e.id === tempId)
+      if (target) {
+        target.id = realEventId
+        target.statusUI = 'saved'
+        // Quitar la etiqueta tras 1 segundo para evitar ruido visual permanente
+        setTimeout(() => {
+          if (target) target.statusUI = 'idle'
+        }, 1000)
+      }
+    } catch (err: any) {
+      console.error('❌ Error al guardar evento en Supabase:', err.message)
+      const target = events.value.find(e => e.id === tempId)
+      if (target) {
+        target.statusUI = 'error'
+      }
+    }
   }
 
   function toggleTask(taskId: string) {
@@ -116,19 +217,22 @@ export const useCalendarStore = defineStore('calendar', () => {
     members,
     events,
     tasks,
+    isLoading,
+    loadError,
     isSheetOpen,
     sheetContextDate,
     activeMember,
     filteredEvents,
     selectedDayEvents,
     selectedDayTasks,
+    loadDataFromSupabase,
     setViewType,
     setViewMode,
     setFilterMember,
     setSelectedDate,
     openCreateSheet,
     closeCreateSheet,
-    addEvent,
+    addEventWithSupabase,
     toggleTask
   }
 })

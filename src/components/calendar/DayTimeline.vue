@@ -60,7 +60,11 @@ function handleOpenContextSheet() {
                 <span v-if="event.isAllDay" class="all-day-tag">Todo el día</span>
                 <span v-else class="time-range">{{ event.startTime }} <template v-if="event.endTime">— {{ event.endTime }}</template></span>
               </div>
-              <span class="category-badge">{{ event.category }}</span>
+              <div class="header-badges">
+                <span v-if="event.statusUI === 'saving'" class="saving-pill">Guardando...</span>
+                <span v-else-if="event.statusUI === 'error'" class="error-pill">⚠️ Error al guardar</span>
+                <span class="category-badge">{{ event.category }}</span>
+              </div>
             </div>
 
             <h4 class="event-card-title">{{ event.title }}</h4>
@@ -286,6 +290,37 @@ function handleOpenContextSheet() {
   color: #059669;
   padding: 0.15rem 0.5rem;
   border-radius: 8px;
+}
+
+.header-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.saving-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
+  padding: 0.15rem 0.5rem;
+  border-radius: 8px;
+  animation: pulse 1.2s infinite;
+}
+
+.error-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  padding: 0.15rem 0.5rem;
+  border-radius: 8px;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 .category-badge {

@@ -15,13 +15,9 @@ const selectedMemberIds = ref<string[]>([])
 
 // Campos de "Más opciones"
 const showMoreOptions = ref(false)
-const category = ref('Salud')
+const categoryId = ref<string | undefined>(undefined)
 const recurrence = ref<CalendarRecurrence>('never')
 const description = ref('')
-
-const categoriesList = [
-  'Salud', 'Escuela', 'Celebración', 'Supermercado', 'Paseo', 'Deporte', 'Hogar', 'Servicios'
-]
 
 // Sincronizar fecha contextual cuando se abre el modal
 watch(() => calendarStore.isSheetOpen, (isOpen) => {
@@ -31,10 +27,18 @@ watch(() => calendarStore.isSheetOpen, (isOpen) => {
     startTime.value = '10:30'
     endTime.value = '11:30'
     isAllDay.value = false
-    // Por defecto selecciona a Israel (Papá) + Esposa (Mamá)
-    selectedMemberIds.value = ['m-1', 'm-2']
+    
+    // Asigna por defecto los primeros miembros
+    if (calendarStore.members.length > 0) {
+      selectedMemberIds.value = [calendarStore.members[0].id]
+      if (calendarStore.members.length > 1) {
+        selectedMemberIds.value.push(calendarStore.members[1].id)
+      }
+    } else {
+      selectedMemberIds.value = ['m-1', 'm-2']
+    }
+
     showMoreOptions.value = false
-    category.value = 'Salud'
     recurrence.value = 'never'
     description.value = ''
   }
@@ -56,19 +60,22 @@ function handleClose() {
 }
 
 function handleSubmit() {
-  if (!title.value.trim()) return
+  if (!title.value.trim() || selectedMemberIds.value.length === 0) return
 
-  calendarStore.addEvent({
+  // Construir fechas en formato ISO 8601 UTC
+  const startISO = `${eventDate.value}T${startTime.value}:00Z`
+  const endISO = `${eventDate.value}T${endTime.value}:00Z`
+
+  calendarStore.addEventWithSupabase({
     title: title.value.trim(),
     description: description.value.trim() || undefined,
-    eventDate: eventDate.value,
-    startTime: startTime.value,
-    endTime: endTime.value,
+    startTime: startISO,
+    endTime: endISO,
     isAllDay: isAllDay.value,
-    category: category.value,
-    memberIds: [...selectedMemberIds.value],
     isFamilyEvent: selectedMemberIds.value.length > 1,
-    recurrence: recurrence.value
+    categoryId: categoryId.value,
+    memberIds: [...selectedMemberIds.value],
+    recurrenceFrequency: recurrence.value !== 'never' ? recurrence.value : undefined
   })
 }
 </script>
@@ -149,14 +156,6 @@ function handleSubmit() {
           </button>
 
           <div v-if="showMoreOptions" class="more-options-content">
-            <!-- Categoría -->
-            <div class="form-group">
-              <label class="form-label">Categoría</label>
-              <select v-model="category" class="form-select">
-                <option v-for="cat in categoriesList" :key="cat" :value="cat">{{ cat }}</option>
-              </select>
-            </div>
-
             <!-- Recurrencia / Repetición -->
             <div class="form-group">
               <label class="form-label">Repetir (Recurrencia)</label>
