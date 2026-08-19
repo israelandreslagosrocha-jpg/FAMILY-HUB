@@ -1,10 +1,23 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useReceiptStore } from '../../stores/receiptStore'
 
 const receiptStore = useReceiptStore()
+const fileInput = ref<HTMLInputElement | null>(null)
 
 function handleClose() {
   receiptStore.closeScanner()
+}
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    receiptStore.processRealFile(target.files[0])
+  }
 }
 
 function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'failed' | 'duplicate') {
@@ -25,8 +38,16 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
       </p>
 
       <!-- Botones Principales de Entrada Móvil -->
+      <input 
+        ref="fileInput" 
+        type="file" 
+        accept="image/*,application/pdf" 
+        style="display: none" 
+        @change="handleFileChange" 
+      />
+
       <div class="capture-actions-grid">
-        <button class="capture-btn camera-btn" @click="handleSelectCase('high_confidence')">
+        <button class="capture-btn camera-btn" @click="triggerFileInput">
           <span class="btn-big-icon">📸</span>
           <div class="btn-text-col">
             <span class="btn-title">Tomar Foto con Cámara</span>
@@ -34,7 +55,7 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
           </div>
         </button>
 
-        <button class="capture-btn gallery-btn" @click="handleSelectCase('high_confidence')">
+        <button class="capture-btn gallery-btn" @click="triggerFileInput">
           <span class="btn-big-icon">🖼️</span>
           <div class="btn-text-col">
             <span class="btn-title">Subir Imagen o PDF</span>

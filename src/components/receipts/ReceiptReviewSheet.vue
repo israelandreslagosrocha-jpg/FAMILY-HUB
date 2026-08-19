@@ -32,7 +32,9 @@ function handleConfirm() {
     merchantConfidence: 100,
     amountConfidence: 100,
     dateConfidence: 100,
-    categoryConfidence: 100
+    categoryConfidence: 100,
+    ocrConfidence: 95,
+    extractionConfidence: 90
   }
 
   receiptStore.confirmReceipt({
@@ -43,7 +45,9 @@ function handleConfirm() {
     date: date.value,
     dateConfidence: prevConf.dateConfidence,
     suggestedCategory: suggestedCategory.value,
-    categoryConfidence: prevConf.categoryConfidence
+    categoryConfidence: prevConf.categoryConfidence,
+    ocrConfidence: prevConf.ocrConfidence || 95,
+    extractionConfidence: prevConf.extractionConfidence || 90
   }, isFamilyScope.value)
 }
 </script>
@@ -114,16 +118,26 @@ function handleConfirm() {
           <div class="form-group">
             <div class="label-row">
               <label class="form-label">Monto Total (CLP)</label>
-              <span 
-                v-if="receiptStore.currentSession.extractedData?.amountConfidence" 
-                class="confidence-badge"
-                :class="{ 
-                  high: receiptStore.currentSession.extractedData.amountConfidence >= 90,
-                  low: receiptStore.currentSession.extractedData.amountConfidence < 90
-                }"
-              >
-                Confianza: {{ receiptStore.currentSession.extractedData.amountConfidence }}%
-              </span>
+              <div class="badges-group" v-if="receiptStore.currentSession.extractedData">
+                <span 
+                  class="confidence-badge"
+                  :class="{ 
+                    high: (receiptStore.currentSession.extractedData.extractionConfidence || 0) >= 90,
+                    low: (receiptStore.currentSession.extractedData.extractionConfidence || 0) < 90
+                  }"
+                >
+                  Extracción Total: {{ receiptStore.currentSession.extractedData.extractionConfidence || 0 }}%
+                </span>
+                <span 
+                  class="confidence-badge"
+                  :class="{ 
+                    high: (receiptStore.currentSession.extractedData.ocrConfidence || 0) >= 90,
+                    low: (receiptStore.currentSession.extractedData.ocrConfidence || 0) < 90
+                  }"
+                >
+                  OCR: {{ receiptStore.currentSession.extractedData.ocrConfidence || 0 }}%
+                </span>
+              </div>
             </div>
             <div class="amount-wrapper">
               <span class="currency-prefix">$</span>
@@ -282,6 +296,7 @@ function handleConfirm() {
 .label-row { display: flex; justify-content: space-between; align-items: center; }
 .form-label { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
 
+.badges-group { display: flex; gap: 0.35rem; }
 .confidence-badge { font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
 .confidence-badge.high { background: #dcfce7; color: #15803d; }
 .confidence-badge.low { background: #fef9c3; color: #a16207; }

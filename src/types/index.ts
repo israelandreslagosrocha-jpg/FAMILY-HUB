@@ -148,19 +148,26 @@ export type OCRStatus =
 
 export interface ExtractedReceiptData {
   merchantName: string
-  merchantConfidence: number // 0-100%
+  merchantConfidence?: number   // Confianza legacy
   totalAmount: number
-  amountConfidence: number   // 0-100%
-  date: string               // YYYY-MM-DD
-  dateConfidence: number     // 0-100%
+  amountConfidence?: number     // Confianza legacy
+  date: string                  // YYYY-MM-DD
+  dateConfidence?: number       // Confianza legacy
   suggestedCategory: string
-  categoryConfidence: number // 0-100%
+  categoryConfidence?: number   // Confianza legacy
+  
+  // Confianzas Diferenciadas (Paso 7C.2)
+  ocrConfidence: number        // 0-100% (Motor Wasm Tesseract)
+  extractionConfidence: number // 0-100% (Parser heurístico sobre el Total)
+  
   isPossibleDuplicate?: boolean
 }
 
 export interface ReceiptScanSession {
   id: string
-  imagePreviewUrl: string
+  familyId?: string
+  storagePath?: string          // Fuente de verdad persistente inmutable en Storage
+  imagePreviewUrl: string       // URL temporal firmada o de lectura en UI
   status: OCRStatus
   extractedData?: ExtractedReceiptData
   errorMessage?: string
