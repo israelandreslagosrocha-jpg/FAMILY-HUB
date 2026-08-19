@@ -55,12 +55,15 @@ Supabase como fuente principal. Caché local para velocidad percibida. Responsab
 Variables de entorno para claves públicas, datos privados, políticas RLS en Supabase antes de dar por terminada la arquitectura de datos.
 
 ## 12. Desarrollo por etapas
-Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
+Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
 - Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). ✅ EJECUTADA
 - Etapa 2C: Ejecución en Supabase + Pruebas y Verificación de Seguridad. ✅ COMPLETADA CON ÉXITO (100% PASS)
-- Etapa 3: Calendario. ⏳ PRÓXIMA ETAPA
+- Etapa 3A: Arquitectura Funcional y UX del Calendario. ✅ APROBADA
+- Etapa 3B: Desarrollo Visual del Calendario en Vue 3 con Datos Mock. ✅ COMPLETADA
+- Etapa 3C: Integración del Calendario con Supabase. 🔄 IMPLEMENTACIÓN DE MIGRACIÓN 00002 & SERVICIOS
+- Etapa 3D: Pruebas Reales de Integración del Calendario.
 - Etapa 4: Tareas y responsabilidades.
 - Etapa 5: Automatizaciones.
 - Etapa 6: Finanzas.
