@@ -100,6 +100,29 @@ export const useAuthStore = defineStore('authStore', () => {
     }
   }
 
+  /**
+   * Elimina a un integrante de la familia de forma reactiva y persistente
+   */
+  async function deleteFamilyMember(memberId: string) {
+    // 1. Quitar de la lista local de forma reactiva e inmediata
+    familyMembers.value = familyMembers.value.filter(m => m.id !== memberId)
+
+    // 2. Si el miembro activo era el eliminado, conmutar al Jefe de Hogar
+    if (activeMemberId.value === memberId && familyMembers.value.length > 0) {
+      activeMemberId.value = familyMembers.value[0].id
+    }
+
+    // 3. Persistir borrado en Supabase
+    if (!memberId.startsWith('m-') && !memberId.startsWith('temp-')) {
+      try {
+        await supabase.from('family_members').update({ is_active: false }).eq('id', memberId)
+        await supabase.from('family_members').delete().eq('id', memberId)
+      } catch (err: any) {
+        console.warn('Advertencia al eliminar miembro de Supabase:', err.message)
+      }
+    }
+  }
+
   // Iniciar Sesión con Supabase Auth
   async function login(email: string, pass: string): Promise<boolean> {
     authError.value = null
@@ -197,6 +220,7 @@ export const useAuthStore = defineStore('authStore', () => {
     login,
     registerFamilyUser,
     logout,
-    setActiveMember
+    setActiveMember,
+    deleteFamilyMember
   }
 })
