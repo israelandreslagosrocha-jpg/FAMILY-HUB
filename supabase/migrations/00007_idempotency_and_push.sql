@@ -1,11 +1,8 @@
 -- ============================================================================
--- MIGRACIÓN 00007 (V2.0 HARDENED): IDEMPOTENCIA FINANCIERA EN SERVIDOR Y WEBPUSH
+-- MIGRACIÓN 00007 (V2.1 HARDENED): IDEMPOTENCIA EN SERVIDOR Y PUSH SUBSCRIPTIONS
 -- ============================================================================
 
--- 1. ELIMINAR FIRMA ANTIGUA DE 11 PARÁMETROS PARA PREVENIR DOBLE CANAL
-DROP FUNCTION IF EXISTS public.create_financial_movement(text, text, numeric, uuid, uuid, uuid, boolean, date, text, text, text);
-
--- 2. ADICIÓN DE COLUMNA IDEMPOTENCY_KEY Y RESTRICCIÓN DE UNICIDAD POR FAMILIA
+-- 1. PREPARACIÓN DE COLUMNAS Y RESTRICCIONES DE UNICIDAD POR FAMILIA
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS idempotency_key text;
 ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS idempotency_key text;
 ALTER TABLE public.transfers ADD COLUMN IF NOT EXISTS idempotency_key text;
@@ -25,16 +22,26 @@ BEGIN
   END IF;
 END $$;
 
--- 3. TABLA PUSH_SUBSCRIPTIONS CON ENDPOINT UNÍVOCO Y RLS ESTRICTO POR USER_ID Y FAMILY_ID
+-- 2. TABLA Y COLUMNAS DE PUSH_SUBSCRIPTIONS CON ALTERACIÓN DEFENSIVA Y RLS
 CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     family_id uuid NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
-    endpoint text NOT NULL UNIQUE,
     subscription_json jsonb NOT NULL,
     device_name text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+-- Asegurar columna endpoint en ejecuciones defensivas
+ALTER TABLE public.push_subscriptions ADD COLUMN IF NOT EXISTS endpoint text;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_push_subscriptions_endpoint') THEN
+    -- Asegurar que sólo se cree si no existe la restricción
+    ALTER TABLE public.push_subscriptions ADD CONSTRAINT unique_push_subscriptions_endpoint UNIQUE (endpoint);
+  END IF;
+END $$;
 
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
 
@@ -52,7 +59,7 @@ WITH CHECK (
 REVOKE INSERT, UPDATE, DELETE ON public.push_subscriptions FROM PUBLIC;
 GRANT ALL ON public.push_subscriptions TO authenticated;
 
--- 4. NUEVA RPC CREATE_FINANCIAL_MOVEMENT DE 12 PARÁMETROS CON IDEMPOTENCIA E INMUTABILIDAD ESTRICTA
+-- 3. CREACIÓN / ACTUALIZACIÓN DE LA NUEVA RPC DE 12 PARÁMETROS CON ON CONFLICT DO NOTHING ESPECÍFICO
 CREATE OR REPLACE FUNCTION public.create_financial_movement(
   p_movement_type text,            -- 'expense' | 'income' | 'transfer'
   p_title text,
@@ -85,7 +92,7 @@ BEGIN
     RAISE EXCEPTION 'El usuario no pertenece a una familia activa';
   END IF;
 
-  -- 2. RECONCILIACIÓN SERVIDOR: Verificar si la idempotency_key ya fue procesada previamente
+  -- 2. RECONCILIACIÓN PREVIA RÁPIDA: Verificar si la idempotency_key ya fue procesada en la familia
   IF p_idempotency_key IS NOT NULL AND trim(p_idempotency_key) <> '' THEN
     IF p_movement_type = 'expense' THEN
       SELECT id INTO v_existing_id FROM public.expenses WHERE family_id = v_family_id AND idempotency_key = p_idempotency_key LIMIT 1;
@@ -150,22 +157,25 @@ BEGIN
     END IF;
   END IF;
 
-  -- 7. PROCESAMIENTO CON UNICIDAD E INMUTABILIDAD ESTRICTA (0 SOBREESCRITURA / 0 AUDITORÍAS DUPLICADAS)
+  -- 7. PROCESAMIENTO ATÓMICO CON ON CONFLICT DO NOTHING SOBRE LA RESTRICCIÓN DE IDEMPOTENCIA
   IF p_movement_type = 'expense' THEN
-    BEGIN
-      INSERT INTO public.expenses (
-        family_id, category_id, registered_by_member_id, belonging_to_member_id,
-        title, amount, currency, date, is_family_expense, receipt_image_url, idempotency_key
-      ) VALUES (
-        v_family_id, p_category_id, v_effective_registered_by, v_effective_belonging_to,
-        p_title, p_amount, 'CLP', coalesce(p_date, CURRENT_DATE), p_is_family_scope, p_receipt_image_url, p_idempotency_key
-      ) RETURNING id INTO v_new_id;
-    EXCEPTION WHEN unique_violation THEN
+    INSERT INTO public.expenses (
+      family_id, category_id, registered_by_member_id, belonging_to_member_id,
+      title, amount, currency, date, is_family_expense, receipt_image_url, idempotency_key
+    ) VALUES (
+      v_family_id, p_category_id, v_effective_registered_by, v_effective_belonging_to,
+      p_title, p_amount, 'CLP', coalesce(p_date, CURRENT_DATE), p_is_family_scope, p_receipt_image_url, p_idempotency_key
+    )
+    ON CONFLICT (family_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+    RETURNING id INTO v_new_id;
+
+    -- Si v_new_id es NULL por conflicto atómico de idempotencia en carrera
+    IF v_new_id IS NULL THEN
       SELECT id INTO v_existing_id FROM public.expenses WHERE family_id = v_family_id AND idempotency_key = p_idempotency_key LIMIT 1;
       RETURN jsonb_build_object('status', 'reconciled', 'id', v_existing_id, 'movement_type', p_movement_type, 'amount', p_amount, 'is_reconciled', true);
-    END;
+    END IF;
 
-    -- Auditoría PostgreSQL inalterable (Solo se ejecuta si es inserción nueva)
+    -- Auditoría PostgreSQL inalterable (Solo para inserción exitosa)
     INSERT INTO public.history_logs (
       family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
     ) VALUES (
@@ -174,20 +184,22 @@ BEGIN
     );
 
   ELSIF p_movement_type = 'income' THEN
-    BEGIN
-      INSERT INTO public.incomes (
-        family_id, category_id, registered_by_member_id, belonging_to_member_id,
-        title, amount, currency, date, is_family_income, idempotency_key
-      ) VALUES (
-        v_family_id, p_category_id, v_effective_registered_by, v_effective_belonging_to,
-        p_title, p_amount, 'CLP', coalesce(p_date, CURRENT_DATE), p_is_family_scope, p_idempotency_key
-      ) RETURNING id INTO v_new_id;
-    EXCEPTION WHEN unique_violation THEN
+    INSERT INTO public.incomes (
+      family_id, category_id, registered_by_member_id, belonging_to_member_id,
+      title, amount, currency, date, is_family_income, idempotency_key
+    ) VALUES (
+      v_family_id, p_category_id, v_effective_registered_by, v_effective_belonging_to,
+      p_title, p_amount, 'CLP', coalesce(p_date, CURRENT_DATE), p_is_family_scope, p_idempotency_key
+    )
+    ON CONFLICT (family_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+    RETURNING id INTO v_new_id;
+
+    IF v_new_id IS NULL THEN
       SELECT id INTO v_existing_id FROM public.incomes WHERE family_id = v_family_id AND idempotency_key = p_idempotency_key LIMIT 1;
       RETURN jsonb_build_object('status', 'reconciled', 'id', v_existing_id, 'movement_type', p_movement_type, 'amount', p_amount, 'is_reconciled', true);
-    END;
+    END IF;
 
-    -- Auditoría PostgreSQL inalterable (Solo se ejecuta si es inserción nueva)
+    -- Auditoría PostgreSQL inalterable (Solo para inserción exitosa)
     INSERT INTO public.history_logs (
       family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
     ) VALUES (
@@ -204,20 +216,22 @@ BEGIN
       RAISE EXCEPTION 'La cuenta de origen debe ser distinta a la cuenta de destino';
     END IF;
 
-    BEGIN
-      INSERT INTO public.transfers (
-        family_id, registered_by_member_id, source_account, destination_account,
-        amount, currency, date, description, idempotency_key
-      ) VALUES (
-        v_family_id, v_effective_registered_by, p_source_account, p_destination_account,
-        p_amount, 'CLP', coalesce(p_date, CURRENT_DATE), p_title, p_idempotency_key
-      ) RETURNING id INTO v_new_id;
-    EXCEPTION WHEN unique_violation THEN
+    INSERT INTO public.transfers (
+      family_id, registered_by_member_id, source_account, destination_account,
+      amount, currency, date, description, idempotency_key
+    ) VALUES (
+      v_family_id, v_effective_registered_by, p_source_account, p_destination_account,
+      p_amount, 'CLP', coalesce(p_date, CURRENT_DATE), p_title, p_idempotency_key
+    )
+    ON CONFLICT (family_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+    RETURNING id INTO v_new_id;
+
+    IF v_new_id IS NULL THEN
       SELECT id INTO v_existing_id FROM public.transfers WHERE family_id = v_family_id AND idempotency_key = p_idempotency_key LIMIT 1;
       RETURN jsonb_build_object('status', 'reconciled', 'id', v_existing_id, 'movement_type', p_movement_type, 'amount', p_amount, 'is_reconciled', true);
-    END;
+    END IF;
 
-    -- Auditoría PostgreSQL inalterable (Solo se ejecuta si es inserción nueva)
+    -- Auditoría PostgreSQL inalterable (Solo para inserción exitosa)
     INSERT INTO public.history_logs (
       family_id, actor_profile_id, family_member_id, action_type, entity_type, entity_id, metadata
     ) VALUES (
@@ -238,6 +252,9 @@ BEGIN
 END;
 $$;
 
--- PERMISOS EXCLUSIVOS EN LA NUEVA FIRMA DE 12 PARÁMETROS
+-- 4. OTORGAR PERMISOS A LA NUEVA FIRMA DE 12 PARÁMETROS
 REVOKE EXECUTE ON FUNCTION public.create_financial_movement(text, text, numeric, uuid, uuid, uuid, boolean, date, text, text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_financial_movement(text, text, numeric, uuid, uuid, uuid, boolean, date, text, text, text, text) TO authenticated;
+
+-- 5. UNA VEZ ASEGURADA LA NUEVA RPC, ELIMINAR LA FIRMA ANTIGUA DE 11 PARÁMETROS
+DROP FUNCTION IF EXISTS public.create_financial_movement(text, text, numeric, uuid, uuid, uuid, boolean, date, text, text, text);
