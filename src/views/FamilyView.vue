@@ -118,9 +118,15 @@ async function handleDeleteMember(memberId: string, memberName: string) {
         </div>
 
         <div class="card-actions">
-          <button class="delete-btn" @click="handleDeleteMember(m.id, m.name)" title="Eliminar Miembro">
+          <button 
+            v-if="m.role !== 'Papá' && m.role !== 'Jefe de Hogar'"
+            class="delete-btn" 
+            @click="handleDeleteMember(m.id, m.name)" 
+            title="Eliminar Miembro"
+          >
             🗑️ Eliminar
           </button>
+          <span v-else class="head-of-household-badge">👑 Jefe de Hogar</span>
         </div>
       </div>
     </div>
@@ -302,6 +308,16 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 
 .delete-btn:hover {
   background: rgba(239, 68, 68, 0.2);
+}
+
+.head-of-household-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  padding: 0.35rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .empty-state {

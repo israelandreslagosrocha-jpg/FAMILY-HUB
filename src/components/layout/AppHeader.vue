@@ -28,7 +28,10 @@ function handleLogout() {
       <!-- Logo / Identificación -->
       <div class="logo-group">
         <div class="logo-badge">FH</div>
-        <span class="logo-title">FAMILY-HUB</span>
+        <div class="logo-titles">
+          <span class="logo-title">FAMILIA LAGOS RIQUELME</span>
+          <span class="logo-subtitle">FAMILY-HUB</span>
+        </div>
       </div>
 
       <!-- Toggle Instantáneo: Mi día | Familia (Regla 22) -->
@@ -135,10 +138,23 @@ function handleLogout() {
   letter-spacing: -0.05em;
 }
 
+.logo-titles {
+  display: flex;
+  flex-direction: column;
+}
+
 .logo-title {
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-weight: 800;
+  font-size: 0.95rem;
   letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.logo-subtitle {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #3b82f6;
+  letter-spacing: 0.05em;
 }
 
 .header-right-controls {

@@ -1,77 +1,93 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useFamilyStore } from '../stores/familyStore'
+import { onMounted, computed } from 'vue'
+import { useAuthStore } from '../stores/authStore'
+import { useTaskStore } from '../stores/taskStore'
+import { useCalendarStore } from '../stores/calendarStore'
+import { useFinanceStore } from '../stores/financeStore'
 import AvatarImage from '../components/common/AvatarImage.vue'
 import { CheckCircle2, Calendar, DollarSign, Activity } from 'lucide-vue-next'
 
-const store = useFamilyStore()
+const authStore = useAuthStore()
+const taskStore = useTaskStore()
+const calendarStore = useCalendarStore()
+const financeStore = useFinanceStore()
 
-onMounted(() => {
-  store.loadData()
+onMounted(async () => {
+  await authStore.loadFamilyMembers()
+  await taskStore.loadDataFromSupabase()
+  await calendarStore.loadDataFromSupabase()
+  await financeStore.loadDataFromSupabase()
 })
 
+const activeMember = computed(() => authStore.activeMember)
+
 function getMemberName(id: string) {
-  const m = store.members.find(mem => mem.id === id)
+  const m = authStore.familyMembers.find(mem => mem.id === id)
   return m ? m.name : 'Familiar'
 }
 
 function getMemberAvatarId(id: string) {
-  const m = store.members.find(mem => mem.id === id)
+  const m = authStore.familyMembers.find(mem => mem.id === id)
   return m ? m.avatarId : 'avatar-01'
 }
 
 function getMemberColor(id: string) {
-  const m = store.members.find(mem => mem.id === id)
+  const m = authStore.familyMembers.find(mem => mem.id === id)
   return m ? m.color : '#3b82f6'
+}
+
+function formatCurrency(val: number): string {
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(val)
 }
 </script>
 
 <template>
   <div class="dashboard-view">
-    <!-- Saludo / Encabezado de Contexto (Regla 24) -->
+    <!-- Saludo / Encabezado de Contexto con Nombre de Familia -->
     <div class="dashboard-banner glass-card">
-      <div class="banner-user-info" v-if="store.activeMember">
+      <div class="banner-user-info" v-if="activeMember">
         <AvatarImage 
-          :avatarId="store.activeMember.avatarId" 
-          :size="52" 
-          :borderColor="store.activeMember.color" 
+          :avatarId="activeMember.avatarId" 
+          :size="56" 
+          :borderColor="activeMember.color" 
         />
         <div>
-          <h1 v-if="store.viewMode === 'my_day'">
-            ¡Hola, {{ store.activeMember.name }}! 👋
+          <span class="family-name-tag">🏡 FAMILIA LAGOS RIQUELME</span>
+          <h1 v-if="taskStore.viewMode === 'my_day'">
+            ¡Hola, {{ activeMember.name }}! 👋
           </h1>
           <h1 v-else>
             Resumen Familiar 🏡
           </h1>
           <p class="text-secondary">
-            <span v-if="store.viewMode === 'my_day'">
-              Aquí tienes tu agenda y responsabilidades personales para hoy.
+            <span v-if="taskStore.viewMode === 'my_day'">
+              Tu agenda, tareas y responsabilidades del hogar para hoy.
             </span>
             <span v-else>
-              Estado general de las actividades, eventos y finanzas del hogar.
+              Estado en tiempo real de actividades, calendario y finanzas familiares.
             </span>
           </p>
         </div>
       </div>
     </div>
 
-    <!-- Filtro Familiar por Miembros (Regla 23) -->
-    <div class="family-filter-bar" v-if="store.viewMode === 'family'">
+    <!-- Filtro Familiar por Miembros Reales -->
+    <div class="family-filter-bar" v-if="taskStore.viewMode === 'family'">
       <span class="filter-label">Filtrar por:</span>
       <div class="filter-pills">
         <button 
           class="filter-pill" 
-          :class="{ active: store.selectedFilterMemberId === 'all' }"
-          @click="store.setFilterMember('all')"
+          :class="{ active: taskStore.filterMemberId === 'all' }"
+          @click="taskStore.setFilterMember('all')"
         >
           <span>Todos</span>
         </button>
         <button 
-          v-for="m in store.members" 
+          v-for="m in authStore.familyMembers" 
           :key="m.id"
           class="filter-pill"
-          :class="{ active: store.selectedFilterMemberId === m.id }"
-          @click="store.setFilterMember(m.id)"
+          :class="{ active: taskStore.filterMemberId === m.id }"
+          @click="taskStore.setFilterMember(m.id)"
         >
           <AvatarImage :avatarId="m.avatarId" :size="20" :borderColor="m.color" />
           <span>{{ m.name }}</span>
@@ -81,7 +97,7 @@ function getMemberColor(id: string) {
 
     <!-- Grid Principal de Widgets (Responsive) -->
     <div class="dashboard-grid">
-      <!-- Widget Tareas Pendientes -->
+      <!-- Widget 1: Tareas Pendientes -->
       <div class="glass-card widget-card">
         <div class="widget-header">
           <div class="widget-title-group">
@@ -89,13 +105,18 @@ function getMemberColor(id: string) {
             <h3>Tareas Pendientes</h3>
           </div>
           <span class="badge-status badge-yellow">
-            {{ store.pendingTasksCount }} pendientes
+            {{ taskStore.pendingTasks.length }} pendientes
           </span>
         </div>
 
-        <div class="task-list">
+        <div v-if="taskStore.displayedTasks.length === 0" class="empty-widget">
+          <span class="empty-emoji">🎉</span>
+          <p class="empty-txt">¡Todo al día! Sin tareas pendientes.</p>
+        </div>
+
+        <div v-else class="task-list">
           <div 
-            v-for="task in store.displayedTasks" 
+            v-for="task in taskStore.displayedTasks" 
             :key="task.id"
             class="task-item-row"
             :class="{ completed: task.completed }"
@@ -103,7 +124,7 @@ function getMemberColor(id: string) {
             <input 
               type="checkbox" 
               :checked="task.completed" 
-              @change="store.toggleTaskCompletion(task.id)"
+              @change="taskStore.toggleTaskStatus(task.id)"
               class="task-checkbox"
             />
             <div class="task-info">
@@ -112,7 +133,6 @@ function getMemberColor(id: string) {
                 {{ task.dueDate }} · {{ task.category }}
               </span>
             </div>
-            <!-- Identificador de Miembro Asignado -->
             <div class="assigned-member-tag" :title="getMemberName(task.assignedToMemberId)">
               <AvatarImage 
                 :avatarId="getMemberAvatarId(task.assignedToMemberId)" 
@@ -124,19 +144,24 @@ function getMemberColor(id: string) {
         </div>
       </div>
 
-      <!-- Widget Próximos Eventos -->
+      <!-- Widget 2: Próximos Eventos -->
       <div class="glass-card widget-card">
         <div class="widget-header">
           <div class="widget-title-group">
             <Calendar class="widget-icon text-purple" />
             <h3>Próximos Eventos</h3>
           </div>
-          <span class="badge-status badge-blue">Calendario</span>
+          <router-link to="/calendar" class="badge-status badge-blue">Calendario</router-link>
         </div>
 
-        <div class="events-list">
+        <div v-if="calendarStore.events.length === 0" class="empty-widget">
+          <span class="empty-emoji">☕</span>
+          <p class="empty-txt">Sin eventos próximos programados.</p>
+        </div>
+
+        <div v-else class="events-list">
           <div 
-            v-for="event in store.events" 
+            v-for="event in calendarStore.events" 
             :key="event.id"
             class="event-item-row"
           >
@@ -158,39 +183,48 @@ function getMemberColor(id: string) {
         </div>
       </div>
 
-      <!-- Widget Resumen Financiero -->
+      <!-- Widget 3: Finanzas del Hogar -->
       <div class="glass-card widget-card">
         <div class="widget-header">
           <div class="widget-title-group">
             <DollarSign class="widget-icon text-green" />
             <h3>Finanzas del Hogar</h3>
           </div>
-          <span class="badge-status badge-green">Período Agosto</span>
+          <router-link to="/finance" class="badge-status badge-green">Ver Finanzas</router-link>
         </div>
 
         <div class="finance-summary-box">
           <div class="finance-stat">
             <span class="stat-label text-secondary">Total Gastos Registrados</span>
-            <span class="stat-value">${{ store.totalFamilyExpenses.toLocaleString('es-CL') }}</span>
+            <span class="stat-value">{{ formatCurrency(financeStore.totalExpenses) }}</span>
           </div>
 
-          <div class="recent-expenses-list">
+          <div v-if="financeStore.movements.length === 0" class="empty-widget compact">
+            <p class="empty-txt">Sin movimientos registrados aún.</p>
+          </div>
+
+          <div v-else class="recent-expenses-list">
             <div 
-              v-for="exp in store.expenses" 
-              :key="exp.id"
+              v-for="mov in financeStore.movements.slice(0, 4)" 
+              :key="mov.id"
               class="expense-row"
             >
               <div class="expense-info">
-                <span class="expense-title">{{ exp.title }}</span>
-                <span class="expense-meta text-muted">{{ exp.date }} · {{ exp.category }}</span>
+                <span class="expense-title">{{ mov.title }}</span>
+                <span class="expense-meta text-muted">{{ mov.date }} · {{ mov.categoryName }}</span>
               </div>
-              <span class="expense-amount">${{ exp.amount.toLocaleString('es-CL') }}</span>
+              <span 
+                class="expense-amount" 
+                :class="{ 'income-txt': mov.type === 'income', 'expense-txt': mov.type === 'expense' }"
+              >
+                {{ mov.type === 'income' ? '+' : '-' }} {{ formatCurrency(mov.amount) }}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Widget Histórico / Actividad Reciente (Regla 19: Quién -> qué hizo -> cuándo -> ítem) -->
+      <!-- Widget 4: Actividad Reciente / Histórico -->
       <div class="glass-card widget-card">
         <div class="widget-header">
           <div class="widget-title-group">
@@ -200,21 +234,9 @@ function getMemberColor(id: string) {
           <span class="badge-status badge-gray">Histórico</span>
         </div>
 
-        <div class="history-list">
-          <div 
-            v-for="log in store.history" 
-            :key="log.id"
-            class="history-row"
-          >
-            <AvatarImage :avatarId="log.memberAvatarId" :size="32" />
-            <div class="history-content">
-              <div class="history-main">
-                <strong>{{ log.memberName }}</strong> {{ log.actionText }}
-              </div>
-              <div class="history-item text-secondary">"{{ log.itemTitle }}"</div>
-              <div class="history-time text-muted">{{ log.formattedTime }}</div>
-            </div>
-          </div>
+        <div class="empty-widget">
+          <span class="empty-emoji">📜</span>
+          <p class="empty-txt">Sin actividad reciente registrada en el historial.</p>
         </div>
       </div>
     </div>
@@ -231,12 +253,31 @@ function getMemberColor(id: string) {
 
 .dashboard-banner {
   padding: 1.5rem;
+  border-radius: 20px;
 }
 
 .banner-user-info {
   display: flex;
   align-items: center;
   gap: 1.25rem;
+}
+
+.family-name-tag {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #3b82f6;
+  letter-spacing: 0.04em;
+}
+
+.banner-user-info h1 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0.1rem 0;
+}
+
+.banner-user-info p {
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 /* Filtro por Miembro */
@@ -274,11 +315,6 @@ function getMemberColor(id: string) {
   transition: all var(--transition-fast);
 }
 
-.filter-pill:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-}
-
 .filter-pill.active {
   background: rgba(59, 130, 246, 0.2);
   border-color: #3b82f6;
@@ -303,6 +339,8 @@ function getMemberColor(id: string) {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 20px;
 }
 
 .widget-header {
@@ -328,6 +366,29 @@ function getMemberColor(id: string) {
 .text-green { color: #22c55e; }
 .text-amber { color: #f59e0b; }
 
+.empty-widget {
+  padding: 2rem 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.empty-widget.compact {
+  padding: 1rem;
+}
+
+.empty-emoji {
+  font-size: 2rem;
+}
+
+.empty-txt {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
 /* Tareas */
 .task-list {
   display: flex;
@@ -340,18 +401,8 @@ function getMemberColor(id: string) {
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.03);
-  transition: background var(--transition-fast);
-}
-
-.task-item-row:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.task-item-row.completed .task-title {
-  text-decoration: line-through;
-  color: var(--text-muted);
 }
 
 .task-checkbox {
@@ -389,7 +440,7 @@ function getMemberColor(id: string) {
   gap: 12px;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.03);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
 }
 
 .event-time-badge {
@@ -440,7 +491,7 @@ function getMemberColor(id: string) {
   background: rgba(34, 197, 94, 0.08);
   border: 1px solid rgba(34, 197, 94, 0.2);
   padding: 12px;
-  border-radius: var(--radius-md);
+  border-radius: 14px;
 }
 
 .stat-label {
@@ -448,8 +499,8 @@ function getMemberColor(id: string) {
 }
 
 .stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: #4ade80;
 }
 
@@ -469,7 +520,7 @@ function getMemberColor(id: string) {
 
 .expense-title {
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .expense-meta {
@@ -478,41 +529,9 @@ function getMemberColor(id: string) {
 
 .expense-amount {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 800;
 }
 
-/* Histórico */
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.history-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 6px 0;
-}
-
-.history-content {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.85rem;
-}
-
-.history-main {
-  color: var(--text-primary);
-}
-
-.history-item {
-  font-style: italic;
-  font-size: 0.8rem;
-}
-
-.history-time {
-  font-size: 0.7rem;
-  margin-top: 2px;
-}
+.income-txt { color: #10b981; }
+.expense-txt { color: #f43f5e; }
 </style>
