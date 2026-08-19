@@ -70,14 +70,9 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 4D: Pruebas Reales de Integración de Tareas. ✅ COMPLETADA CON ÉXITO (100% PASS)
 - Etapa 5A: Arquitectura Funcional y UX de Automatizaciones. ✅ APROBADA
 - Etapa 5B: Desarrollo Visual de Automatizaciones en Vue 3 con Datos Mock. ✅ COMPLETADA
-- Etapa 5C.1: Auditoría de Esquema y Diseño del Motor (Aprobada con Correcciones). ✅
-- Etapa 5C.2: Refinar `implementation_plan.md` con las 6 Correcciones de Hardening. 🔄 EN CURSO
-- Etapa 5C.3: Generar Script SQL `00004_automation_engine.sql`.
-- Etapa 5C.4: Revisar SQL.
-- Etapa 5C.5: Ejecución en Supabase + Verificación.
-- Etapa 5C.6: Integración con `automationService.ts` y Pinia Store.
-- Etapa 5D: Pruebas Reales de Integración de Automatizaciones.
-- Etapa 6: Finanzas.
+- Etapa 5C: Integración de Automatizaciones con Supabase (`00004_automation_engine.sql` + `automationService.ts`). ✅ EJECUTADA Y COMPLETADA
+- Etapa 5D: Pruebas Reales de Integración de Automatizaciones. ✅ COMPLETADA CON ÉXITO (100% PASS)
+- Etapa 6: Finanzas. ⏳ PRÓXIMA ETAPA
 - Etapa 7: Boletas / OCR.
 - Etapa 8: PWA / Notificaciones / Offline avanzado.
 

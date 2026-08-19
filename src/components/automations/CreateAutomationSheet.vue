@@ -32,9 +32,9 @@ function handleClose() {
 function handleSubmit() {
   if (!name.value.trim()) return
 
-  automationStore.createRule({
+  automationStore.createRuleWithSupabase({
     name: name.value.trim(),
-    description: description.value.trim() || 'Regla de automatización familiar',
+    description: description.value.trim() || undefined,
     category: category.value,
     triggerText: triggerText.value.trim(),
     conditionText: conditionText.value.trim() || undefined,

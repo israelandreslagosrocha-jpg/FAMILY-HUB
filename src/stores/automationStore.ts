@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { AutomationRule, AutomationRecipe, AutomationLog, AutomationTabType } from '../types'
+import type { AutomationRule, AutomationRecipe, AutomationLog, AutomationTabType, TriggerCategory } from '../types'
+import { automationService, type CreateRulePayload } from '../services/automationService'
+import { supabase } from '../services/supabaseClient'
 
 export const useAutomationStore = defineStore('automationStore', () => {
   // Estado Principal
-  const activeTab = ref<AutomationTabType>('recipes') // 'recipes' | 'active_rules' | 'execution_logs'
+  const activeTab = ref<AutomationTabType>('recipes')
   const isCreateSheetOpen = ref<boolean>(false)
+  const isLoading = ref<boolean>(false)
 
   // Catálogo de Recetas Prediseñadas del Hogar
   const recipes = ref<AutomationRecipe[]>([
@@ -105,9 +108,33 @@ export const useAutomationStore = defineStore('automationStore', () => {
     }
   ])
 
-  // Acciones
+  async function loadDataFromSupabase() {
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (!sessionData.session) return
+
+    isLoading.value = true
+    try {
+      const dbRules = await automationService.getRules()
+      if (dbRules.length > 0) {
+        activeRules.value = dbRules
+      }
+
+      const dbLogs = await automationService.getExecutions()
+      if (dbLogs.length > 0) {
+        executionLogs.value = dbLogs
+      }
+    } catch (err: any) {
+      console.warn('⚠️ Error al cargar automatizaciones desde Supabase:', err.message)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function setTab(tab: AutomationTabType) {
     activeTab.value = tab
+    if (tab === 'execution_logs') {
+      loadDataFromSupabase()
+    }
   }
 
   function openCreateSheet() {
@@ -118,64 +145,84 @@ export const useAutomationStore = defineStore('automationStore', () => {
     isCreateSheetOpen.value = false
   }
 
-  function toggleRuleActive(ruleId: string) {
+  async function toggleRuleActive(ruleId: string) {
     const rule = activeRules.value.find(r => r.id === ruleId)
-    if (rule) {
-      rule.isActive = !rule.isActive
+    if (!rule) return
+
+    rule.isActive = !rule.isActive
+
+    if (!ruleId.startsWith('rule-')) {
+      try {
+        await automationService.toggleRuleActive(ruleId, rule.isActive)
+      } catch (err: any) {
+        console.error('❌ Error al cambiar estado en Supabase:', err.message)
+      }
     }
   }
 
-  /**
-   * Activa una receta prediseñada en 1 toque
-   */
-  function activateRecipe(recipeId: string) {
+  async function activateRecipe(recipeId: string) {
     const recipe = recipes.value.find(r => r.id === recipeId)
     if (!recipe) return
 
-    const newRule: AutomationRule = {
-      id: `rule-${Date.now()}`,
+    const categoryKind: TriggerCategory = recipe.triggerText.includes('Cada') || recipe.triggerText.includes('Todos') ? 'scheduled_time' : 'data_event'
+
+    await createRuleWithSupabase({
       name: recipe.title,
       description: recipe.description,
-      category: recipe.triggerText.includes('Cada') || recipe.triggerText.includes('Todos') ? 'scheduled_time' : 'data_event',
+      category: categoryKind,
       triggerText: recipe.triggerText,
       conditionText: recipe.conditionText,
       actionText: recipe.actionText,
-      actionKind: recipe.actionKind,
-      isActive: true,
-      executionCount: 0
-    }
-
-    activeRules.value.unshift(newRule)
-    activeTab.value = 'active_rules'
+      actionKind: recipe.actionKind
+    })
   }
 
-  /**
-   * Crea una nueva regla desde el constructor de 3 bloques
-   */
-  function createRule(payload: Omit<AutomationRule, 'id' | 'isActive' | 'executionCount'>) {
-    const newRule: AutomationRule = {
-      ...payload,
-      id: `rule-${Date.now()}`,
+  async function createRuleWithSupabase(payload: CreateRulePayload) {
+    const tempId = `rule-${Date.now()}`
+    const tempRule: AutomationRule = {
+      id: tempId,
+      name: payload.name,
+      description: payload.description || 'Regla de automatización familiar',
+      category: payload.category,
+      triggerText: payload.triggerText,
+      conditionText: payload.conditionText,
+      actionText: payload.actionText,
+      actionKind: payload.actionKind,
       isActive: true,
       executionCount: 0
     }
 
-    activeRules.value.unshift(newRule)
+    activeRules.value.unshift(tempRule)
     isCreateSheetOpen.value = false
     activeTab.value = 'active_rules'
+
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (sessionData.session) {
+      try {
+        const realId = await automationService.createRule(payload)
+        const target = activeRules.value.find(r => r.id === tempId)
+        if (target) {
+          target.id = realId
+        }
+      } catch (err: any) {
+        console.error('❌ Error al crear regla en Supabase:', err.message)
+      }
+    }
   }
 
   return {
     activeTab,
     isCreateSheetOpen,
+    isLoading,
     recipes,
     activeRules,
     executionLogs,
+    loadDataFromSupabase,
     setTab,
     openCreateSheet,
     closeCreateSheet,
     toggleRuleActive,
     activateRecipe,
-    createRule
+    createRuleWithSupabase
   }
 })
