@@ -54,8 +54,8 @@ Supabase como fuente principal. Caché local para velocidad percibida. Responsab
 ## 11. Seguridad
 Variables de entorno para claves públicas, datos privados, políticas RLS en Supabase antes de dar por terminada la arquitectura de datos.
 
-## 12. Desarrollo por etapas
-Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
+## 12. Desarrollo por etapas (Roadmap v1.0 Family Stable)
+Desarrollo secuencial y controlled por etapas. No avanzar a la siguiente etapa sin validar y obtener confirmación de la actual.
 - Etapa 1: Carcasa técnica y visual (Shell con datos mock). ✅ COMPLETADA
 - Etapa 2A: Diseño y aprobación del modelo de datos + Auth + Seguridad. ✅ APROBADA
 - Etapa 2B: Generación y revisión del Script SQL reproducible de Migración (`supabase/migrations/00001_initial_schema.sql`). ✅ EJECUTADA
@@ -72,9 +72,10 @@ Desarrollo secuencial y controlado por etapas. No avanzar a la siguiente etapa s
 - Etapa 6: Finanzas del Hogar. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 7: Boletas / Captura OCR. ✅ IMPLEMENTADA, INTEGRADA Y VERIFICADA AL 100% DE LA BATERÍA DE PRUEBAS DEFINIDA.
 - Etapa 8A: Arquitectura Funcional y UX de PWA / Notificaciones / Offline avanzado. ✅ APROBADA CON 10 PRECISIONES
-- Etapa 8B: Desarrollo Visual de PWA, Alertas Offline y Centro de Notificaciones. 🔄 EN CURSO
-- Etapa 8C: Integración de Service Worker, IndexedDB Sync Queue y WebPush API.
+- Etapa 8B: Desarrollo Visual de PWA, Alertas Offline y Centro de Notificaciones. ✅ COMPLETADA (0 ERRORES)
+- Etapa 8C: Propuesta Técnica e Integración de Service Worker, IndexedDB Sync Queue, Idempotencia Servidor y WebPush API. 🔄 EN REVISIÓN (7 CORRECCIONES INCORPORADAS)
 - Etapa 8D: Pruebas Reales de PWA, Notificaciones y Comportamiento Offline.
+- 🎯 **FAMILY-HUB v1.0 FAMILY STABLE**: CONGELACIÓN DE FUNCIONALIDADES (FEATURE FREEZE) Y DESPLIEGUE PARA USO FAMILIAR COTIDIANO REAL.
 
 ## 13. Documentación
 Mantener la documentación del proyecto actualizada (arquitectura, modelo de datos, componentes, decisiones).
