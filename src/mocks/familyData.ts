@@ -6,31 +6,7 @@ export const mockMembers: FamilyMember[] = [
     name: 'Israel',
     avatarId: 'avatar-01',
     color: '#3b82f6',
-    role: 'Papá',
-    isActive: true
-  },
-  {
-    id: 'm-2',
-    name: 'Esposa',
-    avatarId: 'avatar-02',
-    color: '#ec4899',
-    role: 'Mamá',
-    isActive: true
-  },
-  {
-    id: 'm-3',
-    name: 'Hijo',
-    avatarId: 'avatar-03',
-    color: '#10b981',
-    role: 'Hijo',
-    isActive: true
-  },
-  {
-    id: 'm-4',
-    name: 'Hija',
-    avatarId: 'avatar-04',
-    color: '#f59e0b',
-    role: 'Hija',
+    role: 'Jefe de Hogar',
     isActive: true
   }
 ]

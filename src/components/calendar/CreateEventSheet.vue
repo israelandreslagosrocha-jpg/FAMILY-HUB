@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useCalendarStore } from '../../stores/calendarStore'
+import { useAuthStore } from '../../stores/authStore'
 import type { CalendarRecurrence } from '../../types'
 
 const calendarStore = useCalendarStore()
+const authStore = useAuthStore()
 
 // Campos básicos de la creación ultrarrápida
 const title = ref('')
@@ -28,14 +30,11 @@ watch(() => calendarStore.isSheetOpen, (isOpen) => {
     endTime.value = '11:30'
     isAllDay.value = false
     
-    // Asigna por defecto los primeros miembros
-    if (calendarStore.members.length > 0) {
-      selectedMemberIds.value = [calendarStore.members[0].id]
-      if (calendarStore.members.length > 1) {
-        selectedMemberIds.value.push(calendarStore.members[1].id)
-      }
+    // Asigna por defecto los miembros reales cargados
+    if (authStore.familyMembers.length > 0) {
+      selectedMemberIds.value = [authStore.familyMembers[0].id]
     } else {
-      selectedMemberIds.value = ['m-1', 'm-2']
+      selectedMemberIds.value = []
     }
 
     showMoreOptions.value = false
@@ -81,8 +80,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div v-if="calendarStore.isSheetOpen" class="sheet-backdrop" @click="handleClose">
-    <div class="sheet-modal glass-card" @click.stopPropagation>
+  <div v-if="calendarStore.isSheetOpen" class="sheet-backdrop" @click.self="handleClose">
+    <div class="sheet-modal glass-card" @click.stop>
       <!-- Header de la Hoja Táctil -->
       <div class="sheet-header">
         <h3 class="sheet-title">📅 Nuevo Evento</h3>
@@ -131,7 +130,7 @@ function handleSubmit() {
           <label class="form-label">¿Quiénes asisten / participan?</label>
           <div class="members-chips-grid">
             <button 
-              v-for="member in calendarStore.members" 
+              v-for="member in authStore.familyMembers" 
               :key="member.id"
               type="button"
               class="member-select-chip"
