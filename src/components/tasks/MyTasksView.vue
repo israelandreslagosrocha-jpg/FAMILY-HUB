@@ -58,7 +58,7 @@ function toggleOptionsMenu(taskId: string) {
     <!-- Guía Educativa de Ejemplo -->
     <EducationalHintCard type="tasks" />
     <!-- Estado Vacío -->
-    <div v-if="taskStore.displayedTasks.length === 0" class="glass-card empty-card">
+    <div v-if="taskStore.displayedTasks.length === 0" class="bento-card empty-card">
       <span class="empty-icon">🎉</span>
       <h3 class="empty-title">¡Todo al día!</h3>
       <p class="empty-desc">No tienes tareas pendientes por realizar en este momento.</p>

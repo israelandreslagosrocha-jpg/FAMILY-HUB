@@ -9,7 +9,7 @@ const isDismissed = ref(false)
 </script>
 
 <template>
-  <div v-if="!isDismissed" class="educational-hint-card glass-card">
+  <div v-if="!isDismissed" class="educational-hint-card bento-card">
     <div class="hint-header">
       <div class="hint-title-group">
         <span class="hint-icon">💡</span>
@@ -65,21 +65,15 @@ const isDismissed = ref(false)
 
 <style scoped>
 .educational-hint-card {
-  padding: 1.1rem;
-  border-radius: 18px;
-  background: rgba(59, 130, 246, 0.05);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 1.25rem 1.5rem;
+  border-radius: 24px;
+  background: var(--bg-card);
+  border: 2px solid rgba(59, 130, 246, 0.3);
   margin-bottom: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .educational-hint-card {
-    background: rgba(30, 41, 59, 0.5);
-    border-color: rgba(59, 130, 246, 0.25);
-  }
+  box-shadow: var(--shadow-card);
 }
 
 .hint-header {
@@ -91,33 +85,34 @@ const isDismissed = ref(false)
 .hint-title-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .hint-icon {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
 }
 
 .hint-title {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 800;
   color: #3b82f6;
   margin: 0;
 }
 
 .dismiss-btn {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.05);
   border: none;
   font-size: 0.9rem;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-weight: 700;
 }
 
 .dismiss-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-primary);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 .hint-body {
@@ -127,24 +122,24 @@ const isDismissed = ref(false)
 }
 
 .hint-intro {
-  font-size: 0.86rem;
-  color: var(--text-secondary);
+  font-size: 0.88rem;
+  color: var(--text-primary);
   margin: 0;
-
+  line-height: 1.4;
 }
 
 .hint-examples-list {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
   padding-left: 0.5rem;
   list-style: none;
   margin: 0;
 }
 
 .hint-examples-list li {
-  font-size: 0.83rem;
+  font-size: 0.85rem;
   color: var(--text-primary);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 </style>
