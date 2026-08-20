@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useTaskStore } from '../../stores/taskStore'
+import { useAuthStore } from '../../stores/authStore'
 import type { PriorityLevel } from '../../types'
 
 const taskStore = useTaskStore()
+const authStore = useAuthStore()
 
 const title = ref('')
 const description = ref('')
@@ -17,7 +19,7 @@ watch(() => taskStore.isCreateTaskSheetOpen, (isOpen) => {
   if (isOpen) {
     title.value = ''
     description.value = ''
-    assignedToMemberId.value = taskStore.activeMemberId
+    assignedToMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
     priority.value = 'media'
     dueDate.value = new Date().toISOString().split('T')[0]
     category.value = 'Hogar'
@@ -44,8 +46,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div v-if="taskStore.isCreateTaskSheetOpen" class="sheet-backdrop" @click="handleClose">
-    <div class="sheet-modal glass-card" @click.stopPropagation>
+  <div v-if="taskStore.isCreateTaskSheetOpen" class="sheet-backdrop" @click.self="handleClose">
+    <div class="sheet-modal glass-card" @click.stop>
       <div class="sheet-header">
         <h3 class="sheet-title">📋 Nueva Tarea</h3>
         <button class="close-btn" @click="handleClose">×</button>

@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useFinanceStore } from '../../stores/financeStore'
-import { mockMembers } from '../../mocks/familyData'
+import { useAuthStore } from '../../stores/authStore'
 import type { MovementType, FinancialScope } from '../../types'
 
 const financeStore = useFinanceStore()
+const authStore = useAuthStore()
 
 const title = ref('')
 const amount = ref<number | null>(null)
 const type = ref<MovementType>('expense')
 const scope = ref<FinancialScope>('family')
 const categoryName = ref('Supermercado')
-const registeredByMemberId = ref(mockMembers[0].id)
-const belongingToMemberId = ref(mockMembers[0].id)
+const registeredByMemberId = ref(authStore.activeMemberId || 'm-1')
+const belongingToMemberId = ref(authStore.activeMemberId || 'm-1')
 const date = ref(new Date().toISOString().split('T')[0])
 
 watch(() => financeStore.isCreateSheetOpen, (isOpen) => {
@@ -22,8 +23,8 @@ watch(() => financeStore.isCreateSheetOpen, (isOpen) => {
     type.value = 'expense'
     scope.value = 'family'
     categoryName.value = 'Supermercado'
-    registeredByMemberId.value = mockMembers[0].id
-    belongingToMemberId.value = mockMembers[0].id
+    registeredByMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
+    belongingToMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
     date.value = new Date().toISOString().split('T')[0]
   }
 })
@@ -64,8 +65,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div v-if="financeStore.isCreateSheetOpen" class="sheet-backdrop" @click="handleClose">
-    <div class="sheet-modal glass-card" @click.stopPropagation>
+  <div v-if="financeStore.isCreateSheetOpen" class="sheet-backdrop" @click.self="handleClose">
+    <div class="sheet-modal glass-card" @click.stop>
       <div class="sheet-header">
         <h3 class="sheet-title">💳 Registrar Movimiento Financiero</h3>
         <button class="close-btn" @click="handleClose">×</button>
@@ -177,7 +178,7 @@ function handleSubmit() {
           <div class="form-group">
             <label class="form-label">¿Quién Pagó / Registró?</label>
             <select v-model="registeredByMemberId" class="form-select">
-              <option v-for="m in mockMembers" :key="m.id" :value="m.id">
+              <option v-for="m in authStore.familyMembers" :key="m.id" :value="m.id">
                 {{ m.name }}
               </option>
             </select>
@@ -186,7 +187,7 @@ function handleSubmit() {
           <div v-if="scope === 'personal'" class="form-group">
             <label class="form-label">¿A Quién Pertenece?</label>
             <select v-model="belongingToMemberId" class="form-select">
-              <option v-for="m in mockMembers" :key="m.id" :value="m.id">
+              <option v-for="m in authStore.familyMembers" :key="m.id" :value="m.id">
                 {{ m.name }}
               </option>
             </select>
