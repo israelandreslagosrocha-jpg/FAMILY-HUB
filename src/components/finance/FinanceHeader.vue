@@ -19,27 +19,27 @@ function handleScope(scope: FinancialScope | 'all') {
 </script>
 
 <template>
-  <header class="finance-header glass-card">
-    <!-- Tarjetas de Impacto Financiero -->
+  <header class="finance-header bento-card">
+    <!-- Tarjetas de Impacto Financiero estilo Apple Bento Grid -->
     <div class="financial-summary-cards">
-      <!-- Card Balance Neto -->
-      <div class="summary-card card-balance">
+      <!-- Card Balance Neto (Bento Cyan) -->
+      <div class="summary-card bento-card-cyan">
         <span class="card-label">Balance del Mes</span>
-        <span class="card-value" :class="{ positive: financeStore.netBalance >= 0, negative: financeStore.netBalance < 0 }">
+        <span class="card-value bento-metric-large">
           {{ formatCurrency(financeStore.netBalance) }}
         </span>
       </div>
 
-      <!-- Card Ingresos -->
-      <div class="summary-card card-income">
+      <!-- Card Ingresos (Bento Green) -->
+      <div class="summary-card bento-card-green">
         <span class="card-label">Total Ingresos</span>
-        <span class="card-value income-color">+ {{ formatCurrency(financeStore.totalIncome) }}</span>
+        <span class="card-value bento-metric-large">+ {{ formatCurrency(financeStore.totalIncome) }}</span>
       </div>
 
-      <!-- Card Gastos -->
-      <div class="summary-card card-expenses">
+      <!-- Card Gastos (Bento Dark) -->
+      <div class="summary-card bento-card-dark">
         <span class="card-label">Total Gastos</span>
-        <span class="card-value expense-color">- {{ formatCurrency(financeStore.totalExpenses) }}</span>
+        <span class="card-value bento-metric-large">- {{ formatCurrency(financeStore.totalExpenses) }}</span>
       </div>
     </div>
 

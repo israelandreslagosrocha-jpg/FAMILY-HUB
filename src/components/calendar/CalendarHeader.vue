@@ -56,7 +56,7 @@ function handleFilterMember(memberId: string) {
 </script>
 
 <template>
-  <header class="calendar-header glass-card">
+  <header class="calendar-header bento-card">
     <!-- Fila 1: Control de Vista + Switcher Mi Día / Familia -->
     <div class="header-top-row">
       <!-- Conmutador Mi día / Familia (Regla 22) -->

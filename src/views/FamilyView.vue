@@ -100,7 +100,7 @@ async function handleDeleteMember(memberId: string, memberName: string) {
       <div 
         v-for="m in authStore.familyMembers" 
         :key="m.id" 
-        class="member-card glass-card"
+        class="member-card bento-card"
         :style="{ borderTop: `4px solid ${m.color}` }"
       >
         <div class="avatar-wrapper">

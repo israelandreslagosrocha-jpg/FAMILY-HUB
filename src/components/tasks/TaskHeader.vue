@@ -20,7 +20,7 @@ function handleFilterMember(memberId: string) {
 </script>
 
 <template>
-  <header class="task-header glass-card">
+  <header class="task-header bento-card">
     <!-- Fila 1: Selector de Focos Principal (Mis Tareas | Tareas del Hogar | Responsabilidades) -->
     <div class="header-top-row">
       <div class="focus-selector">
