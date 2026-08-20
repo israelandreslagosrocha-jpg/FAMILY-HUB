@@ -185,6 +185,30 @@ export const useTaskStore = defineStore('taskStore', () => {
   }
 
   /**
+   * Edita título, descripción e integrante asignado de una tarea
+   */
+  async function updateTaskDetails(taskId: string, newTitle: string, newDesc?: string, newMemberId?: string) {
+    const task = tasks.value.find(t => t.id === taskId)
+    if (!task) return
+
+    task.title = newTitle
+    if (newDesc !== undefined) task.description = newDesc
+    if (newMemberId) task.assignedToMemberId = newMemberId
+
+    if (!taskId.startsWith('t-') && !taskId.startsWith('temp-')) {
+      try {
+        await supabase.from('task_instances').update({
+          title: newTitle,
+          description: newDesc,
+          assigned_member_id: newMemberId || task.assignedToMemberId
+        }).eq('id', taskId)
+      } catch (err: any) {
+        console.error('❌ Error al editar tarea en Supabase:', err.message)
+      }
+    }
+  }
+
+  /**
    * Elimina una tarea
    */
   async function deleteTask(taskId: string) {
@@ -261,6 +285,7 @@ export const useTaskStore = defineStore('taskStore', () => {
     toggleTaskStatus,
     skipTask,
     reassignTask,
+    updateTaskDetails,
     deleteTask,
     addTaskWithSupabase
   }

@@ -17,8 +17,8 @@ function handleMarkAllAsRead() {
 </script>
 
 <template>
-  <div v-if="notificationStore.isDrawerOpen" class="drawer-backdrop" @click="handleClose">
-    <div class="drawer-panel glass-card" @click.stopPropagation>
+  <div v-if="notificationStore.isDrawerOpen" class="drawer-backdrop" @click.self="handleClose">
+    <div class="drawer-panel glass-card" @click.stop>
       <div class="drawer-header">
         <div class="header-left">
           <span class="header-icon">🔔</span>
@@ -38,7 +38,12 @@ function handleMarkAllAsRead() {
         </button>
       </div>
 
-      <div class="notifications-list">
+      <div v-if="notificationStore.notifications.length === 0" class="empty-notif-state">
+        <span class="empty-icon">🔔</span>
+        <p class="empty-txt">Sin notificaciones pendientes en el hogar.</p>
+      </div>
+
+      <div v-else class="notifications-list">
         <div 
           v-for="item in notificationStore.notifications" 
           :key="item.id"
@@ -126,4 +131,17 @@ function handleMarkAllAsRead() {
 .notif-title { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
 .notif-time { font-size: 0.7rem; color: var(--text-secondary); }
 .notif-message { font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.35; }
+
+.empty-notif-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+}
+
+.empty-icon { font-size: 2.5rem; opacity: 0.5; }
+.empty-txt { font-size: 0.88rem; color: var(--text-secondary); margin: 0; text-align: center; }
 </style>

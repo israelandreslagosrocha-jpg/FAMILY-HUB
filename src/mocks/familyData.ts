@@ -172,7 +172,7 @@ export const mockHistory: HistoryLog[] = [
   },
   {
     id: 'h-2',
-    memberName: 'Esposa',
+    memberName: 'Naty',
     memberAvatarId: 'avatar-02',
     actionText: '💰 Registró gasto de supermercado',
     itemTitle: '$84.650 — Jumbo',

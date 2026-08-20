@@ -4,35 +4,7 @@ import type { AppNotification } from '../types'
 
 export const useNotificationStore = defineStore('notificationStore', () => {
   const isDrawerOpen = ref<boolean>(false)
-  const notifications = ref<AppNotification[]>([
-    {
-      id: 'notif-1',
-      title: '🚨 Alerta de Presupuesto',
-      message: 'La categoría Supermercado ha alcanzado el 85% del límite mensual.',
-      type: 'warning',
-      entityType: 'finance',
-      createdAt: 'Hace 10 min',
-      isRead: false
-    },
-    {
-      id: 'notif-2',
-      title: '📅 Recordatorio de Calendario',
-      message: 'Evento familiar "Reunión de Colegio" programado para hoy a las 18:00.',
-      type: 'info',
-      entityType: 'event',
-      createdAt: 'Hace 45 min',
-      isRead: false
-    },
-    {
-      id: 'notif-3',
-      title: '✅ Tarea Completada',
-      message: 'Mamá completó la tarea "Comprar remedios del abuelo".',
-      type: 'success',
-      entityType: 'task',
-      createdAt: 'Hace 2 horas',
-      isRead: true
-    }
-  ])
+  const notifications = ref<AppNotification[]>([])
 
   const unreadCount = computed(() => notifications.value.filter(n => !n.isRead).length)
 
