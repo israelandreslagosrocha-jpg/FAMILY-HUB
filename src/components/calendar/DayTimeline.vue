@@ -29,7 +29,7 @@ function handleDeleteEvent(eventId: string) {
 <template>
   <div class="day-timeline-container">
     <!-- CAPA 1: EVENTOS DEL DÍA (Ocupan bloques temporales) -->
-    <div class="section-card glass-card">
+    <div class="section-card bento-card">
       <div class="section-header">
         <h3 class="section-title">
           🗓️ Eventos del Día

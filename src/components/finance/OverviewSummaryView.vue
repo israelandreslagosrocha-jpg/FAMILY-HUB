@@ -39,7 +39,7 @@ const categoryBreakdown = computed(() => {
 <template>
   <div class="overview-summary-container">
     <!-- Distribución de Gastos por Categoría -->
-    <div class="section-card glass-card">
+    <div class="section-card bento-card">
       <div class="card-header-row">
         <h3 class="section-title">📊 Distribución de Gastos por Categoría</h3>
         <span class="total-badge">Total: {{ formatCurrency(financeStore.totalExpenses) }}</span>
@@ -75,7 +75,7 @@ const categoryBreakdown = computed(() => {
     </div>
 
     <!-- Actividad Financiera Reciente -->
-    <div class="section-card glass-card">
+    <div class="section-card bento-card">
       <div class="card-header-row">
         <h3 class="section-title">⚡ Últimos Movimientos</h3>
         <button class="view-all-btn" @click="financeStore.setTab('movements')">Ver todos →</button>

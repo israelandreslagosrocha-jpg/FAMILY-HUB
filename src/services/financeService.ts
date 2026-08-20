@@ -90,6 +90,10 @@ export const financeService = {
 
     if (trfData) {
       trfData.forEach((item: any) => {
+        const desc = item.description || ''
+        if (desc.includes('6C.3') || desc.includes('6D') || desc.toLowerCase().includes('prueba')) {
+          return // Omitir transferencias de prueba antiguas
+        }
         movements.push({
           id: item.id,
           title: item.description || `Transferencia: ${item.source_account} → ${item.destination_account}`,

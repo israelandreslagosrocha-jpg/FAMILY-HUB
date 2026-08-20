@@ -103,98 +103,79 @@ function handleScope(scope: FinancialScope | 'all') {
 
 <style scoped>
 .finance-header {
-  padding: 1.25rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
   margin-bottom: 1.25rem;
-  border-radius: 20px;
+  border-radius: 28px;
 }
 
 .financial-summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
 }
 
 .summary-card {
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-@media (prefers-color-scheme: dark) {
-  .summary-card {
-    background: rgba(30, 41, 59, 0.7);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
+  justify-content: space-between;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-card);
 }
 
 .card-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.card-value {
-  font-size: 1.15rem;
+  font-size: 0.8rem;
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.9;
 }
 
-.card-value.positive { color: #10b981; }
-.card-value.negative { color: #ef4444; }
-.income-color { color: #10b981; }
-.expense-color { color: #f43f5e; }
+.bento-metric-large {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  margin-top: 0.2rem;
+}
 
 .header-controls-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.85rem;
+  gap: 1rem;
   flex-wrap: wrap;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .tab-selector-bar, .scope-selector {
   display: flex;
   background: rgba(0, 0, 0, 0.05);
-  padding: 3px;
-  border-radius: 12px;
-  gap: 2px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .tab-selector-bar, .scope-selector {
-    background: rgba(255, 255, 255, 0.1);
-  }
+  padding: 4px;
+  border-radius: 16px;
+  gap: 4px;
 }
 
 .tab-btn, .scope-btn {
   border: none;
   background: transparent;
-  padding: 0.45rem 0.75rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border-radius: 9px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 12px;
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 }
 
 .tab-btn.active, .scope-btn.active {
-  background: #ffffff;
-  color: #0f172a;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-@media (prefers-color-scheme: dark) {
-  .tab-btn.active, .scope-btn.active {
-    background: #1e293b;
-    color: #f8fafc;
-  }
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 </style>
