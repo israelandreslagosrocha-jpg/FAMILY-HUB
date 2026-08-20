@@ -5,51 +5,80 @@ description: Pautas de diseño visual estilo Apple Bento Grid (basado en hubeiqi
 
 # 🍱 Apple Bento Grid Design System — FAMILY-HUB
 
-Esta habilidad implementa los patrones visuales y de interacción inspirados en **Apple Bento Grid** (`hubeiqiao/apple-bento-grid`) adaptados al proyecto **FAMILY-HUB**.
+Esta habilidad implementa los patrones visuales y de interacción oficial del repositorio **`hubeiqiao/apple-bento-grid`** adaptados a **FAMILY-HUB**.
 
 ---
 
-## 🎨 1. Estructura de Grilla Bento (Bento Grid Proportions)
+## 🎨 1. Atributos Visuales Clave (Apple Bento Grid)
 
-1. **Diseño Asimétrico y Modular**:
-   - Layouts estructurados mediante `grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))` o grillas asimétricas `repeat(12, 1fr)`.
-   - Span modular: `grid-column: span 8` para widgets principales (ej. Finanzas o Calendario) y `grid-column: span 4` para widgets complementarios (ej. Tareas Pendientes, Historial de Auditoría).
+### A. Tipografía de Gran Impacto (Heavy Bold Weights)
+- Títulos principales con peso ultra-bold (`font-weight: 800` / `900`) e interlineado ajustado (`line-height: 1.1`, `letter-spacing: -0.03em`).
+- Números estadísticos de alto contraste en colores eléctricos (Cyan `#00e5ff`, Verde Esmeralda `#00e676`, Púrpura `#a855f7`, Azul `#3b82f6`).
 
-2. **Esquinas Squircular (iOS / macOS Sonoma & Sequoia)**:
-   - Contenedores principales: `border-radius: 24px` o `28px`.
-   - Modales e Inputs: `border-radius: 14px` o `16px`.
-   - Badges y Pills: `border-radius: 20px`.
+### B. Proporciones y Disposición Bento Box
+- Grilla asimétrica modular con `gap: 1.25rem`.
+- Tarjeta Hero (Ancha), Tarjetas Estadísticas con rellenos en gradiente vivo (`linear-gradient(135deg, #0284c7, #06b6d4)` / `#059669, #10b981`), Tarjetas de Etiquetas Pills y Banner de Frase Motivacional al pie.
+- Radios de borde continuamente curvos / Squircular (`border-radius: 28px`).
 
 ---
 
-## ✨ 2. Cristal Esmerilado Glassmorphic & Bordes Gradientes
+## 📐 2. Utilidades CSS Apple Bento Grid (`main.css`)
 
 ```css
-.bento-card {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 24px;
-  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.08);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* Grilla Principal Bento */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.25rem;
 }
 
-:root[data-theme="dark"] .bento-card {
-  background: rgba(19, 27, 46, 0.75);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.5);
+@media (min-width: 900px) {
+  .bento-grid {
+    grid-template-columns: repeat(12, 1fr);
+  }
+}
+
+/* Tarjeta Base Bento */
+.bento-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 28px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s;
 }
 
 .bento-card:hover {
   transform: translateY(-3px) scale(1.01);
   border-color: rgba(59, 130, 246, 0.4);
 }
+
+/* Tarjeta Accent Cyan / Teal (Destacada) */
+.bento-card-cyan {
+  background: linear-gradient(135deg, #0284c7 0%, #06b6d4 50%, #22d3ee 100%);
+  color: #ffffff;
+  border: none;
+}
+
+/* Tarjeta Accent Green / Emerald (Destacada) */
+.bento-card-green {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  border: none;
+}
+
+/* Banner de Lema / Frase Familiar al Pie */
+.bento-quote-banner {
+  grid-column: span 12;
+  background: #0f172a;
+  border-radius: 24px;
+  padding: 1.25rem 2rem;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.bento-quote-banner .highlight-green { color: #10b981; }
+.bento-quote-banner .highlight-blue { color: #38bdf8; }
 ```
-
----
-
-## 🚀 3. Principios de Interacción Táctil y Fluidez
-- Transiciones `cubic-bezier(0.16, 1, 0.3, 1)` para un efecto orgánico estilo iOS.
-- Indicadores semánticos de estado (Verde completado `#22c55e`, Amarillo pendiente `#eab308`, Rojo atención `#ef4444`, Azul informativo `#3b82f6`).
-- Filtros por integrantes de la familia con chips conmutables y distintivo de color único por persona.

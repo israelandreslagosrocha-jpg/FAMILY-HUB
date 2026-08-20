@@ -180,3 +180,117 @@ p, span {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
 }
+
+/* ============================================================================
+   🍱 SISTEMA DE DISEÑO APPLE BENTO GRID (hubeiqiao/apple-bento-grid)
+   ============================================================================ */
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .bento-grid {
+    grid-template-columns: repeat(12, 1fr);
+  }
+}
+
+.bento-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 28px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s, box-shadow 0.25s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.bento-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 15px 35px -10px rgba(59, 130, 246, 0.2);
+}
+
+.bento-col-12 { grid-column: span 12; }
+.bento-col-8 { grid-column: span 12; }
+.bento-col-7 { grid-column: span 12; }
+.bento-col-5 { grid-column: span 12; }
+.bento-col-6 { grid-column: span 12; }
+.bento-col-4 { grid-column: span 12; }
+
+@media (min-width: 900px) {
+  .bento-col-8 { grid-column: span 8; }
+  .bento-col-7 { grid-column: span 7; }
+  .bento-col-5 { grid-column: span 5; }
+  .bento-col-6 { grid-column: span 6; }
+  .bento-col-4 { grid-column: span 4; }
+}
+
+/* Tarjetas de Acento en Colores Eléctricos Vivos */
+.bento-card-cyan {
+  background: linear-gradient(135deg, #0284c7 0%, #06b6d4 50%, #22d3ee 100%);
+  color: #ffffff !important;
+  border: none;
+}
+
+.bento-card-green {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff !important;
+  border: none;
+}
+
+.bento-card-dark {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff !important;
+}
+
+/* Números y Métricas Ultra-Bold estilo Apple Keynote */
+.bento-metric-large {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.bento-metric-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+
+/* Banner de Frase / Quote al Pie */
+.bento-quote-banner {
+  grid-column: span 12;
+  background: #0f172a;
+  border-radius: 24px;
+  padding: 1.25rem 2rem;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bento-quote-banner .hl-cyan { color: #38bdf8; }
+.bento-quote-banner .hl-green { color: #34d399; }
+.bento-quote-banner .hl-purple { color: #c084fc; }
+
+/* Capsulas / Tag Pills estilo Bento */
+.bento-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
