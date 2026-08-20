@@ -25,9 +25,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
     isLoading.value = true
     try {
       const dbMovements = await financeService.getMovements()
-      if (dbMovements.length > 0) {
-        movements.value = dbMovements
-      }
+      movements.value = dbMovements
 
       const dbBudgets = await financeService.getBudgets()
       if (dbBudgets.length > 0) {

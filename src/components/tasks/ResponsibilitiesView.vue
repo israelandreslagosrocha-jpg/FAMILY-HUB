@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { useTaskStore } from '../../stores/taskStore'
-import type { FamilyMember } from '../../types'
+import { useAuthStore } from '../../stores/authStore'
+import EducationalHintCard from '../common/EducationalHintCard.vue'
 
 const taskStore = useTaskStore()
+const authStore = useAuthStore()
 
 function getMemberObj(memberId: string) {
-  return taskStore.members.find((m: FamilyMember) => m.id === memberId)
+  return authStore.familyMembers.find((m: any) => m.id === memberId)
 }
 </script>
 
 <template>
   <div class="responsibilities-container">
+    <EducationalHintCard type="responsibilities" />
     <div class="resp-grid">
       <div 
         v-for="resp in taskStore.responsibilities" 

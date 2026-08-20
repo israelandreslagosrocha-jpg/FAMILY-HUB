@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useTaskStore } from '../../stores/taskStore'
+import { useAuthStore } from '../../stores/authStore'
+import EducationalHintCard from '../common/EducationalHintCard.vue'
 import type { TaskItem } from '../../types'
 
 const taskStore = useTaskStore()
+const authStore = useAuthStore()
 const activeMenuTaskId = ref<string | null>(null)
 
 // Tareas agrupadas por Prioridad
@@ -17,6 +20,15 @@ function handleToggle(taskId: string) {
 
 function handleSkip(taskId: string) {
   taskStore.skipTask(taskId)
+  activeMenuTaskId.value = null
+}
+
+function handleEdit(task: TaskItem) {
+  const newTitle = prompt('Editar título de la tarea:', task.title)
+  if (newTitle !== null && newTitle.trim() !== '') {
+    const newDesc = prompt('Editar descripción de la tarea (opcional):', task.description || '')
+    taskStore.updateTaskDetails(task.id, newTitle.trim(), newDesc !== null ? newDesc.trim() : task.description)
+  }
   activeMenuTaskId.value = null
 }
 
@@ -43,6 +55,8 @@ function toggleOptionsMenu(taskId: string) {
 
 <template>
   <div class="my-tasks-container">
+    <!-- Guía Educativa de Ejemplo -->
+    <EducationalHintCard type="tasks" />
     <!-- Estado Vacío -->
     <div v-if="taskStore.displayedTasks.length === 0" class="glass-card empty-card">
       <span class="empty-icon">🎉</span>
@@ -103,6 +117,9 @@ function toggleOptionsMenu(taskId: string) {
               </button>
 
               <div v-if="activeMenuTaskId === task.id" class="dropdown-menu glass-card">
+                <button class="menu-item" @click="handleEdit(task)">
+                  ✏️ Editar tarea
+                </button>
                 <button class="menu-item" @click="handleSkip(task.id)">
                   ↷ Omitir tarea
                 </button>
@@ -112,7 +129,7 @@ function toggleOptionsMenu(taskId: string) {
                 <div class="menu-divider"></div>
                 <div class="menu-header-text">Reasignar a:</div>
                 <button 
-                  v-for="member in taskStore.members" 
+                  v-for="member in authStore.familyMembers" 
                   :key="member.id"
                   class="menu-item member-item"
                   @click="handleReassign(task.id, member.id)"
@@ -174,13 +191,16 @@ function toggleOptionsMenu(taskId: string) {
               </button>
 
               <div v-if="activeMenuTaskId === task.id" class="dropdown-menu glass-card">
+                <button class="menu-item" @click="handleEdit(task)">
+                  ✏️ Editar tarea
+                </button>
                 <button class="menu-item" @click="handleSkip(task.id)">
                   ↷ Omitir tarea
                 </button>
                 <div class="menu-divider"></div>
                 <div class="menu-header-text">Reasignar a:</div>
                 <button 
-                  v-for="member in taskStore.members" 
+                  v-for="member in authStore.familyMembers" 
                   :key="member.id"
                   class="menu-item member-item"
                   @click="handleReassign(task.id, member.id)"
@@ -242,13 +262,16 @@ function toggleOptionsMenu(taskId: string) {
               </button>
 
               <div v-if="activeMenuTaskId === task.id" class="dropdown-menu glass-card">
+                <button class="menu-item" @click="handleEdit(task)">
+                  ✏️ Editar tarea
+                </button>
                 <button class="menu-item" @click="handleSkip(task.id)">
                   ↷ Omitir tarea
                 </button>
                 <div class="menu-divider"></div>
                 <div class="menu-header-text">Reasignar a:</div>
                 <button 
-                  v-for="member in taskStore.members" 
+                  v-for="member in authStore.familyMembers" 
                   :key="member.id"
                   class="menu-item member-item"
                   @click="handleReassign(task.id, member.id)"

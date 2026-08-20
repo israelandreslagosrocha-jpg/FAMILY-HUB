@@ -19,7 +19,11 @@ watch(() => taskStore.isCreateTaskSheetOpen, (isOpen) => {
   if (isOpen) {
     title.value = ''
     description.value = ''
-    assignedToMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
+    if (taskStore.filterMemberId !== 'all') {
+      assignedToMemberId.value = taskStore.filterMemberId
+    } else {
+      assignedToMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
+    }
     priority.value = 'media'
     dueDate.value = new Date().toISOString().split('T')[0]
     category.value = 'Hogar'

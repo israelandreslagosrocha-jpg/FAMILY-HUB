@@ -8,6 +8,7 @@ import CreateMovementSheet from '../components/finance/CreateMovementSheet.vue'
 import ReceiptCaptureModal from '../components/receipts/ReceiptCaptureModal.vue'
 import ReceiptProcessingState from '../components/receipts/ReceiptProcessingState.vue'
 import ReceiptReviewSheet from '../components/receipts/ReceiptReviewSheet.vue'
+import EducationalHintCard from '../components/common/EducationalHintCard.vue'
 
 const financeStore = useFinanceStore()
 
@@ -20,6 +21,9 @@ function handleOpenCreateSheet() {
   <div class="finance-page-view">
     <!-- Header del Módulo de Finanzas -->
     <FinanceHeader />
+
+    <!-- Guía Educativa de Ejemplo -->
+    <EducationalHintCard type="finance" />
 
     <!-- Área Principal de Contenido dinámico según Pestaña -->
     <main class="finance-main-content">

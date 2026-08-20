@@ -30,8 +30,10 @@ watch(() => calendarStore.isSheetOpen, (isOpen) => {
     endTime.value = '11:30'
     isAllDay.value = false
     
-    // Asigna por defecto los miembros reales cargados
-    if (authStore.familyMembers.length > 0) {
+    // Asigna por defecto el integrante seleccionado en el filtro si existe
+    if (calendarStore.filterMemberId !== 'all') {
+      selectedMemberIds.value = [calendarStore.filterMemberId]
+    } else if (authStore.familyMembers.length > 0) {
       selectedMemberIds.value = [authStore.familyMembers[0].id]
     } else {
       selectedMemberIds.value = []

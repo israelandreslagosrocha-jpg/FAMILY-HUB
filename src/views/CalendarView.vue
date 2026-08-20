@@ -5,6 +5,7 @@ import DayTimeline from '../components/calendar/DayTimeline.vue'
 import WeekGrid from '../components/calendar/WeekGrid.vue'
 import MonthGrid from '../components/calendar/MonthGrid.vue'
 import CreateEventSheet from '../components/calendar/CreateEventSheet.vue'
+import EducationalHintCard from '../components/common/EducationalHintCard.vue'
 
 const calendarStore = useCalendarStore()
 
@@ -17,6 +18,9 @@ function handleUniversalAdd() {
   <div class="calendar-page-container">
     <!-- Encabezado de Navegación, Vistas y Filtros del Calendario -->
     <CalendarHeader />
+
+    <!-- Guía Educativa de Ejemplo -->
+    <EducationalHintCard type="events" />
 
     <!-- Vistas del Calendario (Jerarquía: Día > Semana > Mes) -->
     <main class="calendar-content">
