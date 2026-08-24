@@ -11,7 +11,7 @@ export interface FamilyMember {
 
 export type PriorityLevel = 'alta' | 'media' | 'baja'
 export type StatusSemantic = 'completed' | 'pending' | 'urgent' | 'info' | 'archived'
-export type TaskStatusEnum = 'pending' | 'completed' | 'skipped'
+export type TaskStatusEnum = 'pending' | 'completed' | 'skipped' | 'suggestion'
 
 export interface TaskItem {
   id: string
@@ -31,7 +31,7 @@ export interface TaskItem {
 export interface ResponsibilityItem {
   id: string
   title: string
-  description: string
+  description?: string
   defaultAssignedMemberId: string
   icon: string
   color: string
@@ -97,7 +97,19 @@ export interface AutomationLog {
 // TIPOS PARA FINANZAS (ETAPA 6)
 export type MovementType = 'expense' | 'income' | 'transfer'
 export type FinancialScope = 'family' | 'personal'
-export type FinanceTabType = 'overview' | 'movements' | 'budgets'
+export type FinanceTabType = 'overview' | 'movements' | 'budgets' | 'fixed_expenses'
+
+export interface FixedExpenseItem {
+  id: string
+  title: string
+  amount: number
+  categoryName: string
+  dueDay: number
+  isPaid: boolean
+  paidAt?: string | null
+  icon: string
+  color: string
+}
 
 export interface FinancialMovement {
   id: string

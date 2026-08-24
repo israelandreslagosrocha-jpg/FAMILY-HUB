@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import type { FinancialMovement, CategoryBudget, MovementType } from '../types'
+import type { FinancialMovement, CategoryBudget, MovementType, FixedExpenseItem } from '../types'
 
 export interface CreateMovementParams {
   movementType: MovementType
@@ -18,6 +18,88 @@ export interface CreateMovementParams {
 
 export const financeService = {
   /**
+   * Obtiene las cuentas fijas del hogar en Supabase
+   */
+  async getFixedExpenses(): Promise<FixedExpenseItem[]> {
+    const { data, error } = await supabase
+      .from('fixed_expenses')
+      .select('*')
+      .order('due_day', { ascending: true })
+
+    if (error) {
+      console.warn('⚠️ Warning al obtener cuentas fijas de Supabase:', error.message)
+      return []
+    }
+
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      amount: Number(item.amount),
+      categoryName: item.category_name,
+      dueDay: item.due_day,
+      isPaid: item.is_paid,
+      paidAt: item.paid_at,
+      icon: item.icon || '💡',
+      color: item.color || '#3b82f6'
+    }))
+  },
+
+  /**
+   * Crea una nueva cuenta fija en Supabase
+   */
+  async createFixedExpense(item: Omit<FixedExpenseItem, 'id'>): Promise<string> {
+    const { data: mData } = await supabase.from('family_members').select('family_id').limit(1)
+    const familyId = (mData && mData.length > 0) ? mData[0].family_id : undefined
+
+    const payload: any = {
+      title: item.title,
+      amount: item.amount,
+      category_name: item.categoryName,
+      due_day: item.dueDay,
+      is_paid: item.isPaid,
+      paid_at: item.paidAt || null,
+      icon: item.icon,
+      color: item.color
+    }
+
+    if (familyId) {
+      payload.family_id = familyId
+    }
+
+    const { data, error } = await supabase
+      .from('fixed_expenses')
+      .insert(payload)
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('❌ Error al crear cuenta fija en Supabase:', error.message)
+      throw error
+    }
+    return data.id
+  },
+
+  /**
+   * Actualiza el estado pagado/pendiente de una cuenta fija
+   */
+  async updateFixedExpensePaid(id: string, isPaid: boolean): Promise<void> {
+    await supabase
+      .from('fixed_expenses')
+      .update({
+        is_paid: isPaid,
+        paid_at: isPaid ? new Date().toISOString() : null
+      })
+      .eq('id', id)
+  },
+
+  /**
+   * Elimina una cuenta fija de Supabase
+   */
+  async deleteFixedExpense(id: string): Promise<void> {
+    await supabase.from('fixed_expenses').delete().eq('id', id)
+  },
+
+  /**
    * Obtiene todos los movimientos financieros (gastos, ingresos y transferencias) de la familia autenticada
    */
   async getMovements(): Promise<FinancialMovement[]> {
@@ -26,7 +108,7 @@ export const financeService = {
     // 1. Obtener Gastos (expenses)
     const { data: expData, error: expErr } = await supabase
       .from('expenses')
-      .select('*, categories(name, icon, color)')
+      .select('*')
       .order('date', { ascending: false })
 
     if (expErr) console.error('❌ Error al obtener gastos:', expErr.message)
@@ -40,10 +122,10 @@ export const financeService = {
           currency: 'CLP',
           type: 'expense',
           scope: item.is_family_expense ? 'family' : 'personal',
-          categoryId: item.category_id,
-          categoryName: item.categories?.name || 'Gasto General',
-          categoryIcon: item.categories?.icon || '💸',
-          categoryColor: item.categories?.color || '#f43f5e',
+          categoryId: item.category_id || 'cat-general',
+          categoryName: item.category_name || 'Gasto General',
+          categoryIcon: item.category_icon || '💸',
+          categoryColor: item.category_color || '#f43f5e',
           registeredByMemberId: item.registered_by_member_id,
           belongingToMemberId: item.belonging_to_member_id || undefined,
           date: item.date,
@@ -55,7 +137,7 @@ export const financeService = {
     // 2. Obtener Ingresos (incomes)
     const { data: incData, error: incErr } = await supabase
       .from('incomes')
-      .select('*, categories(name, icon, color)')
+      .select('*')
       .order('date', { ascending: false })
 
     if (incErr) console.error('❌ Error al obtener ingresos:', incErr.message)

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCalendarStore } from '../../stores/calendarStore'
+import { getChileTodayString } from '../../utils/dateUtils'
 
 const calendarStore = useCalendarStore()
 
 // Genera los 7 días de la semana seleccionada
 const weekDays = computed(() => {
+  const todayStr = getChileTodayString()
   const [year, month, day] = calendarStore.selectedDate.split('-').map(Number)
   const current = new Date(year, month - 1, day)
   
@@ -34,7 +36,7 @@ const weekDays = computed(() => {
       dateStr: fullDateStr,
       dayName: capitalizedDayName,
       dayNumber: d.getDate(),
-      isToday: fullDateStr === '2026-08-19',
+      isToday: fullDateStr === todayStr,
       isSelected: fullDateStr === calendarStore.selectedDate,
       events: dayEvents
     })

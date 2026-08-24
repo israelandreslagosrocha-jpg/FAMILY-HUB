@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { TaskItem, ResponsibilityItem, TaskFocusType, ViewMode, FamilyMember } from '../types'
+import type { TaskItem, ResponsibilityItem, TaskFocusType, ViewMode, FamilyMember, TaskStatusEnum } from '../types'
 import { mockMembers } from '../mocks/familyData'
 import { taskService, type CreateTaskPayload } from '../services/taskService'
 import { supabase } from '../services/supabaseClient'
@@ -12,8 +12,9 @@ export const useTaskStore = defineStore('taskStore', () => {
   const activeMemberId = ref<string>('m-1')        // Israel (Papá) por defecto
   const filterMemberId = ref<string>('all')        // 'all' o ID de miembro
 
-  // Estado del Modal Sheet de Creación de Tarea
+  // Estado del Modal Sheet de Creación de Tarea / Responsabilidad
   const isCreateTaskSheetOpen = ref<boolean>(false)
+  const createTaskSheetMode = ref<'task' | 'responsibility'>('task')
 
   // Estado de Carga
   const isLoading = ref<boolean>(false)
@@ -58,6 +59,10 @@ export const useTaskStore = defineStore('taskStore', () => {
     return displayedTasks.value.filter(t => t.status === 'skipped')
   })
 
+  const suggestionTasks = computed(() => {
+    return tasks.value.filter(t => t.status === 'suggestion' && (t.assignedToMemberId === activeMemberId.value || viewMode.value === 'family'))
+  })
+
   // Acciones de Carga Supabase
   async function loadDataFromSupabase() {
     const { data: sessionData } = await supabase.auth.getSession()
@@ -71,9 +76,13 @@ export const useTaskStore = defineStore('taskStore', () => {
 
     try {
       // Cargar miembros
-      const { data: dbMembers } = await supabase.from('family_members').select('*')
+      const { data: dbMembers } = await supabase.from('family_members').select('*').eq('is_active', true)
       if (dbMembers && dbMembers.length > 0) {
-        members.value = dbMembers.map((m: any) => ({
+        const validMembers = dbMembers.filter((m: any) => {
+          const n = (m.name || '').toLowerCase()
+          return !n.includes('prueba') && !n.includes('esposa') && !(n === 'vicente' && m.role === 'Mamá')
+        })
+        members.value = validMembers.map((m: any) => ({
           id: m.id,
           name: m.name,
           avatarId: m.avatar_id,
@@ -81,7 +90,9 @@ export const useTaskStore = defineStore('taskStore', () => {
           role: m.role,
           isActive: m.is_active
         }))
-        activeMemberId.value = members.value[0].id
+        if (members.value.length > 0) {
+          activeMemberId.value = members.value[0].id
+        }
       }
 
       // Cargar responsabilidades
@@ -115,7 +126,8 @@ export const useTaskStore = defineStore('taskStore', () => {
     filterMemberId.value = memberId
   }
 
-  function openCreateTaskSheet() {
+  function openCreateTaskSheet(mode: 'task' | 'responsibility' = 'task') {
+    createTaskSheetMode.value = mode
     isCreateTaskSheetOpen.value = true
   }
 
@@ -226,9 +238,41 @@ export const useTaskStore = defineStore('taskStore', () => {
     }
   }
 
+  /**
+   * Acepta una sugerencia de tarea recibida y la convierte en tarea pendiente activa
+   */
+  async function acceptTaskSuggestion(taskId: string) {
+    const task = tasks.value.find(t => t.id === taskId)
+    if (!task) return
+
+    task.status = 'pending'
+    task.completed = false
+
+    if (!taskId.startsWith('t-') && !taskId.startsWith('temp-')) {
+      try {
+        await taskService.updateTaskStatus(taskId, 'pending')
+      } catch (err: any) {
+        console.error('❌ Error al aceptar sugerencia en Supabase:', err.message)
+      }
+    }
+  }
+
+  /**
+   * Rechaza/Elimina una sugerencia de tarea recibida
+   */
+  async function rejectTaskSuggestion(taskId: string) {
+    await deleteTask(taskId)
+  }
+
   async function addTaskWithSupabase(payload: CreateTaskPayload) {
     const tempId = `temp-${Date.now()}`
     
+    // Detección: Si la asigna otro miembro a Israel (Papá / Jefe de Hogar), se crea como 'suggestion'
+    const targetMember = members.value.find(m => m.id === payload.assignedMemberId)
+    const isTargetPapa = targetMember?.role === 'Papá' || targetMember?.role === 'Jefe de Hogar' || targetMember?.name.toLowerCase().includes('israel')
+    const isCreatedByOther = activeMemberId.value !== payload.assignedMemberId
+    const initialStatus: TaskStatusEnum = (isTargetPapa && isCreatedByOther) ? 'suggestion' : 'pending'
+
     // 1. Agregar inmediatamente a Pinia (Respuesta UI <50ms)
     const tempTask: TaskItem = {
       id: tempId,
@@ -238,7 +282,7 @@ export const useTaskStore = defineStore('taskStore', () => {
       createdByMemberId: activeMemberId.value,
       priority: payload.priority,
       dueDate: payload.dueDate,
-      status: 'pending',
+      status: initialStatus,
       completed: false,
       completedAt: null,
       category: 'Hogar',
@@ -255,8 +299,37 @@ export const useTaskStore = defineStore('taskStore', () => {
       if (target) {
         target.id = realTaskId
       }
+
+      // Si es sugerencia, sincronizar el estado 'suggestion' en Supabase
+      if (initialStatus === 'suggestion' && !realTaskId.startsWith('t-')) {
+        await supabase.from('task_instances').update({ status: 'suggestion' }).eq('id', realTaskId)
+      }
     } catch (err: any) {
       console.error('❌ Error al crear tarea en Supabase:', err.message)
+    }
+  }
+
+  async function addResponsibilityWithSupabase(payload: { title: string; description?: string; defaultAssignedMemberId: string; icon?: string; color?: string }) {
+    const tempId = `temp-resp-${Date.now()}`
+    const newResp: ResponsibilityItem = {
+      id: tempId,
+      title: payload.title,
+      description: payload.description || undefined,
+      defaultAssignedMemberId: payload.defaultAssignedMemberId,
+      icon: payload.icon || '🛠️',
+      color: payload.color || '#3b82f6'
+    }
+    responsibilities.value.push(newResp)
+    isCreateTaskSheetOpen.value = false
+
+    try {
+      const realId = await taskService.createResponsibility(payload)
+      const target = responsibilities.value.find(r => r.id === tempId)
+      if (target) {
+        target.id = realId
+      }
+    } catch (err: any) {
+      console.error('❌ Error al guardar responsabilidad en Supabase:', err.message)
     }
   }
 
@@ -269,6 +342,7 @@ export const useTaskStore = defineStore('taskStore', () => {
     responsibilities,
     tasks,
     isCreateTaskSheetOpen,
+    createTaskSheetMode,
     isLoading,
     loadError,
     activeMember,
@@ -276,6 +350,7 @@ export const useTaskStore = defineStore('taskStore', () => {
     pendingTasks,
     completedTasks,
     skippedTasks,
+    suggestionTasks,
     loadDataFromSupabase,
     setTaskFocus,
     setViewMode,
@@ -287,6 +362,9 @@ export const useTaskStore = defineStore('taskStore', () => {
     reassignTask,
     updateTaskDetails,
     deleteTask,
-    addTaskWithSupabase
+    addTaskWithSupabase,
+    addResponsibilityWithSupabase,
+    acceptTaskSuggestion,
+    rejectTaskSuggestion
   }
 })

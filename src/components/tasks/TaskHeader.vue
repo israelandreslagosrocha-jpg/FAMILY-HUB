@@ -64,6 +64,16 @@ function handleFilterMember(memberId: string) {
           🏠 Familia
         </button>
       </div>
+
+      <!-- Grupo de Botones de Acción Prominentes -->
+      <div class="action-buttons-group">
+        <button class="add-action-btn add-task-btn" @click="taskStore.openCreateTaskSheet('task')">
+          <span>➕ Nueva Tarea</span>
+        </button>
+        <button class="add-action-btn add-resp-btn" @click="taskStore.openCreateTaskSheet('responsibility')">
+          <span>🛠️ Nueva Responsabilidad</span>
+        </button>
+      </div>
     </div>
 
     <!-- Fila 2: Filtro por Integrantes del Hogar (Regla 23) -->
@@ -181,5 +191,41 @@ function handleFilterMember(memberId: string) {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+}
+
+.action-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.add-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 0.95rem;
+  border-radius: 14px;
+  border: none;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.add-action-btn:hover {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.add-task-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.add-resp-btn {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 </style>

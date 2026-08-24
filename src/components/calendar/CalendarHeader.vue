@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useCalendarStore } from '../../stores/calendarStore'
 import { useAuthStore } from '../../stores/authStore'
 import type { CalendarViewType, ViewMode } from '../../types'
+import { getChileTodayString } from '../../utils/dateUtils'
 
 const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
@@ -22,7 +23,9 @@ const formattedDateTitle = computed(() => {
     const monthName = dateObj.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })
     return monthName.charAt(0).toUpperCase() + monthName.slice(1)
   } else {
-    return `Semana del ${day} de Agosto`
+    const monthName = dateObj.toLocaleDateString('es-CL', { month: 'long' })
+    const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+    return `Semana del ${day} de ${capitalizedMonth}`
   }
 })
 
@@ -39,7 +42,7 @@ function changeDate(daysOffset: number) {
 }
 
 function resetToToday() {
-  calendarStore.setSelectedDate('2026-08-19')
+  calendarStore.setSelectedDate(getChileTodayString())
 }
 
 function handleViewType(type: CalendarViewType) {

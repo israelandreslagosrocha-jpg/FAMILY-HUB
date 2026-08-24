@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useTaskStore } from '../stores/taskStore'
 import TaskHeader from '../components/tasks/TaskHeader.vue'
 import MyTasksView from '../components/tasks/MyTasksView.vue'
@@ -7,6 +8,10 @@ import ResponsibilitiesView from '../components/tasks/ResponsibilitiesView.vue'
 import CreateTaskSheet from '../components/tasks/CreateTaskSheet.vue'
 
 const taskStore = useTaskStore()
+
+onMounted(async () => {
+  await taskStore.loadDataFromSupabase()
+})
 
 function handleOpenCreateSheet() {
   taskStore.openCreateTaskSheet()

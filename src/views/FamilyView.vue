@@ -8,12 +8,19 @@ const authStore = useAuthStore()
 
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)
+const copied = ref(false)
 
 // Form fields
 const name = ref('')
 const role = ref('Mamá')
 const selectedAvatar = ref('avatar-02')
 const selectedColor = ref('#ec4899')
+
+function copyInviteCode() {
+  navigator.clipboard.writeText(authStore.familyInviteCode || 'LAGOS-FAMILY')
+  copied.value = true
+  setTimeout(() => { copied.value = false }, 2000)
+}
 
 const avatarOptions = [
   'avatar-01', 'avatar-02', 'avatar-03', 'avatar-04',
@@ -92,6 +99,18 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 
       <button class="add-member-btn" @click="openModal">
         ➕ Agregar Miembro
+      </button>
+    </div>
+
+    <!-- Tarjeta de Código de Invitación del Hogar -->
+    <div class="invite-code-card glass-card">
+      <div class="invite-info">
+        <span class="invite-tag">🔑 CÓDIGO DE INVITACIÓN DEL HOGAR</span>
+        <h3 class="invite-code-text">{{ authStore.familyInviteCode }}</h3>
+        <p class="invite-sub">Comparte este código con tu esposa o hijos para que unan su cuenta en 1 clic.</p>
+      </div>
+      <button class="copy-code-btn" @click="copyInviteCode">
+        📋 {{ copied ? '¡Copiado!' : 'Copiar Código' }}
       </button>
     </div>
 
@@ -484,5 +503,63 @@ async function handleDeleteMember(memberId: string, memberName: string) {
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+.invite-code-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.12));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.invite-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.invite-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #3b82f6;
+  letter-spacing: 0.06em;
+}
+
+.invite-code-text {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0;
+  font-family: monospace, var(--font-main);
+  color: var(--text-primary);
+}
+
+.invite-sub {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.copy-code-btn {
+  padding: 0.65rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-code-btn:hover {
+  background: #3b82f6;
+  color: #ffffff;
 }
 </style>

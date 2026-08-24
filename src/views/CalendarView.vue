@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useCalendarStore } from '../stores/calendarStore'
 import CalendarHeader from '../components/calendar/CalendarHeader.vue'
 import DayTimeline from '../components/calendar/DayTimeline.vue'
@@ -8,6 +9,10 @@ import CreateEventSheet from '../components/calendar/CreateEventSheet.vue'
 import EducationalHintCard from '../components/common/EducationalHintCard.vue'
 
 const calendarStore = useCalendarStore()
+
+onMounted(() => {
+  calendarStore.resetToToday()
+})
 
 function handleUniversalAdd() {
   calendarStore.openCreateSheet()

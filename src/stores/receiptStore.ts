@@ -3,9 +3,11 @@ import { ref } from 'vue'
 import type { ReceiptScanSession, ExtractedReceiptData } from '../types'
 import { receiptService } from '../services/receiptService'
 import { useFinanceStore } from './financeStore'
+import { useAuthStore } from './authStore'
 
 export const useReceiptStore = defineStore('receiptStore', () => {
   const financeStore = useFinanceStore()
+  const authStore = useAuthStore()
 
   // Estado Principal
   const isScannerOpen = ref<boolean>(false)
@@ -179,7 +181,7 @@ export const useReceiptStore = defineStore('receiptStore', () => {
         categoryName: finalData.suggestedCategory,
         categoryIcon: '🧾',
         categoryColor: '#3b82f6',
-        registeredByMemberId: 'm-1',
+        registeredByMemberId: authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1'),
         date: finalData.date,
         receiptImageUrl: currentSession.value.storagePath
       })

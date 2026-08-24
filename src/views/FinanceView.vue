@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useFinanceStore } from '../stores/financeStore'
 import FinanceHeader from '../components/finance/FinanceHeader.vue'
 import OverviewSummaryView from '../components/finance/OverviewSummaryView.vue'
+import FixedExpensesView from '../components/finance/FixedExpensesView.vue'
 import MovementsListView from '../components/finance/MovementsListView.vue'
 import BudgetsProgressView from '../components/finance/BudgetsProgressView.vue'
 import CreateMovementSheet from '../components/finance/CreateMovementSheet.vue'
@@ -11,6 +13,10 @@ import ReceiptReviewSheet from '../components/receipts/ReceiptReviewSheet.vue'
 import EducationalHintCard from '../components/common/EducationalHintCard.vue'
 
 const financeStore = useFinanceStore()
+
+onMounted(async () => {
+  await financeStore.loadDataFromSupabase()
+})
 
 function handleOpenCreateSheet() {
   financeStore.openCreateSheet()
@@ -30,10 +36,13 @@ function handleOpenCreateSheet() {
       <!-- Pestaña 1: Resumen & Gráficos -->
       <OverviewSummaryView v-if="financeStore.activeTab === 'overview'" />
 
-      <!-- Pestaña 2: Movimientos Cronológicos -->
+      <!-- Pestaña 2: Cuentas & Gastos Fijos Mensuales -->
+      <FixedExpensesView v-else-if="financeStore.activeTab === 'fixed_expenses'" />
+
+      <!-- Pestaña 3: Movimientos Cronológicos -->
       <MovementsListView v-else-if="financeStore.activeTab === 'movements'" />
 
-      <!-- Pestaña 3: Presupuestos por Categoría -->
+      <!-- Pestaña 4: Presupuestos por Categoría -->
       <BudgetsProgressView v-else-if="financeStore.activeTab === 'budgets'" />
     </main>
 

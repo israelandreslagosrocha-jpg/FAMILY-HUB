@@ -1,20 +1,45 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useFamilyStore } from '../../stores/familyStore'
 import { useAuthStore } from '../../stores/authStore'
+import { useCalendarStore } from '../../stores/calendarStore'
+import { getChileTimeString, getChileFormattedDate, getChileTodayString } from '../../utils/dateUtils'
 import AvatarImage from '../common/AvatarImage.vue'
 import NetworkStatusBadge from '../pwa/NetworkStatusBadge.vue'
 import NotificationBell from '../pwa/NotificationBell.vue'
 
 const store = useFamilyStore()
 const authStore = useAuthStore()
+const calendarStore = useCalendarStore()
+
 const showMemberSelector = ref(false)
 const currentTheme = ref<'dark' | 'light'>('dark')
+
+const chileTime = ref(getChileTimeString())
+const chileDate = ref(getChileFormattedDate())
+let timerId: ReturnType<typeof setInterval> | null = null
+let lastTodayString = getChileTodayString()
 
 onMounted(() => {
   const savedTheme = (localStorage.getItem('family_hub_theme') as 'dark' | 'light') || 'dark'
   currentTheme.value = savedTheme
   document.documentElement.setAttribute('data-theme', savedTheme)
+
+  timerId = setInterval(() => {
+    chileTime.value = getChileTimeString()
+    chileDate.value = getChileFormattedDate()
+
+    // Verificación automática de cambio de día a medianoche
+    const currentToday = getChileTodayString()
+    if (currentToday !== lastTodayString) {
+      lastTodayString = currentToday
+      calendarStore.setSelectedDate(currentToday)
+    }
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (timerId) clearInterval(timerId)
 })
 
 function toggleTheme() {
@@ -29,9 +54,9 @@ function selectActiveMember(id: string) {
   showMemberSelector.value = false
 }
 
-function handleLogout() {
+async function handleLogout() {
   if (confirm('¿Deseas cerrar sesión en FAMILY-HUB?')) {
-    authStore.logout()
+    await authStore.logout()
   }
 }
 </script>
@@ -66,8 +91,17 @@ function handleLogout() {
         </button>
       </div>
 
-      <!-- Selector de Miembro Autenticado + PWA Badges + Modo Claro/Oscuro -->
+      <!-- Selector de Miembro Autenticado + Reloj Chile + PWA Badges + Modo Claro/Oscuro -->
       <div class="header-right-controls">
+        <!-- Reloj y Fecha Oficial Chile (America/Santiago) -->
+        <div class="chile-clock-badge" title="Hora y Fecha en Tiempo Real de Chile (America/Santiago)">
+          <span class="clock-flag">🇨🇱</span>
+          <div class="clock-details">
+            <span class="clock-time">{{ chileTime }}</span>
+            <span class="clock-date">{{ chileDate }}</span>
+          </div>
+        </div>
+
         <NetworkStatusBadge />
         <NotificationBell />
 
@@ -294,9 +328,50 @@ function handleLogout() {
   background: rgba(239, 68, 68, 0.2);
 }
 
+.chile-clock-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 4px 10px;
+  border-radius: 16px;
+  user-select: none;
+}
+
+.clock-flag {
+  font-size: 1.1rem;
+}
+
+.clock-details {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.clock-time {
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-family: monospace, var(--font-main);
+  color: #3b82f6;
+  letter-spacing: -0.02em;
+}
+
+.clock-date {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 @media (max-width: 640px) {
   .logo-title {
     display: none;
+  }
+  .clock-date {
+    display: none;
+  }
+  .chile-clock-badge {
+    padding: 4px 6px;
   }
 }
 </style>

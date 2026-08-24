@@ -7,6 +7,7 @@ import StaleDataBanner from './components/pwa/StaleDataBanner.vue'
 import PWAInstallBanner from './components/pwa/PWAInstallBanner.vue'
 import NotificationDrawer from './components/notifications/NotificationDrawer.vue'
 import LoginView from './views/LoginView.vue'
+import JoinFamilyModal from './components/common/JoinFamilyModal.vue'
 
 const authStore = useAuthStore()
 
@@ -19,6 +20,9 @@ onMounted(async () => {
   <div class="app-layout">
     <!-- Banner Discreto de Datos Cacheados en Modo Offline -->
     <StaleDataBanner />
+
+    <!-- Modal de Vinculación a la Familia para Usuarios Nuevos Sin Hogar Registrado -->
+    <JoinFamilyModal v-if="authStore.isAuthenticated && authStore.isUnlinkedUser" />
 
     <!-- Pantalla de Login Apple Style cuando NO está Autenticado -->
     <LoginView v-if="!authStore.isAuthenticated" />

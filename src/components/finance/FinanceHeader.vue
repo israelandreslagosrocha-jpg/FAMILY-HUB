@@ -43,7 +43,7 @@ function handleScope(scope: FinancialScope | 'all') {
       </div>
     </div>
 
-    <!-- Controles de Navegación: Ámbito + Pestañas -->
+    <!-- Controles de Navegación: Ámbito + Pestañas + Acciones -->
     <div class="header-controls-row">
       <!-- Selector de Pestañas -->
       <div class="tab-selector-bar">
@@ -53,6 +53,13 @@ function handleScope(scope: FinancialScope | 'all') {
           @click="handleTab('overview')"
         >
           📊 Resumen
+        </button>
+        <button 
+          class="tab-btn" 
+          :class="{ active: financeStore.activeTab === 'fixed_expenses' }"
+          @click="handleTab('fixed_expenses')"
+        >
+          📌 Cuentas Fijas
         </button>
         <button 
           class="tab-btn" 
@@ -95,8 +102,14 @@ function handleScope(scope: FinancialScope | 'all') {
         </button>
       </div>
 
-      <!-- Escáner OCR de Boletas -->
-      <ReceiptScannerBtn />
+      <!-- Grupo de Botones de Acción Prominentes -->
+      <div class="action-buttons-group">
+        <button class="add-movement-btn" @click="financeStore.openCreateSheet()">
+          <span>➕ Registrar Movimiento</span>
+        </button>
+        <!-- Escáner OCR de Boletas -->
+        <ReceiptScannerBtn />
+      </div>
     </div>
   </header>
 </template>
@@ -177,5 +190,33 @@ function handleScope(scope: FinancialScope | 'all') {
   background: #3b82f6;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.action-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.add-movement-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.65rem 1.15rem;
+  border-radius: 14px;
+  border: none;
+  background: #10b981;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.add-movement-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
 }
 </style>

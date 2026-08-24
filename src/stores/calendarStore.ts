@@ -4,10 +4,11 @@ import type { CalendarEvent, TaskItem, CalendarViewType, ViewMode, FamilyMember 
 import { mockMembers } from '../mocks/familyData'
 import { calendarService, type CreateEventPayload } from '../services/calendarService'
 import { supabase } from '../services/supabaseClient'
+import { getChileTodayString } from '../utils/dateUtils'
 
 export const useCalendarStore = defineStore('calendar', () => {
   // Estado Principal
-  const selectedDate = ref<string>('2026-08-19') // Formato YYYY-MM-DD (Hoy)
+  const selectedDate = ref<string>(getChileTodayString()) // Formato YYYY-MM-DD (Hoy dinámico Chile)
   const viewType = ref<CalendarViewType>('day')   // 'day' (prioridad) | 'week' | 'month'
   const viewMode = ref<ViewMode>('my_day')        // 'my_day' | 'family'
   const activeMemberId = ref<string>('m-1')       // Papá (Israel) por defecto
@@ -24,7 +25,7 @@ export const useCalendarStore = defineStore('calendar', () => {
 
   // Estado del Modal Sheet de Creación
   const isSheetOpen = ref<boolean>(false)
-  const sheetContextDate = ref<string>('2026-08-19')
+  const sheetContextDate = ref<string>(getChileTodayString())
 
   // Computados
   const activeMember = computed(() => {
@@ -219,6 +220,10 @@ export const useCalendarStore = defineStore('calendar', () => {
     }
   }
 
+  function resetToToday() {
+    selectedDate.value = getChileTodayString()
+  }
+
   function toggleTask(taskId: string) {
     const t = tasks.value.find(item => item.id === taskId)
     if (t) {
@@ -248,6 +253,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     setViewMode,
     setFilterMember,
     setSelectedDate,
+    resetToToday,
     openCreateSheet,
     closeCreateSheet,
     addEventWithSupabase,

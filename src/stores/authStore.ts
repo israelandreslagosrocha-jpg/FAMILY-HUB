@@ -11,6 +11,8 @@ export const useAuthStore = defineStore('authStore', () => {
   const activeMemberId = ref<string | null>(null)
   const isLoading = ref<boolean>(true)
   const authError = ref<string | null>(null)
+  const isUnlinkedUser = ref<boolean>(false)
+  const familyInviteCode = ref<string>('LAGOS-FAMILY')
 
   const isAuthenticated = computed(() => !!user.value)
 
@@ -46,6 +48,7 @@ export const useAuthStore = defineStore('authStore', () => {
       } else {
         familyMembers.value = []
         activeMemberId.value = null
+        isUnlinkedUser.value = false
       }
     })
   }
@@ -55,6 +58,24 @@ export const useAuthStore = defineStore('authStore', () => {
     if (!user.value) return
 
     try {
+      // 1. Intentar auto-vinculación silenciosa por correo si corresponde
+      try {
+        await supabase.rpc('auto_link_member_by_email')
+      } catch (e) {
+        // Ignorar si la función no está desplegada aún
+      }
+
+      // 2. Cargar código de invitación del hogar si el usuario pertenece a una familia
+      try {
+        const { data: famData } = await supabase.from('families').select('invite_code').limit(1)
+        if (famData && famData.length > 0 && famData[0].invite_code) {
+          familyInviteCode.value = famData[0].invite_code
+        }
+      } catch (e) {
+        // Fallback a LAGOS-FAMILY
+      }
+
+      // 3. Cargar miembros familiares del hogar del usuario
       const { data, error } = await supabase
         .from('family_members')
         .select('*')
@@ -67,13 +88,23 @@ export const useAuthStore = defineStore('authStore', () => {
       }
 
       if (data && data.length > 0) {
-        familyMembers.value = data.map((m: any, idx: number) => ({
+        isUnlinkedUser.value = false
+        const validMembers = data.filter((m: any) => {
+          const n = (m.name || '').toLowerCase()
+          if (n.includes('prueba') || n.includes('esposa') || (n === 'vicente' && m.role === 'Mamá')) {
+            return false
+          }
+          return true
+        })
+
+        familyMembers.value = validMembers.map((m: any, idx: number) => ({
           id: m.id,
           name: m.name || m.role || 'Familiar',
           avatarId: m.avatar_id || `avatar-0${(idx % 4) + 1}`,
           color: m.color || (idx === 0 ? '#3b82f6' : idx === 1 ? '#ec4899' : '#10b981'),
           role: m.role || 'Miembro',
-          isActive: m.is_active !== false
+          isActive: m.is_active !== false,
+          email: m.email || undefined
         }))
 
         // Seleccionar por defecto el perfil vinculado al usuario autenticado
@@ -84,16 +115,10 @@ export const useAuthStore = defineStore('authStore', () => {
           activeMemberId.value = data[0].id
         }
       } else {
-        // Si no existen miembros en la BD aún para esta familia, crear perfil inicial
-        familyMembers.value = [{
-          id: 'm-default',
-          name: user.value.email?.split('@')[0] || 'Israel',
-          avatarId: 'avatar-01',
-          color: '#3b82f6',
-          role: 'Papá',
-          isActive: true
-        }]
-        activeMemberId.value = 'm-default'
+        // El usuario está autenticado pero no está vinculado a una familia en Supabase
+        isUnlinkedUser.value = true
+        familyMembers.value = []
+        activeMemberId.value = null
       }
     } catch (err: any) {
       console.error('Error al procesar miembros familiares:', err.message)
@@ -101,18 +126,70 @@ export const useAuthStore = defineStore('authStore', () => {
   }
 
   /**
+   * Obtener integrantes disponibles de una familia por su código de invitación
+   */
+  async function fetchMembersByInviteCode(inviteCode: string) {
+    try {
+      const { data, error } = await supabase.rpc('get_unlinked_family_members_by_code', {
+        p_invite_code: inviteCode
+      })
+      if (error) throw error
+      return data || []
+    } catch (err: any) {
+      console.error('Error al consultar familia por código:', err.message)
+      throw err
+    }
+  }
+
+  /**
+   * Vincular la cuenta actual del usuario a un perfil de la familia seleccionada
+   */
+  async function linkMemberProfile(inviteCode: string, memberId: string): Promise<boolean> {
+    isLoading.value = true
+    authError.value = null
+    try {
+      // 1. Garantizar perfil en public.profiles para prevenir fallo de clave foránea
+      if (user.value) {
+        await supabase.from('profiles').upsert({
+          id: user.value.id,
+          display_name: user.value.email?.split('@')[0] || 'Familiar'
+        })
+      }
+
+      // 2. Ejecutar vinculación por RPC
+      const { data, error } = await supabase.rpc('link_member_profile', {
+        p_invite_code: inviteCode,
+        p_member_id: memberId
+      })
+
+      if (error) {
+        authError.value = error.message
+        return false
+      }
+
+      if (data) {
+        await loadFamilyMembers()
+        return true
+      }
+      return false
+    } catch (err: any) {
+      authError.value = err.message || 'Error al vincular perfil.'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
    * Elimina a un integrante de la familia de forma reactiva y persistente
    */
   async function deleteFamilyMember(memberId: string) {
-    // 1. Quitar de la lista local de forma reactiva e inmediata
     familyMembers.value = familyMembers.value.filter(m => m.id !== memberId)
 
-    // 2. Si el miembro activo era el eliminado, conmutar al Jefe de Hogar
     if (activeMemberId.value === memberId && familyMembers.value.length > 0) {
       activeMemberId.value = familyMembers.value[0].id
     }
 
-    // 3. Persistir borrado en Supabase
     if (!memberId.startsWith('m-') && !memberId.startsWith('temp-')) {
       try {
         await supabase.from('family_members').update({ is_active: false }).eq('id', memberId)
@@ -186,19 +263,21 @@ export const useAuthStore = defineStore('authStore', () => {
     }
   }
 
-  // Cerrar Sesión
+  // Cerrar Sesión Defensivo Garantizado
   async function logout() {
     isLoading.value = true
     try {
       await supabase.auth.signOut()
+    } catch (err: any) {
+      console.warn('⚠️ Warning al cerrar sesión en Supabase:', err?.message)
+    } finally {
       user.value = null
       session.value = null
       familyMembers.value = []
       activeMemberId.value = null
-    } catch (err: any) {
-      console.error('Error al cerrar sesión:', err.message)
-    } finally {
+      isUnlinkedUser.value = false
       isLoading.value = false
+      window.location.href = '/'
     }
   }
 
@@ -215,8 +294,12 @@ export const useAuthStore = defineStore('authStore', () => {
     isLoading,
     authError,
     isAuthenticated,
+    isUnlinkedUser,
+    familyInviteCode,
     initAuth,
     loadFamilyMembers,
+    fetchMembersByInviteCode,
+    linkMemberProfile,
     login,
     registerFamilyUser,
     logout,

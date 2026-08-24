@@ -23,7 +23,7 @@ export const taskService = {
   async getTasks(): Promise<TaskItem[]> {
     const { data, error } = await supabase
       .from('task_instances')
-      .select('*, categories(name, color), responsibilities(id, title, icon, color)')
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -152,5 +152,39 @@ export const taskService = {
       console.error('❌ Error al eliminar tarea en Supabase:', error.message)
       throw error
     }
+  },
+
+  /**
+   * Crea una nueva responsabilidad permanente en Supabase
+   */
+  async createResponsibility(payload: { title: string; description?: string; defaultAssignedMemberId: string; icon?: string; color?: string }): Promise<string> {
+    const { data: mData } = await supabase.from('family_members').select('family_id').limit(1)
+    const familyId = mData && mData.length > 0 ? mData[0].family_id : undefined
+
+    const row: any = {
+      title: payload.title,
+      description: payload.description || null,
+      default_assigned_member_id: payload.defaultAssignedMemberId,
+      icon: payload.icon || '🛠️',
+      color: payload.color || '#3b82f6',
+      is_active: true
+    }
+
+    if (familyId) {
+      row.family_id = familyId
+    }
+
+    const { data, error } = await supabase
+      .from('responsibilities')
+      .insert(row)
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('❌ Error al crear responsabilidad en Supabase:', error.message)
+      throw error
+    }
+
+    return data.id
   }
 }

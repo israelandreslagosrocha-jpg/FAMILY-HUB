@@ -54,10 +54,10 @@ const navItems = [
 </template>
 
 <style scoped>
-/* Estilos Menú Lateral Desktop */
+/* Estilos Menú Lateral Desktop (Apple HIG Sidebar) */
 .sidebar-nav {
   display: none;
-  width: 220px;
+  width: 230px;
   flex-shrink: 0;
   padding: 1.5rem 1rem;
   border-right: 1px solid var(--border-subtle);
@@ -77,30 +77,39 @@ const navItems = [
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border-radius: var(--radius-md);
+  border-radius: 14px;
   color: var(--text-secondary);
   text-decoration: none;
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: all var(--transition-fast);
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav-link-desktop:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
+  transform: translateX(3px);
 }
 
 .nav-link-desktop.active {
-  background: rgba(59, 130, 246, 0.15);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(37, 99, 235, 0.22));
   color: #3b82f6;
-  font-weight: 600;
+  font-weight: 700;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
 .nav-icon {
   flex-shrink: 0;
+  transition: transform 0.2s;
 }
 
-/* Estilos Barra Inferior Móvil */
+.nav-link-desktop.active .nav-icon {
+  transform: scale(1.1);
+}
+
+/* Estilos Barra Inferior Móvil (iOS TabBar HIG) */
 .bottom-nav {
   display: flex;
   position: fixed;
@@ -108,7 +117,7 @@ const navItems = [
   left: 0;
   right: 0;
   height: 64px;
-  background: rgba(19, 27, 46, 0.92);
+  background: var(--bg-glass);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-subtle);
@@ -125,16 +134,22 @@ const navItems = [
   gap: 3px;
   color: var(--text-muted);
   text-decoration: none;
-  transition: color var(--transition-fast);
+  transition: color 0.15s, transform 0.15s;
+}
+
+.nav-link-mobile:active {
+  transform: scale(0.92);
 }
 
 .nav-link-mobile.active {
   color: #3b82f6;
+  font-weight: 700;
 }
 
 .mobile-label {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* Media Queries para Responsive Breakpoint */

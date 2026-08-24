@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useFinanceStore } from '../../stores/financeStore'
 import { useAuthStore } from '../../stores/authStore'
 import type { MovementType, FinancialScope } from '../../types'
+import { getChileTodayString } from '../../utils/dateUtils'
 
 const financeStore = useFinanceStore()
 const authStore = useAuthStore()
@@ -14,7 +15,7 @@ const scope = ref<FinancialScope>('family')
 const categoryName = ref('Supermercado')
 const registeredByMemberId = ref(authStore.activeMemberId || 'm-1')
 const belongingToMemberId = ref(authStore.activeMemberId || 'm-1')
-const date = ref(new Date().toISOString().split('T')[0])
+const date = ref(getChileTodayString())
 
 watch(() => financeStore.isCreateSheetOpen, (isOpen) => {
   if (isOpen) {
@@ -25,7 +26,7 @@ watch(() => financeStore.isCreateSheetOpen, (isOpen) => {
     categoryName.value = 'Supermercado'
     registeredByMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
     belongingToMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
-    date.value = new Date().toISOString().split('T')[0]
+    date.value = getChileTodayString()
   }
 })
 

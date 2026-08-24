@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCalendarStore } from '../../stores/calendarStore'
+import { getChileTodayString } from '../../utils/dateUtils'
 
 const calendarStore = useCalendarStore()
 
 const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
-// Genera la grilla de días del mes seleccionado (Agosto 2026)
+// Genera la grilla de días del mes seleccionado
 const calendarDays = computed(() => {
+  const todayStr = getChileTodayString()
   const [year, month] = calendarStore.selectedDate.split('-').map(Number)
   
   // Primer día del mes
@@ -49,7 +51,7 @@ const calendarDays = computed(() => {
       dayNumber: d,
       fullDate: fullDateStr,
       isCurrentMonth: true,
-      isToday: fullDateStr === '2026-08-19',
+      isToday: fullDateStr === todayStr,
       isSelected: fullDateStr === calendarStore.selectedDate,
       dots
     })

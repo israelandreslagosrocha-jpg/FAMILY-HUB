@@ -1,18 +1,23 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { FinancialMovement, CategoryBudget, FinanceTabType, FinancialScope } from '../types'
+import type { FinancialMovement, CategoryBudget, FinanceTabType, FinancialScope, FixedExpenseItem } from '../types'
 import { financeService } from '../services/financeService'
 import { supabase } from '../services/supabaseClient'
+import { getChileTodayString } from '../utils/dateUtils'
 
 export const useFinanceStore = defineStore('financeStore', () => {
   // Estado Principal
   const activeTab = ref<FinanceTabType>('overview')
   const filterScope = ref<FinancialScope | 'all'>('all')
   const filterMemberId = ref<string>('all')
+  const selectedMonth = ref<string>(getChileTodayString().substring(0, 7)) // YYYY-MM
   const isCreateSheetOpen = ref<boolean>(false)
   const isLoading = ref<boolean>(false)
 
-  // Movimientos Financieros (Inicializa limpio)
+  // Cuentas y Gastos Fijos del Mes (Inicializa limpio desde cero)
+  const fixedExpenses = ref<FixedExpenseItem[]>([])
+
+  // Movimientos Financieros
   const movements = ref<FinancialMovement[]>([])
 
   // Presupuestos por Categoría (Inicializa limpio)
@@ -26,6 +31,9 @@ export const useFinanceStore = defineStore('financeStore', () => {
     try {
       const dbMovements = await financeService.getMovements()
       movements.value = dbMovements
+
+      const dbFixed = await financeService.getFixedExpenses()
+      fixedExpenses.value = dbFixed
 
       const dbBudgets = await financeService.getBudgets()
       if (dbBudgets.length > 0) {
@@ -162,10 +170,83 @@ export const useFinanceStore = defineStore('financeStore', () => {
     }
   }
 
+  async function toggleFixedExpensePaid(id: string) {
+    const item = fixedExpenses.value.find(f => f.id === id)
+    if (item) {
+      item.isPaid = !item.isPaid
+      item.paidAt = item.isPaid ? new Date().toISOString() : null
+
+      if (!id.startsWith('fix-') && !id.startsWith('temp-')) {
+        try {
+          await financeService.updateFixedExpensePaid(id, item.isPaid)
+        } catch (err: any) {
+          console.error('❌ Error al actualizar cuenta fija en Supabase:', err.message)
+        }
+      }
+
+      // Si se marca pagada, registrar el movimiento de gasto automáticamente
+      if (item.isPaid) {
+        addMovement({
+          title: `Pago Cuenta: ${item.title}`,
+          amount: item.amount,
+          currency: 'CLP',
+          type: 'expense',
+          scope: 'family',
+          categoryId: `cat-fixed-${item.id}`,
+          categoryName: item.categoryName,
+          categoryIcon: item.icon,
+          categoryColor: item.color,
+          registeredByMemberId: 'm-1',
+          date: getChileTodayString()
+        })
+      }
+    }
+  }
+
+  async function addFixedExpense(payload: Omit<FixedExpenseItem, 'id'>) {
+    const tempId = `temp-fix-${Date.now()}`
+    const newItem: FixedExpenseItem = {
+      ...payload,
+      id: tempId
+    }
+    fixedExpenses.value.push(newItem)
+
+    // Persistir en Supabase
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (sessionData.session) {
+      try {
+        const realId = await financeService.createFixedExpense(payload)
+        const target = fixedExpenses.value.find(f => f.id === tempId)
+        if (target) {
+          target.id = realId
+        }
+      } catch (err: any) {
+        console.error('❌ Error al guardar cuenta fija en Supabase:', err.message)
+      }
+    }
+  }
+
+  async function deleteFixedExpense(id: string) {
+    const idx = fixedExpenses.value.findIndex(f => f.id === id)
+    if (idx !== -1) {
+      fixedExpenses.value.splice(idx, 1)
+    }
+
+    if (!id.startsWith('fix-') && !id.startsWith('temp-')) {
+      try {
+        await financeService.deleteFixedExpense(id)
+      } catch (err: any) {
+        console.error('❌ Error al eliminar cuenta fija de Supabase:', err.message)
+      }
+    }
+  }
+
   return {
     activeTab,
     filterScope,
     filterMemberId,
+    selectedMonth,
+    fixedExpenses,
     isCreateSheetOpen,
     isLoading,
     movements,
@@ -181,6 +262,9 @@ export const useFinanceStore = defineStore('financeStore', () => {
     openCreateSheet,
     closeCreateSheet,
     addMovement,
-    deleteMovement
+    deleteMovement,
+    toggleFixedExpensePaid,
+    addFixedExpense,
+    deleteFixedExpense
   }
 })

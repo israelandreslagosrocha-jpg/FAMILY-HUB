@@ -63,6 +63,37 @@ function formatCurrency(val: number): string {
 
     <!-- 🍱 GRILLA PRINCIPAL BENTO (APPLE BENTO GRID SYSTEM) -->
     <div class="bento-grid">
+      <!-- 📌 BENTO CARD SUGERENCIAS DE TAREAS RECIBIDAS (12 COLS) -->
+      <div v-if="taskStore.suggestionTasks.length > 0" class="bento-card bento-col-12 suggestion-bento-card">
+        <div class="bento-card-top">
+          <div class="bento-title-group">
+            <span class="suggestion-emoji">💡</span>
+            <div>
+              <h3 class="bento-card-title">Sugerencias de Tareas Recibidas</h3>
+              <span class="suggestion-subtitle">Revisa las tareas sugeridas por tu familia para agregar a tus pendientes.</span>
+            </div>
+          </div>
+          <span class="count-pill-amber">{{ taskStore.suggestionTasks.length }} Pendiente(s)</span>
+        </div>
+
+        <div class="suggestions-list">
+          <div v-for="t in taskStore.suggestionTasks" :key="t.id" class="suggestion-item-row">
+            <div class="suggestion-item-info">
+              <span class="suggestion-item-title">{{ t.title }}</span>
+              <span class="suggestion-item-meta" v-if="t.description">{{ t.description }}</span>
+            </div>
+            <div class="suggestion-item-actions">
+              <button class="accept-btn" @click="taskStore.acceptTaskSuggestion(t.id)">
+                ✓ Aceptar Tarea
+              </button>
+              <button class="reject-btn" @click="taskStore.rejectTaskSuggestion(t.id)">
+                ✕ Rechazar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 📌 BENTO CARD HERO (8 COLS): Saludo e Identidad Familiar -->
       <div class="bento-card bento-col-7 bento-card-hero">
         <div class="hero-header-bento">
@@ -365,5 +396,103 @@ function formatCurrency(val: number): string {
 
 .bento-event-cat {
   font-size: 0.75rem;
+}
+
+.suggestion-bento-card {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+
+  .suggestion-emoji {
+    font-size: 1.6rem;
+  }
+
+  .suggestion-subtitle {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    display: block;
+  }
+
+  .count-pill-amber {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .suggestions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+  }
+
+  .suggestion-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .suggestion-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .suggestion-item-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .suggestion-item-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+  }
+
+  .suggestion-item-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .accept-btn {
+    padding: 0.5rem 0.9rem;
+    border-radius: 10px;
+    border: none;
+    background: #10b981;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .accept-btn:hover {
+    transform: scale(1.04);
+    background: #059669;
+  }
+
+  .reject-btn {
+    padding: 0.5rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .reject-btn:hover {
+    transform: scale(1.04);
+    background: rgba(239, 68, 68, 0.2);
+  }
 }
 </style>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useTaskStore } from '../../stores/taskStore'
 import { useAuthStore } from '../../stores/authStore'
 import type { PriorityLevel } from '../../types'
+import { getChileTodayString } from '../../utils/dateUtils'
 
 const taskStore = useTaskStore()
 const authStore = useAuthStore()
@@ -11,9 +12,16 @@ const title = ref('')
 const description = ref('')
 const assignedToMemberId = ref('m-1')
 const priority = ref<PriorityLevel>('media')
-const dueDate = ref('2026-08-19')
+const dueDate = ref(getChileTodayString())
 const category = ref('Hogar')
 const responsibilityId = ref<string | undefined>(undefined)
+
+const isSuggestionForPapa = computed(() => {
+  const selected = taskStore.members.find(m => m.id === assignedToMemberId.value)
+  const isPapa = selected?.role === 'Papá' || selected?.role === 'Jefe de Hogar' || selected?.name.toLowerCase().includes('israel')
+  const isSelf = authStore.activeMemberId === assignedToMemberId.value
+  return isPapa && !isSelf
+})
 
 watch(() => taskStore.isCreateTaskSheetOpen, (isOpen) => {
   if (isOpen) {
@@ -25,7 +33,7 @@ watch(() => taskStore.isCreateTaskSheetOpen, (isOpen) => {
       assignedToMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
     }
     priority.value = 'media'
-    dueDate.value = new Date().toISOString().split('T')[0]
+    dueDate.value = getChileTodayString()
     category.value = 'Hogar'
     responsibilityId.value = undefined
   }
@@ -38,14 +46,22 @@ function handleClose() {
 function handleSubmit() {
   if (!title.value.trim()) return
 
-  taskStore.addTaskWithSupabase({
-    title: title.value.trim(),
-    description: description.value.trim() || undefined,
-    assignedMemberId: assignedToMemberId.value,
-    priority: priority.value,
-    dueDate: dueDate.value,
-    responsibilityId: responsibilityId.value
-  })
+  if (taskStore.createTaskSheetMode === 'responsibility') {
+    taskStore.addResponsibilityWithSupabase({
+      title: title.value.trim(),
+      description: description.value.trim() || undefined,
+      defaultAssignedMemberId: assignedToMemberId.value
+    })
+  } else {
+    taskStore.addTaskWithSupabase({
+      title: title.value.trim(),
+      description: description.value.trim() || undefined,
+      assignedMemberId: assignedToMemberId.value,
+      priority: priority.value,
+      dueDate: dueDate.value,
+      responsibilityId: responsibilityId.value
+    })
+  }
 }
 </script>
 
@@ -53,19 +69,43 @@ function handleSubmit() {
   <div v-if="taskStore.isCreateTaskSheetOpen" class="sheet-backdrop" @click.self="handleClose">
     <div class="sheet-modal glass-card" @click.stop>
       <div class="sheet-header">
-        <h3 class="sheet-title">📋 Nueva Tarea</h3>
+        <h3 class="sheet-title">
+          {{ taskStore.createTaskSheetMode === 'responsibility' ? '🛠️ Nueva Responsabilidad' : '📋 Nueva Tarea' }}
+        </h3>
         <button class="close-btn" @click="handleClose">×</button>
+      </div>
+
+      <!-- Selector Táctil Dual estilo Apple Pill -->
+      <div class="sheet-mode-toggle">
+        <button 
+          type="button"
+          class="mode-pill-btn" 
+          :class="{ active: taskStore.createTaskSheetMode === 'task' }"
+          @click="taskStore.createTaskSheetMode = 'task'"
+        >
+          📋 Tarea del Hogar
+        </button>
+        <button 
+          type="button"
+          class="mode-pill-btn" 
+          :class="{ active: taskStore.createTaskSheetMode === 'responsibility' }"
+          @click="taskStore.createTaskSheetMode = 'responsibility'"
+        >
+          🛠️ Responsabilidad
+        </button>
       </div>
 
       <form class="sheet-form" @submit.prevent="handleSubmit">
         <!-- 1. TÍTULO -->
         <div class="form-group">
-          <label class="form-label">¿Qué hay que hacer?</label>
+          <label class="form-label">
+            {{ taskStore.createTaskSheetMode === 'responsibility' ? 'Nombre de la Responsabilidad' : '¿Qué hay que hacer?' }}
+          </label>
           <input 
             v-model="title" 
             type="text" 
             class="form-input main-title-input" 
-            placeholder="Ej. Comprar leche, Pagar cuenta de luz..."
+            :placeholder="taskStore.createTaskSheetMode === 'responsibility' ? 'Ej. Sacar la basura, Cocinar almuerzo, Lavar los platos...' : 'Ej. Comprar leche, Pagar cuenta de luz...'"
             autofocus 
             required 
           />
@@ -73,7 +113,9 @@ function handleSubmit() {
 
         <!-- 2. ENCARGADO / ASIGNADO A -->
         <div class="form-group">
-          <label class="form-label">Asignado a</label>
+          <label class="form-label">
+            {{ taskStore.createTaskSheetMode === 'responsibility' ? 'Miembro Responsable' : 'Asignado a' }}
+          </label>
           <div class="members-chips-grid">
             <button 
               v-for="member in taskStore.members" 
@@ -90,8 +132,13 @@ function handleSubmit() {
           </div>
         </div>
 
-        <!-- 3. PRIORIDAD Y FECHA -->
-        <div class="form-row">
+        <!-- AVISO DE SUGERENCIA PARA ISRAEL (SOLO EN MODO TAREA) -->
+        <div v-if="taskStore.createTaskSheetMode === 'task' && isSuggestionForPapa" class="suggestion-notice-pill">
+          💡 <strong>Sugerencia para Israel:</strong> Se enviará como una sugerencia a Israel para que la revise y acepte.
+        </div>
+
+        <!-- 3. PRIORIDAD Y FECHA (SOLO MODO TAREA) -->
+        <div v-if="taskStore.createTaskSheetMode === 'task'" class="form-row">
           <div class="form-group flex-1">
             <label class="form-label">Prioridad</label>
             <select v-model="priority" class="form-select">
@@ -107,8 +154,8 @@ function handleSubmit() {
           </div>
         </div>
 
-        <!-- 4. VINCULAR A RESPONSABILIDAD (OPCIONAL) -->
-        <div class="form-group">
+        <!-- 4. VINCULAR A RESPONSABILIDAD (OPCIONAL EN MODO TAREA) -->
+        <div v-if="taskStore.createTaskSheetMode === 'task'" class="form-group">
           <label class="form-label">Responsabilidad del hogar (opcional)</label>
           <select v-model="responsibilityId" class="form-select">
             <option :value="undefined">Ninguna (Tarea puntual)</option>
@@ -125,7 +172,7 @@ function handleSubmit() {
         <!-- BOTÓN SUBMIT -->
         <div class="sheet-actions">
           <button type="submit" class="submit-task-btn" :disabled="!title.trim()">
-            + Crear Tarea
+            {{ taskStore.createTaskSheetMode === 'responsibility' ? '+ Crear Responsabilidad' : '+ Crear Tarea' }}
           </button>
         </div>
       </form>
@@ -183,7 +230,41 @@ function handleSubmit() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sheet-mode-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px;
+  border-radius: 16px;
+  gap: 4px;
   margin-bottom: 1.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sheet-mode-toggle {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.mode-pill-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-pill-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .sheet-title {
@@ -314,5 +395,15 @@ function handleSubmit() {
 .submit-task-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.suggestion-notice-pill {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  line-height: 1.35;
 }
 </style>
