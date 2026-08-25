@@ -23,6 +23,12 @@ const tasksByMember = computed(() => {
 function handleToggle(taskId: string) {
   taskStore.toggleTaskStatus(taskId)
 }
+
+function handleDeleteTask(taskId: string) {
+  if (confirm('¿Deseas eliminar esta tarea?')) {
+    taskStore.deleteTask(taskId)
+  }
+}
 </script>
 
 <template>
@@ -78,6 +84,11 @@ function handleToggle(taskId: string) {
             <span class="mini-task-title" :class="{ strike: task.status === 'completed' }">
               {{ task.title }}
             </span>
+
+            <div class="mini-task-actions">
+              <button type="button" class="action-icon-btn" title="Editar Tarea" @click.stop="taskStore.openEditTaskSheet(task)">✏️</button>
+              <button type="button" class="action-icon-btn" title="Eliminar Tarea" @click.stop="handleDeleteTask(task.id)">🗑️</button>
+            </div>
           </div>
         </div>
       </section>
@@ -210,6 +221,7 @@ function handleToggle(taskId: string) {
 }
 
 .mini-task-title {
+  flex: 1;
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -217,5 +229,25 @@ function handleToggle(taskId: string) {
 
 .mini-task-title.strike {
   text-decoration: line-through;
+}
+
+.mini-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.action-icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.action-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 </style>

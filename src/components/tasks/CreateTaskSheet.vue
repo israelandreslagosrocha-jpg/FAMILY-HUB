@@ -15,6 +15,7 @@ const priority = ref<PriorityLevel>('media')
 const dueDate = ref(getChileTodayString())
 const category = ref('Hogar')
 const responsibilityId = ref<string | undefined>(undefined)
+const fixedTime = ref('')
 
 const isSuggestionForPapa = computed(() => {
   const selected = taskStore.members.find(m => m.id === assignedToMemberId.value)
@@ -25,17 +26,34 @@ const isSuggestionForPapa = computed(() => {
 
 watch(() => taskStore.isCreateTaskSheetOpen, (isOpen) => {
   if (isOpen) {
-    title.value = ''
-    description.value = ''
-    if (taskStore.filterMemberId !== 'all') {
-      assignedToMemberId.value = taskStore.filterMemberId
+    if (taskStore.editingTask) {
+      title.value = taskStore.editingTask.title
+      description.value = taskStore.editingTask.description || ''
+      assignedToMemberId.value = taskStore.editingTask.assignedToMemberId
+      priority.value = taskStore.editingTask.priority
+      dueDate.value = taskStore.editingTask.dueDate
+      category.value = taskStore.editingTask.category
+      responsibilityId.value = taskStore.editingTask.responsibilityId
+      fixedTime.value = ''
+    } else if (taskStore.editingResponsibility) {
+      title.value = taskStore.editingResponsibility.title
+      description.value = taskStore.editingResponsibility.description || ''
+      assignedToMemberId.value = taskStore.editingResponsibility.defaultAssignedMemberId
+      fixedTime.value = taskStore.editingResponsibility.fixedTime || ''
     } else {
-      assignedToMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
+      title.value = ''
+      description.value = ''
+      fixedTime.value = ''
+      if (taskStore.filterMemberId !== 'all') {
+        assignedToMemberId.value = taskStore.filterMemberId
+      } else {
+        assignedToMemberId.value = authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1')
+      }
+      priority.value = 'media'
+      dueDate.value = getChileTodayString()
+      category.value = 'Hogar'
+      responsibilityId.value = undefined
     }
-    priority.value = 'media'
-    dueDate.value = getChileTodayString()
-    category.value = 'Hogar'
-    responsibilityId.value = undefined
   }
 })
 
@@ -46,11 +64,23 @@ function handleClose() {
 function handleSubmit() {
   if (!title.value.trim()) return
 
-  if (taskStore.createTaskSheetMode === 'responsibility') {
+  if (taskStore.editingTask) {
+    taskStore.updateTaskDetails(taskStore.editingTask.id, title.value.trim(), description.value.trim() || undefined)
+    taskStore.reassignTask(taskStore.editingTask.id, assignedToMemberId.value)
+    taskStore.closeCreateTaskSheet()
+  } else if (taskStore.editingResponsibility) {
+    taskStore.updateResponsibilityWithSupabase(taskStore.editingResponsibility.id, {
+      title: title.value.trim(),
+      description: description.value.trim() || undefined,
+      defaultAssignedMemberId: assignedToMemberId.value,
+      fixedTime: fixedTime.value || undefined
+    })
+  } else if (taskStore.createTaskSheetMode === 'responsibility') {
     taskStore.addResponsibilityWithSupabase({
       title: title.value.trim(),
       description: description.value.trim() || undefined,
-      defaultAssignedMemberId: assignedToMemberId.value
+      defaultAssignedMemberId: assignedToMemberId.value,
+      fixedTime: fixedTime.value || undefined
     })
   } else {
     taskStore.addTaskWithSupabase({
@@ -70,13 +100,16 @@ function handleSubmit() {
     <div class="sheet-modal glass-card" @click.stop>
       <div class="sheet-header">
         <h3 class="sheet-title">
-          {{ taskStore.createTaskSheetMode === 'responsibility' ? '🛠️ Nueva Responsabilidad' : '📋 Nueva Tarea' }}
+          <template v-if="taskStore.editingTask">✏️ Editar Tarea</template>
+          <template v-else-if="taskStore.editingResponsibility">✏️ Editar Responsabilidad</template>
+          <template v-else-if="taskStore.createTaskSheetMode === 'responsibility'">🛠️ Nueva Responsabilidad</template>
+          <template v-else>📋 Nueva Tarea</template>
         </h3>
         <button class="close-btn" @click="handleClose">×</button>
       </div>
 
-      <!-- Selector Táctil Dual estilo Apple Pill -->
-      <div class="sheet-mode-toggle">
+      <!-- Selector Táctil Dual estilo Apple Pill (deshabilitado al editar) -->
+      <div v-if="!taskStore.editingTask && !taskStore.editingResponsibility" class="sheet-mode-toggle">
         <button 
           type="button"
           class="mode-pill-btn" 
@@ -137,6 +170,12 @@ function handleSubmit() {
           💡 <strong>Sugerencia para Israel:</strong> Se enviará como una sugerencia a Israel para que la revise y acepte.
         </div>
 
+        <!-- HORARIO FIJO (SOLO EN MODO RESPONSABILIDAD) -->
+        <div v-if="taskStore.createTaskSheetMode === 'responsibility'" class="form-group">
+          <label class="form-label">⏰ Horario Fijo Cotidiano (opcional)</label>
+          <input v-model="fixedTime" type="time" class="form-input" placeholder="Ej. 08:30" />
+        </div>
+
         <!-- 3. PRIORIDAD Y FECHA (SOLO MODO TAREA) -->
         <div v-if="taskStore.createTaskSheetMode === 'task'" class="form-row">
           <div class="form-group flex-1">
@@ -172,7 +211,9 @@ function handleSubmit() {
         <!-- BOTÓN SUBMIT -->
         <div class="sheet-actions">
           <button type="submit" class="submit-task-btn" :disabled="!title.trim()">
-            {{ taskStore.createTaskSheetMode === 'responsibility' ? '+ Crear Responsabilidad' : '+ Crear Tarea' }}
+            <template v-if="taskStore.editingTask || taskStore.editingResponsibility">💾 Guardar Cambios</template>
+            <template v-else-if="taskStore.createTaskSheetMode === 'responsibility'">+ Crear Responsabilidad</template>
+            <template v-else>+ Crear Tarea</template>
           </button>
         </div>
       </form>

@@ -35,6 +35,7 @@ export interface ResponsibilityItem {
   defaultAssignedMemberId: string
   icon: string
   color: string
+  fixedTime?: string            // Horario fijo de la rutina diaria (ej. "08:30")
 }
 
 export type CalendarRecurrence = 'never' | 'daily' | 'weekly' | 'monthly' | 'yearly'

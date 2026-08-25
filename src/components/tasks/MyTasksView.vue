@@ -24,11 +24,7 @@ function handleSkip(taskId: string) {
 }
 
 function handleEdit(task: TaskItem) {
-  const newTitle = prompt('Editar título de la tarea:', task.title)
-  if (newTitle !== null && newTitle.trim() !== '') {
-    const newDesc = prompt('Editar descripción de la tarea (opcional):', task.description || '')
-    taskStore.updateTaskDetails(task.id, newTitle.trim(), newDesc !== null ? newDesc.trim() : task.description)
-  }
+  taskStore.openEditTaskSheet(task)
   activeMenuTaskId.value = null
 }
 

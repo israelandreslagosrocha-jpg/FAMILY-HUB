@@ -75,6 +75,7 @@ export const taskService = {
       title: item.title,
       description: item.description,
       defaultAssignedMemberId: item.default_assigned_member_id,
+      fixedTime: item.fixed_time || undefined,
       icon: item.icon || '🛠️',
       color: item.color || '#3b82f6'
     }))
@@ -157,7 +158,7 @@ export const taskService = {
   /**
    * Crea una nueva responsabilidad permanente en Supabase
    */
-  async createResponsibility(payload: { title: string; description?: string; defaultAssignedMemberId: string; icon?: string; color?: string }): Promise<string> {
+  async createResponsibility(payload: { title: string; description?: string; defaultAssignedMemberId: string; fixedTime?: string; icon?: string; color?: string }): Promise<string> {
     const { data: mData } = await supabase.from('family_members').select('family_id').limit(1)
     const familyId = mData && mData.length > 0 ? mData[0].family_id : undefined
 
@@ -165,6 +166,7 @@ export const taskService = {
       title: payload.title,
       description: payload.description || null,
       default_assigned_member_id: payload.defaultAssignedMemberId,
+      fixed_time: payload.fixedTime || null,
       icon: payload.icon || '🛠️',
       color: payload.color || '#3b82f6',
       is_active: true
@@ -186,5 +188,42 @@ export const taskService = {
     }
 
     return data.id
+  },
+
+  /**
+   * Actualiza una responsabilidad en Supabase
+   */
+  async updateResponsibility(id: string, payload: { title: string; description?: string; defaultAssignedMemberId: string; fixedTime?: string; icon?: string; color?: string }): Promise<void> {
+    const { error } = await supabase
+      .from('responsibilities')
+      .update({
+        title: payload.title,
+        description: payload.description || null,
+        default_assigned_member_id: payload.defaultAssignedMemberId,
+        fixed_time: payload.fixedTime || null,
+        icon: payload.icon || '🛠️',
+        color: payload.color || '#3b82f6'
+      })
+      .eq('id', id)
+
+    if (error) {
+      console.error('❌ Error al actualizar responsabilidad en Supabase:', error.message)
+      throw error
+    }
+  },
+
+  /**
+   * Elimina una responsabilidad de Supabase
+   */
+  async deleteResponsibility(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('responsibilities')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('❌ Error al eliminar responsabilidad en Supabase:', error.message)
+      throw error
+    }
   }
 }

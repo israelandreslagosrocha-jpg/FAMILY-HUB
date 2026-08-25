@@ -2,12 +2,23 @@
 import { useTaskStore } from '../../stores/taskStore'
 import { useAuthStore } from '../../stores/authStore'
 import EducationalHintCard from '../common/EducationalHintCard.vue'
+import type { ResponsibilityItem } from '../../types'
 
 const taskStore = useTaskStore()
 const authStore = useAuthStore()
 
 function getMemberObj(memberId: string) {
   return authStore.familyMembers.find((m: any) => m.id === memberId)
+}
+
+function handleEdit(resp: ResponsibilityItem) {
+  taskStore.openEditResponsibilitySheet(resp)
+}
+
+function handleDelete(respId: string) {
+  if (confirm('¿Deseas eliminar esta responsabilidad del hogar?')) {
+    taskStore.deleteResponsibilityWithSupabase(respId)
+  }
 }
 </script>
 
@@ -25,8 +36,16 @@ function getMemberObj(memberId: string) {
         <div class="resp-card-header">
           <span class="resp-icon">{{ resp.icon }}</span>
           <div class="resp-title-col">
-            <h3 class="resp-title">{{ resp.title }}</h3>
+            <div class="resp-title-row">
+              <h3 class="resp-title">{{ resp.title }}</h3>
+              <span v-if="resp.fixedTime" class="fixed-time-chip">⏰ {{ resp.fixedTime }}</span>
+            </div>
             <span class="resp-tag">Área Fija del Hogar</span>
+          </div>
+
+          <div class="resp-actions">
+            <button type="button" class="action-btn-sm" title="Editar Responsabilidad" @click="handleEdit(resp)">✏️</button>
+            <button type="button" class="action-btn-sm" title="Eliminar Responsabilidad" @click="handleDelete(resp.id)">🗑️</button>
           </div>
         </div>
 
@@ -80,8 +99,16 @@ function getMemberObj(memberId: string) {
 }
 
 .resp-title-col {
+  flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.resp-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .resp-title {
@@ -89,6 +116,35 @@ function getMemberObj(memberId: string) {
   font-weight: 700;
   margin: 0;
   color: var(--text-primary);
+}
+
+.fixed-time-chip {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 8px;
+}
+
+.resp-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.action-btn-sm {
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.action-btn-sm:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .resp-tag {

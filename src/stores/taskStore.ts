@@ -12,9 +12,11 @@ export const useTaskStore = defineStore('taskStore', () => {
   const activeMemberId = ref<string>('m-1')        // Israel (Papá) por defecto
   const filterMemberId = ref<string>('all')        // 'all' o ID de miembro
 
-  // Estado del Modal Sheet de Creación de Tarea / Responsabilidad
+  // Estado del Modal Sheet de Creación / Edición de Tarea / Responsabilidad
   const isCreateTaskSheetOpen = ref<boolean>(false)
   const createTaskSheetMode = ref<'task' | 'responsibility'>('task')
+  const editingTask = ref<TaskItem | null>(null)
+  const editingResponsibility = ref<ResponsibilityItem | null>(null)
 
   // Estado de Carga
   const isLoading = ref<boolean>(false)
@@ -127,12 +129,30 @@ export const useTaskStore = defineStore('taskStore', () => {
   }
 
   function openCreateTaskSheet(mode: 'task' | 'responsibility' = 'task') {
+    editingTask.value = null
+    editingResponsibility.value = null
     createTaskSheetMode.value = mode
+    isCreateTaskSheetOpen.value = true
+  }
+
+  function openEditTaskSheet(task: TaskItem) {
+    editingTask.value = task
+    editingResponsibility.value = null
+    createTaskSheetMode.value = 'task'
+    isCreateTaskSheetOpen.value = true
+  }
+
+  function openEditResponsibilitySheet(resp: ResponsibilityItem) {
+    editingResponsibility.value = resp
+    editingTask.value = null
+    createTaskSheetMode.value = 'responsibility'
     isCreateTaskSheetOpen.value = true
   }
 
   function closeCreateTaskSheet() {
     isCreateTaskSheetOpen.value = false
+    editingTask.value = null
+    editingResponsibility.value = null
   }
 
   /**
@@ -309,13 +329,14 @@ export const useTaskStore = defineStore('taskStore', () => {
     }
   }
 
-  async function addResponsibilityWithSupabase(payload: { title: string; description?: string; defaultAssignedMemberId: string; icon?: string; color?: string }) {
+  async function addResponsibilityWithSupabase(payload: { title: string; description?: string; defaultAssignedMemberId: string; fixedTime?: string; icon?: string; color?: string }) {
     const tempId = `temp-resp-${Date.now()}`
     const newResp: ResponsibilityItem = {
       id: tempId,
       title: payload.title,
       description: payload.description || undefined,
       defaultAssignedMemberId: payload.defaultAssignedMemberId,
+      fixedTime: payload.fixedTime || undefined,
       icon: payload.icon || '🛠️',
       color: payload.color || '#3b82f6'
     }
@@ -333,6 +354,38 @@ export const useTaskStore = defineStore('taskStore', () => {
     }
   }
 
+  async function updateResponsibilityWithSupabase(id: string, payload: { title: string; description?: string; defaultAssignedMemberId: string; fixedTime?: string; icon?: string; color?: string }) {
+    const target = responsibilities.value.find(r => r.id === id)
+    if (target) {
+      target.title = payload.title
+      target.description = payload.description
+      target.defaultAssignedMemberId = payload.defaultAssignedMemberId
+      target.fixedTime = payload.fixedTime
+      if (payload.icon) target.icon = payload.icon
+      if (payload.color) target.color = payload.color
+    }
+    isCreateTaskSheetOpen.value = false
+
+    if (!id.startsWith('temp-')) {
+      try {
+        await taskService.updateResponsibility(id, payload)
+      } catch (err: any) {
+        console.error('❌ Error al actualizar responsabilidad en Supabase:', err.message)
+      }
+    }
+  }
+
+  async function deleteResponsibilityWithSupabase(id: string) {
+    responsibilities.value = responsibilities.value.filter(r => r.id !== id)
+    if (!id.startsWith('temp-')) {
+      try {
+        await taskService.deleteResponsibility(id)
+      } catch (err: any) {
+        console.error('❌ Error al eliminar responsabilidad en Supabase:', err.message)
+      }
+    }
+  }
+
   return {
     taskFocus,
     viewMode,
@@ -343,6 +396,8 @@ export const useTaskStore = defineStore('taskStore', () => {
     tasks,
     isCreateTaskSheetOpen,
     createTaskSheetMode,
+    editingTask,
+    editingResponsibility,
     isLoading,
     loadError,
     activeMember,
@@ -356,6 +411,8 @@ export const useTaskStore = defineStore('taskStore', () => {
     setViewMode,
     setFilterMember,
     openCreateTaskSheet,
+    openEditTaskSheet,
+    openEditResponsibilitySheet,
     closeCreateTaskSheet,
     toggleTaskStatus,
     skipTask,
@@ -364,6 +421,8 @@ export const useTaskStore = defineStore('taskStore', () => {
     deleteTask,
     addTaskWithSupabase,
     addResponsibilityWithSupabase,
+    updateResponsibilityWithSupabase,
+    deleteResponsibilityWithSupabase,
     acceptTaskSuggestion,
     rejectTaskSuggestion
   }
