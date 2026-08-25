@@ -121,9 +121,15 @@ export const useReceiptStore = defineStore('receiptStore', () => {
     } else if (caseType === 'high_confidence') {
       currentSession.value.status = 'review_ready'
       currentSession.value.extractedData = {
-        merchantName: 'Supermercado Jumbo',
-        totalAmount: 42990,
-        date: '2026-08-18',
+        merchantName: 'Supermercado Bella Vista',
+        totalAmount: 7660,
+        taxAmount: 1223,
+        items: [
+          { id: 'i-1', quantity: 1, description: 'PAN CORRIENTE', unitPrice: 2660, totalPrice: 2660 },
+          { id: 'i-2', quantity: 2, description: 'CALZONES ROTOS', unitPrice: 1000, totalPrice: 2000 },
+          { id: 'i-3', quantity: 1, description: 'PAPAS SABOR JAMON SERRANO', unitPrice: 3000, totalPrice: 3000 }
+        ],
+        date: '2026-08-16',
         suggestedCategory: 'Supermercado',
         ocrConfidence: 98,
         extractionConfidence: 96,

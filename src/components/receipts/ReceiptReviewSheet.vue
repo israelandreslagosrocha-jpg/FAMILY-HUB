@@ -1,24 +1,61 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useReceiptStore } from '../../stores/receiptStore'
+import type { ReceiptItem } from '../../types'
 
 const receiptStore = useReceiptStore()
 
 const merchantName = ref('')
 const totalAmount = ref<number | null>(null)
+const taxAmount = ref<number | null>(null)
 const date = ref(new Date().toISOString().split('T')[0])
 const suggestedCategory = ref('Supermercado')
 const isFamilyScope = ref(true)
+const items = ref<ReceiptItem[]>([])
 
-watch(() => receiptStore.currentSession, (session) => {
-  if (session && session.extractedData) {
-    merchantName.value = session.extractedData.merchantName || ''
-    totalAmount.value = session.extractedData.totalAmount || null
-    date.value = session.extractedData.date || new Date().toISOString().split('T')[0]
-    suggestedCategory.value = session.extractedData.suggestedCategory || 'Supermercado'
+// Escuchar únicamente cambios de ID de sesión para no reiniciar inputs al editar
+watch(() => receiptStore.currentSession?.id, (sessionId) => {
+  if (sessionId && receiptStore.currentSession?.extractedData) {
+    const data = receiptStore.currentSession.extractedData
+    merchantName.value = data.merchantName || ''
+    totalAmount.value = data.totalAmount || null
+    taxAmount.value = data.taxAmount || (data.totalAmount ? Math.round(data.totalAmount - (data.totalAmount / 1.19)) : null)
+    date.value = data.date || new Date().toISOString().split('T')[0]
+    suggestedCategory.value = data.suggestedCategory || 'Supermercado'
     isFamilyScope.value = true
+    items.value = data.items ? data.items.map(i => ({ ...i })) : []
   }
 }, { immediate: true })
+
+function addItem() {
+  items.value.push({
+    id: `item-${Date.now()}-${Math.random()}`,
+    quantity: 1,
+    description: '',
+    unitPrice: 0,
+    totalPrice: 0
+  })
+}
+
+function removeItem(index: number) {
+  items.value.splice(index, 1)
+  recalculateGrandTotal()
+}
+
+function recalculateItemTotal(item: ReceiptItem) {
+  item.totalPrice = (item.quantity || 1) * (item.unitPrice || 0)
+  recalculateGrandTotal()
+}
+
+function recalculateGrandTotal() {
+  if (items.value.length > 0) {
+    const sum = items.value.reduce((acc, curr) => acc + (curr.totalPrice || 0), 0)
+    if (sum > 0) {
+      totalAmount.value = sum
+      taxAmount.value = Math.round(sum - (sum / 1.19))
+    }
+  }
+}
 
 function handleClose() {
   receiptStore.cancelSession()
@@ -41,6 +78,8 @@ function handleConfirm() {
     merchantName: merchantName.value.trim(),
     merchantConfidence: prevConf.merchantConfidence,
     totalAmount: totalAmount.value,
+    taxAmount: taxAmount.value || undefined,
+    items: items.value,
     amountConfidence: prevConf.amountConfidence,
     date: date.value,
     dateConfidence: prevConf.dateConfidence,
@@ -109,46 +148,82 @@ function handleConfirm() {
               v-model="merchantName" 
               type="text" 
               class="form-input" 
-              placeholder="Ej. Supermercado Jumbo, Farmacia..." 
+              placeholder="Ej. Supermercado Bella Vista, Jumbo..." 
               required 
             />
           </div>
 
-          <!-- Campo Monto Total -->
-          <div class="form-group">
-            <div class="label-row">
-              <label class="form-label">Monto Total (CLP)</label>
-              <div class="badges-group" v-if="receiptStore.currentSession.extractedData">
-                <span 
-                  class="confidence-badge"
-                  :class="{ 
-                    high: (receiptStore.currentSession.extractedData.extractionConfidence || 0) >= 90,
-                    low: (receiptStore.currentSession.extractedData.extractionConfidence || 0) < 90
-                  }"
-                >
-                  Extracción Total: {{ receiptStore.currentSession.extractedData.extractionConfidence || 0 }}%
-                </span>
-                <span 
-                  class="confidence-badge"
-                  :class="{ 
-                    high: (receiptStore.currentSession.extractedData.ocrConfidence || 0) >= 90,
-                    low: (receiptStore.currentSession.extractedData.ocrConfidence || 0) < 90
-                  }"
-                >
-                  OCR: {{ receiptStore.currentSession.extractedData.ocrConfidence || 0 }}%
-                </span>
+          <!-- Campo Monto Total e IVA -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <div class="label-row">
+                <label class="form-label">Monto Total (CLP)</label>
+              </div>
+              <div class="amount-wrapper">
+                <span class="currency-prefix">$</span>
+                <input 
+                  v-model.number="totalAmount" 
+                  type="number" 
+                  class="form-input amount-input" 
+                  placeholder="0" 
+                  min="1" 
+                  required 
+                />
               </div>
             </div>
-            <div class="amount-wrapper">
-              <span class="currency-prefix">$</span>
-              <input 
-                v-model.number="totalAmount" 
-                type="number" 
-                class="form-input amount-input" 
-                placeholder="0" 
-                min="1" 
-                required 
-              />
+
+            <div class="form-group">
+              <label class="form-label">IVA Incluido (19%)</label>
+              <div class="amount-wrapper tax-wrapper">
+                <span class="currency-prefix tax-prefix">$</span>
+                <input 
+                  v-model.number="taxAmount" 
+                  type="number" 
+                  class="form-input amount-input tax-input" 
+                  placeholder="0" 
+                  min="0" 
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- DESGLOSE DE PRODUCTOS / ÍTEMS DE LA BOLETA -->
+          <div class="form-group items-section">
+            <div class="label-row">
+              <label class="form-label">🛒 Productos / Desglose Boleta ({{ items.length }})</label>
+              <button type="button" class="add-item-btn" @click="addItem">+ Agregar Producto</button>
+            </div>
+
+            <div v-if="items.length > 0" class="items-list">
+              <div v-for="(item, idx) in items" :key="item.id || idx" class="item-row">
+                <input 
+                  v-model.number="item.quantity" 
+                  type="number" 
+                  min="1" 
+                  class="form-input item-qty" 
+                  placeholder="Cant." 
+                  @input="recalculateItemTotal(item)" 
+                />
+                <input 
+                  v-model="item.description" 
+                  type="text" 
+                  class="form-input item-desc" 
+                  placeholder="Descripción producto (Ej. Pan Corriente)" 
+                />
+                <input 
+                  v-model.number="item.unitPrice" 
+                  type="number" 
+                  min="0" 
+                  class="form-input item-price" 
+                  placeholder="P. Unit" 
+                  @input="recalculateItemTotal(item)" 
+                />
+                <span class="item-total-badge">${{ (item.totalPrice || 0).toLocaleString('es-CL') }}</span>
+                <button type="button" class="remove-item-btn" @click="removeItem(idx)">🗑️</button>
+              </div>
+            </div>
+            <div v-else class="empty-items-notice">
+              <span>Sin productos desglosados automáticamente. Puedes agregarlos con "+ Agregar Producto".</span>
             </div>
           </div>
 
@@ -224,7 +299,7 @@ function handleConfirm() {
 
 .review-modal {
   width: 100%;
-  max-width: 680px;
+  max-width: 740px;
   background: #ffffff;
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
@@ -233,7 +308,7 @@ function handleConfirm() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 90vh;
+  max-height: 92vh;
   overflow-y: auto;
 }
 
@@ -280,7 +355,7 @@ function handleConfirm() {
 .image-wrapper {
   position: relative;
   width: 100%;
-  height: 240px;
+  height: 280px;
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -296,14 +371,15 @@ function handleConfirm() {
 .label-row { display: flex; justify-content: space-between; align-items: center; }
 .form-label { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
 
-.badges-group { display: flex; gap: 0.35rem; }
 .confidence-badge { font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
 .confidence-badge.high { background: #dcfce7; color: #15803d; }
 .confidence-badge.low { background: #fef9c3; color: #a16207; }
 
 .amount-wrapper { display: flex; align-items: center; background: rgba(0,0,0,0.03); border: 1.5px solid #3b82f6; border-radius: 12px; padding: 0.1rem 0.6rem; }
-.currency-prefix { font-size: 1.2rem; font-weight: 800; color: #3b82f6; margin-right: 0.3rem; }
-.amount-input { font-size: 1.2rem !important; font-weight: 800 !important; border: none !important; background: transparent !important; }
+.tax-wrapper { border-color: rgba(0, 0, 0, 0.12); background: transparent; }
+.currency-prefix { font-size: 1.1rem; font-weight: 800; color: #3b82f6; margin-right: 0.3rem; }
+.tax-prefix { color: #64748b; }
+.amount-input { font-size: 1.1rem !important; font-weight: 800 !important; border: none !important; background: transparent !important; }
 
 .form-input, .form-select {
   width: 100%;
@@ -319,6 +395,39 @@ function handleConfirm() {
 @media (prefers-color-scheme: dark) {
   .form-input, .form-select { background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); }
 }
+
+/* ESTILOS DE ÍTEMS / DESGLOSE DE PRODUCTOS */
+.items-section {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 0.75rem;
+  border-radius: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .items-section { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); }
+}
+
+.add-item-btn {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.items-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
+.item-row { display: flex; align-items: center; gap: 0.35rem; }
+.item-qty { width: 55px !important; text-align: center; padding: 0.4rem !important; }
+.item-desc { flex: 1; padding: 0.4rem !important; }
+.item-price { width: 85px !important; padding: 0.4rem !important; }
+.item-total-badge { font-size: 0.82rem; font-weight: 800; color: #10b981; min-width: 65px; text-align: right; }
+.remove-item-btn { background: transparent; border: none; font-size: 0.9rem; cursor: pointer; padding: 0.2rem; }
+
+.empty-items-notice { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.3rem; font-style: italic; }
 
 .scope-bar { display: flex; background: rgba(0,0,0,0.05); padding: 3px; border-radius: 10px; gap: 2px; }
 .scope-btn { flex: 1; border: none; background: transparent; padding: 0.45rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; color: var(--text-secondary); cursor: pointer; }

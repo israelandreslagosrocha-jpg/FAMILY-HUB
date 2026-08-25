@@ -31,17 +31,17 @@ export const ocrEngine = {
       const ocrConfidence = Math.round(ret.data.confidence || 0)
 
       return {
-        rawText: rawText || 'SUPERMERCADO JUMBO TOTAL $42.990 FECHA 18/08/2026',
-        ocrConfidence: ocrConfidence || 95
+        rawText: rawText || '',
+        ocrConfidence: ocrConfidence || 0
       }
     } catch (err: any) {
       if (worker) {
         try { await worker.terminate() } catch {}
       }
-      console.warn('⚠️ Fallback controlado de OCR para la prueba de comprobante:', err?.message || err)
+      console.warn('⚠️ Error en motor OCR Tesseract:', err?.message || err)
       return {
-        rawText: 'SUPERMERCADO JUMBO TOTAL $42.990 FECHA 18/08/2026',
-        ocrConfidence: 95
+        rawText: '',
+        ocrConfidence: 0
       }
     }
   }

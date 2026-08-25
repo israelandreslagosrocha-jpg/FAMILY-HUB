@@ -158,10 +158,20 @@ export type OCRStatus =
   | 'saved'
   | 'ocr_failed'
 
+export interface ReceiptItem {
+  id: string
+  quantity: number
+  description: string
+  unitPrice: number
+  totalPrice: number
+}
+
 export interface ExtractedReceiptData {
   merchantName: string
   merchantConfidence?: number   // Confianza legacy
   totalAmount: number
+  taxAmount?: number            // IVA (ej. 19% en Chile)
+  items?: ReceiptItem[]         // Desglose de productos de la boleta
   amountConfidence?: number     // Confianza legacy
   date: string                  // YYYY-MM-DD
   dateConfidence?: number       // Confianza legacy
