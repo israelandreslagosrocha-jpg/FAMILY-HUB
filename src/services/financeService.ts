@@ -203,7 +203,7 @@ export const financeService = {
   async getBudgets(): Promise<CategoryBudget[]> {
     const { data, error } = await supabase
       .from('budgets')
-      .select('*, categories(name, icon, color)')
+      .select('*')
 
     if (error) {
       console.error('❌ Error al obtener presupuestos:', error.message)
