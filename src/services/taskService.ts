@@ -60,7 +60,6 @@ export const taskService = {
     const { data, error } = await supabase
       .from('responsibilities')
       .select('*')
-      .eq('is_active', true)
       .order('created_at', { ascending: true })
 
     if (error) {
@@ -70,15 +69,17 @@ export const taskService = {
 
     if (!data) return []
 
-    return data.map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      defaultAssignedMemberId: item.default_assigned_member_id,
-      fixedTime: item.fixed_time || undefined,
-      icon: item.icon || '🛠️',
-      color: item.color || '#3b82f6'
-    }))
+    return data
+      .filter((item: any) => item.is_active !== false)
+      .map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        defaultAssignedMemberId: item.default_assigned_member_id,
+        fixedTime: item.fixed_time || undefined,
+        icon: item.icon || '🛠️',
+        color: item.color || '#3b82f6'
+      }))
   },
 
   /**
@@ -194,21 +195,31 @@ export const taskService = {
    * Actualiza una responsabilidad en Supabase
    */
   async updateResponsibility(id: string, payload: { title: string; description?: string; defaultAssignedMemberId: string; fixedTime?: string; icon?: string; color?: string }): Promise<void> {
+    const row: any = {
+      title: payload.title,
+      description: payload.description || null,
+      default_assigned_member_id: payload.defaultAssignedMemberId
+    }
+    if (payload.fixedTime !== undefined) row.fixed_time = payload.fixedTime
+    if (payload.icon) row.icon = payload.icon
+    if (payload.color) row.color = payload.color
+
     const { error } = await supabase
       .from('responsibilities')
-      .update({
-        title: payload.title,
-        description: payload.description || null,
-        default_assigned_member_id: payload.defaultAssignedMemberId,
-        fixed_time: payload.fixedTime || null,
-        icon: payload.icon || '🛠️',
-        color: payload.color || '#3b82f6'
-      })
+      .update(row)
       .eq('id', id)
 
     if (error) {
-      console.error('❌ Error al actualizar responsabilidad en Supabase:', error.message)
-      throw error
+      console.warn('⚠️ Fallback en updateResponsibility:', error.message)
+      const { error: fallbackErr } = await supabase
+        .from('responsibilities')
+        .update({
+          title: payload.title,
+          description: payload.description || null,
+          default_assigned_member_id: payload.defaultAssignedMemberId
+        })
+        .eq('id', id)
+      if (fallbackErr) throw fallbackErr
     }
   },
 
