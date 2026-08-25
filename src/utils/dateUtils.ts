@@ -66,14 +66,16 @@ export function toChileDateString(dateInput: Date | string): string {
 }
 
 /**
- * Extrae la hora en formato HH:mm de forma literal sin sufrir desfases por huso horario UTC
+ * Extrae la hora en formato HH:mm garantizando el horario de pared agendado por la familia (ej. "09:20")
  */
 export function parseTimeString(timeInput?: string | null): string {
   if (!timeInput) return '00:00'
   const trimmed = timeInput.trim()
-  if (/^\d{2}:\d{2}$/.test(trimmed)) return trimmed
-  if (/^\d{2}:\d{2}:\d{2}/.test(trimmed)) return trimmed.slice(0, 5)
   
+  if (/^\d{2}:\d{2}$/.test(trimmed)) return trimmed
+  if (/^\d{2}:\d{2}:\d{2}$/.test(trimmed)) return trimmed.slice(0, 5)
+
+  // Extraer la hora HH:mm literal de la marca de tiempo (previene desplazamientos por huso horario UTC)
   const match = trimmed.match(/(?:T|\s)(\d{2}:\d{2})/)
   if (match && match[1]) {
     return match[1]
@@ -83,13 +85,14 @@ export function parseTimeString(timeInput?: string | null): string {
 }
 
 /**
- * Extrae la fecha en formato YYYY-MM-DD de forma literal sin sufrir desfases por huso horario UTC
+ * Extrae la fecha en formato YYYY-MM-DD garantizando la fecha agendada por la familia (ej. "2026-08-25")
  */
 export function parseDateString(dateInput?: string | null): string {
   if (!dateInput) return getChileTodayString()
   const trimmed = dateInput.trim()
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
   
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+
   const match = trimmed.match(/(\d{4}-\d{2}-\d{2})/)
   if (match && match[1]) {
     return match[1]
@@ -97,3 +100,12 @@ export function parseDateString(dateInput?: string | null): string {
 
   return getChileTodayString()
 }
+
+/**
+ * Construye un string ISO limpio en formato local YYYY-MM-DDTHH:mm:ss para enviar a Supabase
+ */
+export function buildChileISOString(dateStr: string, timeStr: string): string {
+  return `${dateStr}T${timeStr}:00`
+}
+
+

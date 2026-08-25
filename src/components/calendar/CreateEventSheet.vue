@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useCalendarStore } from '../../stores/calendarStore'
 import { useAuthStore } from '../../stores/authStore'
 import type { CalendarRecurrence } from '../../types'
+import { buildChileISOString } from '../../utils/dateUtils'
 
 const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
@@ -63,9 +64,9 @@ function handleClose() {
 function handleSubmit() {
   if (!title.value.trim() || selectedMemberIds.value.length === 0) return
 
-  // Construir fechas locales de inicio y fin
-  const startISO = `${eventDate.value}T${startTime.value}:00`
-  const endISO = `${eventDate.value}T${endTime.value}:00`
+  // Construir marcas de tiempo ISO exactas en huso horario local de Chile
+  const startISO = buildChileISOString(eventDate.value, startTime.value)
+  const endISO = buildChileISOString(eventDate.value, endTime.value)
 
   calendarStore.addEventWithSupabase({
     title: title.value.trim(),

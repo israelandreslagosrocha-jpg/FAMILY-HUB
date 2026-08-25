@@ -7,6 +7,8 @@ import AvatarImage from '../components/common/AvatarImage.vue'
 const authStore = useAuthStore()
 
 const isModalOpen = ref(false)
+const modalMode = ref<'add' | 'edit'>('add')
+const editingMemberId = ref<string | null>(null)
 const isSubmitting = ref(false)
 const copied = ref(false)
 
@@ -28,11 +30,11 @@ const avatarOptions = [
 ]
 
 const colorOptions = [
-  { name: 'Azul', hex: '#3b82f6' },
-  { name: 'Rosa', hex: '#ec4899' },
-  { name: 'Verde', hex: '#10b981' },
+  { name: 'Azul (Israel)', hex: '#3b82f6' },
+  { name: 'Morado (Natalia)', hex: '#a855f7' },
+  { name: 'Verde (Santi)', hex: '#10b981' },
+  { name: 'Rosado (Vicente)', hex: '#ec4899' },
   { name: 'Naranja', hex: '#f59e0b' },
-  { name: 'Púrpura', hex: '#8b5cf6' },
   { name: 'Rojo', hex: '#ef4444' }
 ]
 
@@ -41,6 +43,8 @@ onMounted(async () => {
 })
 
 function openModal() {
+  modalMode.value = 'add'
+  editingMemberId.value = null
   name.value = ''
   role.value = 'Mamá'
   selectedAvatar.value = 'avatar-02'
@@ -48,32 +52,53 @@ function openModal() {
   isModalOpen.value = true
 }
 
-function closeModal() {
-  isModalOpen.value = false
+function openEditModal(m: any) {
+  modalMode.value = 'edit'
+  editingMemberId.value = m.id
+  name.value = m.name
+  role.value = m.role
+  selectedAvatar.value = m.avatarId
+  selectedColor.value = m.color
+  isModalOpen.value = true
 }
 
-async function handleAddMember() {
+function closeModal() {
+  isModalOpen.value = false
+  editingMemberId.value = null
+}
+
+async function handleSaveMember() {
   if (!name.value) return
   isSubmitting.value = true
 
   try {
-    const { data: userFam } = await supabase.from('family_members').select('family_id').limit(1).single()
-    const familyId = userFam?.family_id
-
-    const { error } = await supabase.from('family_members').insert({
-      family_id: familyId,
-      name: name.value,
-      role: role.value,
-      avatar_id: selectedAvatar.value,
-      color: selectedColor.value,
-      is_active: true
-    })
-
-    if (error) {
-      alert('Error al agregar miembro: ' + error.message)
-    } else {
-      await authStore.loadFamilyMembers()
+    if (modalMode.value === 'edit' && editingMemberId.value) {
+      await authStore.updateFamilyMember(editingMemberId.value, {
+        name: name.value,
+        role: role.value,
+        avatarId: selectedAvatar.value,
+        color: selectedColor.value
+      })
       closeModal()
+    } else {
+      const { data: userFam } = await supabase.from('family_members').select('family_id').limit(1).single()
+      const familyId = userFam?.family_id
+
+      const { error } = await supabase.from('family_members').insert({
+        family_id: familyId,
+        name: name.value,
+        role: role.value,
+        avatar_id: selectedAvatar.value,
+        color: selectedColor.value,
+        is_active: true
+      })
+
+      if (error) {
+        alert('Error al agregar miembro: ' + error.message)
+      } else {
+        await authStore.loadFamilyMembers()
+        closeModal()
+      }
     }
   } catch (err: any) {
     alert('Error al procesar: ' + err.message)
@@ -133,6 +158,13 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 
         <div class="card-actions">
           <button 
+            class="edit-btn"
+            @click="openEditModal(m)"
+            title="Editar Color y Avatar"
+          >
+            ✏️ Editar Perfil
+          </button>
+          <button 
             v-if="m.role !== 'Papá' && m.role !== 'Jefe de Hogar'"
             class="delete-btn" 
             @click="handleDeleteMember(m.id, m.name)" 
@@ -140,7 +172,6 @@ async function handleDeleteMember(memberId: string, memberName: string) {
           >
             🗑️ Eliminar
           </button>
-          <span v-else class="head-of-household-badge">👑 Jefe de Hogar</span>
         </div>
       </div>
     </div>
@@ -155,15 +186,15 @@ async function handleDeleteMember(memberId: string, memberName: string) {
       </button>
     </div>
 
-    <!-- Modal Formulario Agregar Miembro -->
+    <!-- Modal Formulario Agregar / Editar Miembro -->
     <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeModal">
       <div class="modal-card glass-card">
         <div class="modal-header">
-          <h3 class="modal-title">✨ Agregar Miembro Familiar</h3>
+          <h3 class="modal-title">{{ modalMode === 'edit' ? '✏️ Editar Integrante' : '✨ Agregar Miembro Familiar' }}</h3>
           <button class="close-btn" @click="closeModal">✕</button>
         </div>
 
-        <form class="modal-form" @submit.prevent="handleAddMember">
+        <form class="modal-form" @submit.prevent="handleSaveMember">
           <div class="form-group">
             <label class="form-label">Nombre del Integrante</label>
             <input 
@@ -182,6 +213,7 @@ async function handleDeleteMember(memberId: string, memberName: string) {
               <option value="Papá">Papá / Esposo</option>
               <option value="Hijo">Hijo</option>
               <option value="Hija">Hija</option>
+              <option value="Jefe de Hogar">Jefe de Hogar</option>
               <option value="Otro">Otro Miembro</option>
             </select>
           </div>
@@ -203,7 +235,7 @@ async function handleDeleteMember(memberId: string, memberName: string) {
           </div>
 
           <div class="form-group">
-            <label class="form-label">Color Identificador</label>
+            <label class="form-label">Color Identificador del Miembro</label>
             <div class="color-picker">
               <button 
                 v-for="c in colorOptions" 
@@ -222,7 +254,7 @@ async function handleDeleteMember(memberId: string, memberName: string) {
             <button type="button" class="cancel-btn" @click="closeModal">Cancelar</button>
             <button type="submit" class="submit-btn" :disabled="isSubmitting">
               <span v-if="isSubmitting">Guardando...</span>
-              <span v-else>Guardar Miembro</span>
+              <span v-else>{{ modalMode === 'edit' ? '✓ Guardar Cambios' : 'Guardar Miembro' }}</span>
             </button>
           </div>
         </form>
@@ -307,6 +339,27 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 
 .card-actions {
   margin-top: 0.4rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.edit-btn {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  padding: 0.35rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.edit-btn:hover {
+  background: #3b82f6;
+  color: #ffffff;
 }
 
 .delete-btn {

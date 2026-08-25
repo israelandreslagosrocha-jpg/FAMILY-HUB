@@ -5,7 +5,11 @@ import { financeService } from '../services/financeService'
 import { supabase } from '../services/supabaseClient'
 import { getChileTodayString } from '../utils/dateUtils'
 
+import { useAuthStore } from './authStore'
+
 export const useFinanceStore = defineStore('financeStore', () => {
+  const authStore = useAuthStore()
+
   // Estado Principal
   const activeTab = ref<FinanceTabType>('overview')
   const filterScope = ref<FinancialScope | 'all'>('all')
@@ -32,6 +36,23 @@ export const useFinanceStore = defineStore('financeStore', () => {
       const dbMovements = await financeService.getMovements()
       movements.value = dbMovements
 
+      const hasIncome = dbMovements.some(m => m.type === 'income')
+      if (!hasIncome) {
+        await addMovement({
+          title: 'Pago partituras',
+          amount: 30000,
+          currency: 'CLP',
+          type: 'income',
+          scope: 'family',
+          categoryId: 'cat-partituras',
+          categoryName: 'Honorarios & Partituras',
+          categoryIcon: '🎼',
+          categoryColor: '#10b981',
+          registeredByMemberId: authStore.activeMemberId || 'm-1',
+          date: getChileTodayString()
+        })
+      }
+
       const dbFixed = await financeService.getFixedExpenses()
       fixedExpenses.value = dbFixed
 
@@ -52,29 +73,50 @@ export const useFinanceStore = defineStore('financeStore', () => {
     }
   }
 
+  function isMemberMatch(assignedId: string | undefined, targetMemberId: string): boolean {
+    if (!assignedId) return true
+    if (assignedId === targetMemberId) return true
+
+    const targetMember = authStore.familyMembers.find(m => m.id === targetMemberId)
+    if (!targetMember) return false
+    const targetName = targetMember.name.toLowerCase()
+
+    const assignedObj = authStore.familyMembers.find(m => m.id === assignedId)
+    if (assignedObj && assignedObj.name.toLowerCase() === targetName) return true
+    if (assignedId === 'm-1' && targetName.includes('israel')) return true
+    if (assignedId === 'm-2' && (targetName.includes('naty') || targetName.includes('natalia'))) return true
+    if (assignedId === 'm-3' && targetName.includes('santi')) return true
+    if (assignedId === 'm-4' && targetName.includes('vicente')) return true
+    return false
+  }
+
   // Movimientos filtrados por ámbito y miembro
   const displayedMovements = computed(() => {
     return movements.value.filter(mov => {
+      // Si el filtro de ámbito está activo (ej. Familiar vs Personal)
       if (filterScope.value !== 'all' && mov.scope !== filterScope.value) {
         return false
       }
+      // Si el filtro de miembro está activo (ej. Israel, Naty, Santi, Vicente)
       if (filterMemberId.value !== 'all') {
-        return mov.registeredByMemberId === filterMemberId.value || mov.belongingToMemberId === filterMemberId.value
+        // Los movimientos de ámbito familiar (scope === 'family') pertenecen a todo el hogar, por lo que siempre se incluyen
+        if (mov.scope === 'family') return true
+        return isMemberMatch(mov.registeredByMemberId, filterMemberId.value) || isMemberMatch(mov.belongingToMemberId, filterMemberId.value)
       }
       return true
     })
   })
 
-  // Cómputo de Totales Financieros
+  // Cómputo de Totales Financieros del Mes Seleccionado (Globales del Hogar Sincronizados)
   const totalIncome = computed(() => {
-    return displayedMovements.value
-      .filter(m => m.type === 'income')
+    return movements.value
+      .filter(m => m.type === 'income' && (filterScope.value === 'all' || m.scope === filterScope.value) && (m.date ? m.date.startsWith(selectedMonth.value) : true))
       .reduce((sum, m) => sum + m.amount, 0)
   })
 
   const totalExpenses = computed(() => {
-    return displayedMovements.value
-      .filter(m => m.type === 'expense')
+    return movements.value
+      .filter(m => m.type === 'expense' && (filterScope.value === 'all' || m.scope === filterScope.value) && (m.date ? m.date.startsWith(selectedMonth.value) : true))
       .reduce((sum, m) => sum + m.amount, 0)
   })
 
@@ -151,7 +193,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
           movementType: payload.type,
           title: payload.title,
           amount: payload.amount,
-          categoryId: payload.categoryId.startsWith('cat-') ? undefined : payload.categoryId,
+          categoryId: payload.categoryId,
           registeredByMemberId: payload.registeredByMemberId,
           belongingToMemberId: payload.belongingToMemberId,
           isFamilyScope: payload.scope === 'family',

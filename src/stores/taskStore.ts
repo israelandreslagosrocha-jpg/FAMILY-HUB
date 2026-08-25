@@ -4,13 +4,30 @@ import type { TaskItem, ResponsibilityItem, TaskFocusType, ViewMode, FamilyMembe
 import { mockMembers } from '../mocks/familyData'
 import { taskService, type CreateTaskPayload } from '../services/taskService'
 import { supabase } from '../services/supabaseClient'
+import { useAuthStore } from './authStore'
+import { useFamilyStore } from './familyStore'
 
 export const useTaskStore = defineStore('taskStore', () => {
+  const authStore = useAuthStore()
+  const familyStore = useFamilyStore()
+
   // Estado Principal
   const taskFocus = ref<TaskFocusType>('my_tasks') // 'my_tasks' | 'family_tasks' | 'responsibilities'
-  const viewMode = ref<ViewMode>('my_day')         // 'my_day' | 'family'
-  const activeMemberId = ref<string>('m-1')        // Israel (Papá) por defecto
   const filterMemberId = ref<string>('all')        // 'all' o ID de miembro
+
+  // Sincronización reactiva con authStore y familyStore
+  const activeMemberId = computed<string>(() => {
+    return authStore.activeMemberId || authStore.familyMembers[0]?.id || 'm-1'
+  })
+
+  const viewMode = computed<ViewMode>({
+    get: () => familyStore.viewMode,
+    set: (val: ViewMode) => { familyStore.setViewMode(val) }
+  })
+
+  const members = computed<FamilyMember[]>(() => {
+    return authStore.familyMembers.length > 0 ? authStore.familyMembers : mockMembers
+  })
 
   // Estado del Modal Sheet de Creación / Edición de Tarea / Responsabilidad
   const isCreateTaskSheetOpen = ref<boolean>(false)
@@ -21,9 +38,6 @@ export const useTaskStore = defineStore('taskStore', () => {
   // Estado de Carga
   const isLoading = ref<boolean>(false)
   const loadError = ref<string | null>(null)
-
-  // Datos Mock de Miembros
-  const members = ref<FamilyMember[]>(mockMembers)
 
   // Datos de Responsabilidades Permanentes
   const responsibilities = ref<ResponsibilityItem[]>([])
@@ -36,14 +50,31 @@ export const useTaskStore = defineStore('taskStore', () => {
     return members.value.find(m => m.id === activeMemberId.value) || members.value[0]
   })
 
+  function isTaskMemberMatch(assignedId: string | undefined, targetMemberId: string): boolean {
+    if (!assignedId) return true
+    if (assignedId === targetMemberId) return true
+
+    const targetMember = authStore.familyMembers.find(m => m.id === targetMemberId)
+    if (!targetMember) return false
+    const targetName = targetMember.name.toLowerCase()
+
+    const assignedObj = authStore.familyMembers.find(m => m.id === assignedId)
+    if (assignedObj && assignedObj.name.toLowerCase() === targetName) return true
+    if (assignedId === 'm-1' && targetName.includes('israel')) return true
+    if (assignedId === 'm-2' && (targetName.includes('naty') || targetName.includes('natalia'))) return true
+    if (assignedId === 'm-3' && targetName.includes('santi')) return true
+    if (assignedId === 'm-4' && targetName.includes('vicente')) return true
+    return false
+  }
+
   // Tareas filtradas por Mis Tareas vs Familia vs Filtro por Miembro
   const displayedTasks = computed(() => {
     return tasks.value.filter(task => {
       if (taskFocus.value === 'my_tasks' || viewMode.value === 'my_day') {
-        return task.assignedToMemberId === activeMemberId.value
+        return isTaskMemberMatch(task.assignedToMemberId, activeMemberId.value)
       }
       if (filterMemberId.value !== 'all') {
-        return task.assignedToMemberId === filterMemberId.value
+        return isTaskMemberMatch(task.assignedToMemberId, filterMemberId.value)
       }
       return true
     })
@@ -77,25 +108,8 @@ export const useTaskStore = defineStore('taskStore', () => {
     loadError.value = null
 
     try {
-      // Cargar miembros
-      const { data: dbMembers } = await supabase.from('family_members').select('*').eq('is_active', true)
-      if (dbMembers && dbMembers.length > 0) {
-        const validMembers = dbMembers.filter((m: any) => {
-          const n = (m.name || '').toLowerCase()
-          return !n.includes('prueba') && !n.includes('esposa') && !(n === 'vicente' && m.role === 'Mamá')
-        })
-        members.value = validMembers.map((m: any) => ({
-          id: m.id,
-          name: m.name,
-          avatarId: m.avatar_id,
-          color: m.color,
-          role: m.role,
-          isActive: m.is_active
-        }))
-        if (members.value.length > 0) {
-          activeMemberId.value = members.value[0].id
-        }
-      }
+      // Garantizar miembros en authStore
+      await authStore.loadFamilyMembers()
 
       // Cargar responsabilidades
       const dbResp = await taskService.getResponsibilities()

@@ -200,6 +200,33 @@ export const useAuthStore = defineStore('authStore', () => {
     }
   }
 
+  /**
+   * Actualiza el perfil (nombre, rol, avatar, color) de un integrante de la familia
+   */
+  async function updateFamilyMember(memberId: string, payload: { name?: string; role?: string; avatarId?: string; color?: string }) {
+    const member = familyMembers.value.find(m => m.id === memberId)
+    if (member) {
+      if (payload.name) member.name = payload.name
+      if (payload.role) member.role = payload.role
+      if (payload.avatarId) member.avatarId = payload.avatarId
+      if (payload.color) member.color = payload.color
+    }
+
+    if (!memberId.startsWith('m-') && !memberId.startsWith('temp-')) {
+      try {
+        const updateData: any = {}
+        if (payload.name) updateData.name = payload.name
+        if (payload.role) updateData.role = payload.role
+        if (payload.avatarId) updateData.avatar_id = payload.avatarId
+        if (payload.color) updateData.color = payload.color
+
+        await supabase.from('family_members').update(updateData).eq('id', memberId)
+      } catch (err: any) {
+        console.warn('Advertencia al actualizar miembro en Supabase:', err.message)
+      }
+    }
+  }
+
   // Iniciar Sesión con Supabase Auth
   async function login(email: string, pass: string): Promise<boolean> {
     authError.value = null
@@ -304,6 +331,7 @@ export const useAuthStore = defineStore('authStore', () => {
     registerFamilyUser,
     logout,
     setActiveMember,
-    deleteFamilyMember
+    deleteFamilyMember,
+    updateFamilyMember
   }
 })

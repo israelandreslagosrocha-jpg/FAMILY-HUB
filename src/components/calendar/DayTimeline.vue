@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCalendarStore } from '../../stores/calendarStore'
+import { getChileTodayString } from '../../utils/dateUtils'
 
 const calendarStore = useCalendarStore()
 
@@ -9,6 +10,55 @@ const tasks = computed(() => calendarStore.selectedDayTasks)
 
 function getMemberObj(memberId: string) {
   return calendarStore.members.find(m => m.id === memberId)
+}
+
+function getMemberColor(memberId?: string): string {
+  if (!memberId) return '#3b82f6'
+  const m = calendarStore.members.find(mem => mem.id === memberId)
+  return m ? m.color : '#3b82f6'
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const cleanHex = hex.replace('#', '')
+  const r = parseInt(cleanHex.substring(0, 2), 16) || 59
+  const g = parseInt(cleanHex.substring(2, 4), 16) || 130
+  const b = parseInt(cleanHex.substring(4, 6), 16) || 246
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function getEventCardStyle(event: any) {
+  const memberId = event.memberIds && event.memberIds[0] ? event.memberIds[0] : undefined
+  const color = getMemberColor(memberId)
+  return {
+    background: `linear-gradient(135deg, ${hexToRgba(color, 0.22)} 0%, ${hexToRgba(color, 0.08)} 100%)`,
+    border: `1px solid ${hexToRgba(color, 0.4)}`,
+    boxShadow: `0 8px 24px -6px ${hexToRgba(color, 0.25)}`,
+    '--event-accent': color
+  }
+}
+
+function getTaskCardStyle(task: any) {
+  const color = getMemberColor(task.assignedToMemberId)
+  return {
+    background: `linear-gradient(135deg, ${hexToRgba(color, 0.20)} 0%, ${hexToRgba(color, 0.06)} 100%)`,
+    border: `1px solid ${hexToRgba(color, 0.35)}`,
+    boxShadow: `0 6px 20px -6px ${hexToRgba(color, 0.2)}`,
+    borderLeft: `6px solid ${color}`
+  }
+}
+
+function getEventCompletionState(event: any) {
+  if (event.completionStatus === 'approved') return 'approved'
+  if (event.completionStatus === 'failed') return 'failed'
+  
+  const todayStr = getChileTodayString()
+  if (event.eventDate < todayStr) return 'failed'
+
+  return 'pending'
+}
+
+function handleSetStatus(eventId: string, status: 'approved' | 'failed') {
+  calendarStore.setEventCompletionStatus(eventId, status)
 }
 
 function handleToggleTask(taskId: string) {
@@ -54,11 +104,11 @@ function handleDeleteEvent(eventId: string) {
         <div 
           v-for="event in events" 
           :key="event.id"
-          class="event-card"
-          :style="{ '--event-accent': event.color || '#3b82f6' }"
+          class="event-card glassy-gradient-card"
+          :style="getEventCardStyle(event)"
         >
           <!-- Borde lateral de color semántico -->
-          <div class="event-color-bar"></div>
+          <div class="event-color-bar" :style="{ backgroundColor: getMemberColor(event.memberIds && event.memberIds[0]) }"></div>
 
           <div class="event-content">
             <div class="event-header-row">
@@ -66,7 +116,19 @@ function handleDeleteEvent(eventId: string) {
                 <span v-if="event.isAllDay" class="all-day-tag">Todo el día</span>
                 <span v-else class="time-range">{{ event.startTime }} <template v-if="event.endTime">— {{ event.endTime }}</template></span>
               </div>
+
               <div class="header-badges">
+                <!-- Badges de Estado de Cumplimiento -->
+                <span v-if="getEventCompletionState(event) === 'approved'" class="completion-badge badge-approved">
+                  ✓ Aprobada
+                </span>
+                <span v-else-if="getEventCompletionState(event) === 'failed'" class="completion-badge badge-failed">
+                  ✕ No cumplida
+                </span>
+                <span v-else class="completion-badge badge-pending">
+                  ⏳ Pendiente
+                </span>
+
                 <span v-if="event.statusUI === 'saving'" class="saving-pill">Guardando...</span>
                 <span v-else-if="event.statusUI === 'error'" class="error-pill">⚠️ Error al guardar</span>
                 <span class="category-badge">{{ event.category }}</span>
@@ -77,20 +139,48 @@ function handleDeleteEvent(eventId: string) {
             <h4 class="event-card-title">{{ event.title }}</h4>
             <p v-if="event.description" class="event-description">{{ event.description }}</p>
 
-            <!-- Participantes del Hogar (Chips con Avatar y Nombre) -->
-            <div class="participants-row">
-              <span class="participants-label">Participantes:</span>
-              <div class="avatars-group">
-                <div 
-                  v-for="mId in event.memberIds" 
-                  :key="mId"
-                  class="member-avatar-chip"
-                  :title="getMemberObj(mId)?.name"
-                  :style="{ '--m-color': getMemberObj(mId)?.color }"
-                >
-                  <span class="dot-indicator" :style="{ backgroundColor: getMemberObj(mId)?.color }"></span>
-                  <span class="member-chip-name">{{ getMemberObj(mId)?.name }}</span>
+            <div class="event-footer-row">
+              <!-- Participantes del Hogar (Chips con Avatar y Nombre y Color) -->
+              <div class="participants-row">
+                <span class="participants-label">Participantes:</span>
+                <div class="avatars-group">
+                  <div 
+                    v-for="mId in event.memberIds" 
+                    :key="mId"
+                    class="member-avatar-chip"
+                    :title="getMemberObj(mId)?.name"
+                    :style="{ 
+                      backgroundColor: hexToRgba(getMemberColor(mId), 0.25), 
+                      color: getMemberColor(mId),
+                      borderColor: getMemberColor(mId)
+                    }"
+                  >
+                    <span class="dot-indicator" :style="{ backgroundColor: getMemberColor(mId) }"></span>
+                    <span class="member-chip-name">{{ getMemberObj(mId)?.name }}</span>
+                  </div>
                 </div>
+              </div>
+
+              <!-- Botones de Acción para Aprobar o Marcar No Cumplida -->
+              <div class="status-action-buttons">
+                <button 
+                  type="button"
+                  class="status-btn approve-btn"
+                  :class="{ active: getEventCompletionState(event) === 'approved' }"
+                  @click="handleSetStatus(event.id, 'approved')"
+                  title="Marcar evento como realizado / aprobado"
+                >
+                  ✓ Realizada
+                </button>
+                <button 
+                  type="button"
+                  class="status-btn fail-btn"
+                  :class="{ active: getEventCompletionState(event) === 'failed' }"
+                  @click="handleSetStatus(event.id, 'failed')"
+                  title="Marcar evento como no cumplido"
+                >
+                  ✕ No cumplida
+                </button>
               </div>
             </div>
           </div>
@@ -115,8 +205,9 @@ function handleDeleteEvent(eventId: string) {
         <div 
           v-for="task in tasks" 
           :key="task.id"
-          class="task-item-row"
+          class="task-item-row glassy-gradient-card"
           :class="{ completed: task.completed }"
+          :style="getTaskCardStyle(task)"
         >
           <label class="checkbox-container">
             <input 
@@ -135,7 +226,7 @@ function handleDeleteEvent(eventId: string) {
           <div class="task-meta">
             <span 
               class="member-tag"
-              :style="{ backgroundColor: getMemberObj(task.assignedToMemberId)?.color + '20', color: getMemberObj(task.assignedToMemberId)?.color }"
+              :style="{ backgroundColor: hexToRgba(getMemberColor(task.assignedToMemberId), 0.3), color: getMemberColor(task.assignedToMemberId) }"
             >
               {{ getMemberObj(task.assignedToMemberId)?.name }}
             </span>
@@ -391,16 +482,97 @@ function handleDeleteEvent(eventId: string) {
   gap: 0.3rem;
   padding: 0.15rem 0.5rem;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.04);
   font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  border: 1px solid transparent;
 }
 
 .dot-indicator {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+
+.glassy-gradient-card {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.glassy-gradient-card:hover {
+  transform: translateY(-2px) scale(1.008);
+}
+
+.event-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.completion-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+}
+
+.badge-approved {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.badge-failed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.badge-pending {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.status-action-buttons {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.status-btn {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--text-secondary);
+  padding: 0.3rem 0.65rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="light"] .status-btn {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.approve-btn:hover, .approve-btn.active {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #059669 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.fail-btn:hover, .fail-btn.active {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
 /* Sección de Tareas */
@@ -415,16 +587,8 @@ function handleDeleteEvent(eventId: string) {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 0.9rem;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 14px;
   transition: opacity 0.2s;
-}
-
-@media (prefers-color-scheme: dark) {
-  .task-item-row {
-    background: rgba(30, 41, 59, 0.5);
-  }
 }
 
 .task-item-row.completed {
@@ -453,7 +617,7 @@ function handleDeleteEvent(eventId: string) {
 
 .task-title {
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
 }
 

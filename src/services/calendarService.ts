@@ -25,7 +25,7 @@ export const calendarService = {
   async getEvents(): Promise<CalendarEvent[]> {
     const { data, error } = await supabase
       .from('events')
-      .select('*')
+      .select('*, event_members(member_id), categories(name, color)')
       .order('start_time', { ascending: true })
 
     if (error) {

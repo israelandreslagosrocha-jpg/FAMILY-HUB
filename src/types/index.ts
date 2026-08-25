@@ -54,6 +54,7 @@ export interface CalendarEvent {
   isFamilyEvent: boolean
   recurrence?: CalendarRecurrence
   statusUI?: 'idle' | 'saving' | 'saved' | 'error'
+  completionStatus?: 'pending' | 'approved' | 'failed'
 }
 
 // TIPOS PARA AUTOMATIZACIONES (ETAPA 5)

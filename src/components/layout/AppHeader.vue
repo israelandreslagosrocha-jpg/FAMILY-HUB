@@ -160,11 +160,12 @@ async function handleLogout() {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(9, 13, 22, 0.85);
+  background: var(--bg-glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
   padding: 0.75rem 1.25rem;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .header-content {
@@ -225,7 +226,7 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.04);
   border: 1px solid var(--border-subtle);
   padding: 4px 10px 4px 4px;
   border-radius: 24px;
@@ -234,13 +235,18 @@ async function handleLogout() {
   transition: all var(--transition-fast);
 }
 
+:root[data-theme="dark"] .active-member-btn {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .active-member-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(59, 130, 246, 0.12);
 }
 
 .member-name-label {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--text-primary);
   padding-right: 4px;
 }
 
@@ -257,6 +263,7 @@ async function handleLogout() {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  z-index: 120;
 }
 
 .dropdown-header {
@@ -281,6 +288,10 @@ async function handleLogout() {
 }
 
 .dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="dark"] .dropdown-item:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -290,7 +301,7 @@ async function handleLogout() {
 }
 
 .theme-toggle-btn {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.04);
   border: 1px solid var(--border-subtle);
   font-size: 1rem;
   width: 36px;
@@ -303,9 +314,13 @@ async function handleLogout() {
   transition: transform 0.15s, background 0.15s;
 }
 
+:root[data-theme="dark"] .theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .theme-toggle-btn:hover {
   transform: scale(1.1);
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .logout-btn {
@@ -353,8 +368,12 @@ async function handleLogout() {
   font-size: 0.85rem;
   font-weight: 800;
   font-family: monospace, var(--font-main);
-  color: #3b82f6;
+  color: #2563eb;
   letter-spacing: -0.02em;
+}
+
+:root[data-theme="dark"] .clock-time {
+  color: #3b82f6;
 }
 
 .clock-date {

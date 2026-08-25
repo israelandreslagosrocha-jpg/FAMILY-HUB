@@ -151,10 +151,10 @@ export const financeService = {
           currency: 'CLP',
           type: 'income',
           scope: item.is_family_income ? 'family' : 'personal',
-          categoryId: item.category_id,
-          categoryName: item.categories?.name || 'Ingresos',
-          categoryIcon: item.categories?.icon || '💼',
-          categoryColor: item.categories?.color || '#10b981',
+          categoryId: item.category_id || 'cat-income',
+          categoryName: item.category_name || item.title || 'Honorarios & Partituras',
+          categoryIcon: item.category_icon || '🎼',
+          categoryColor: item.category_color || '#10b981',
           registeredByMemberId: item.registered_by_member_id,
           belongingToMemberId: item.belonging_to_member_id || undefined,
           date: item.date
@@ -227,11 +227,23 @@ export const financeService = {
    * Crea un nuevo movimiento financiero llamando a la RPC transaccional segura
    */
   async createMovement(params: CreateMovementParams): Promise<string> {
+    let validCategoryId = params.categoryId
+    if (!validCategoryId || validCategoryId.startsWith('cat-')) {
+      try {
+        const { data: catData } = await supabase.from('categories').select('id').limit(1)
+        if (catData && catData.length > 0) {
+          validCategoryId = catData[0].id
+        }
+      } catch (err: any) {
+        console.warn('⚠️ No se pudo obtener categoría por defecto de Supabase:', err.message)
+      }
+    }
+
     const { data, error } = await supabase.rpc('create_financial_movement', {
       p_movement_type: params.movementType,
       p_title: params.title,
       p_amount: params.amount,
-      p_category_id: params.categoryId || null,
+      p_category_id: validCategoryId || null,
       p_registered_by_member_id: params.registeredByMemberId || null,
       p_belonging_to_member_id: params.belongingToMemberId || null,
       p_is_family_scope: params.isFamilyScope,
@@ -247,7 +259,7 @@ export const financeService = {
       throw error
     }
 
-    return data.id
+    return typeof data === 'object' && data?.id ? data.id : String(data)
   },
 
   /**

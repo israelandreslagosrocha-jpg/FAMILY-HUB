@@ -10,8 +10,9 @@ import EducationalHintCard from '../components/common/EducationalHintCard.vue'
 
 const calendarStore = useCalendarStore()
 
-onMounted(() => {
+onMounted(async () => {
   calendarStore.resetToToday()
+  await calendarStore.loadDataFromSupabase()
 })
 
 function handleUniversalAdd() {

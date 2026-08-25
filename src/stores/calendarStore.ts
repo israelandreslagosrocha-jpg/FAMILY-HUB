@@ -1,23 +1,37 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { CalendarEvent, TaskItem, CalendarViewType, ViewMode, FamilyMember } from '../types'
+import type { CalendarEvent, CalendarViewType, ViewMode, FamilyMember } from '../types'
 import { mockMembers } from '../mocks/familyData'
 import { calendarService, type CreateEventPayload } from '../services/calendarService'
 import { supabase } from '../services/supabaseClient'
 import { getChileTodayString, parseDateString, parseTimeString } from '../utils/dateUtils'
+import { useAuthStore } from './authStore'
+import { useFamilyStore } from './familyStore'
+import { useTaskStore } from './taskStore'
 
 export const useCalendarStore = defineStore('calendar', () => {
+  const authStore = useAuthStore()
+  const familyStore = useFamilyStore()
+  const taskStore = useTaskStore()
+
   // Estado Principal
   const selectedDate = ref<string>(getChileTodayString()) // Formato YYYY-MM-DD (Hoy dinámico Chile)
   const viewType = ref<CalendarViewType>('day')   // 'day' (prioridad) | 'week' | 'month'
-  const viewMode = ref<ViewMode>('my_day')        // 'my_day' | 'family'
-  const activeMemberId = ref<string>('m-1')       // Papá (Israel) por defecto
   const filterMemberId = ref<string>('all')       // 'all' o ID de miembro
 
+  // Sincronización reactiva con authStore y familyStore
+  const activeMemberId = computed<string>(() => {
+    return authStore.activeMemberId || authStore.familyMembers[0]?.id || 'm-1'
+  })
+
+  const viewMode = computed<ViewMode>({
+    get: () => familyStore.viewMode,
+    set: (val: ViewMode) => { familyStore.setViewMode(val) }
+  })
+
   // Datos (Inicializa limpio)
-  const members = ref<FamilyMember[]>(mockMembers)
+  const members = computed<FamilyMember[]>(() => authStore.familyMembers.length > 0 ? authStore.familyMembers : mockMembers)
   const events = ref<CalendarEvent[]>([])
-  const tasks = ref<TaskItem[]>([])
 
   // Estado de Carga
   const isLoading = ref<boolean>(false)
@@ -32,16 +46,56 @@ export const useCalendarStore = defineStore('calendar', () => {
     return members.value.find(m => m.id === activeMemberId.value) || members.value[0]
   })
 
+  // Función auxiliar de coincidencia flexible de integrante (soporta UUID Supabase, mock IDs y nombres)
+  function isMemberMatch(eventMemberIds: string[] | undefined, targetMemberId: string): boolean {
+    if (!eventMemberIds || eventMemberIds.length === 0) return true
+    if (eventMemberIds.includes(targetMemberId)) return true
+
+    const targetMember = authStore.familyMembers.find(m => m.id === targetMemberId)
+    if (!targetMember) return false
+    const targetName = targetMember.name.toLowerCase()
+
+    return eventMemberIds.some(mId => {
+      if (mId === targetMemberId) return true
+      const mObj = authStore.familyMembers.find(m => m.id === mId)
+      if (mObj && mObj.name.toLowerCase() === targetName) return true
+      if (mId === 'm-1' && targetName.includes('israel')) return true
+      if (mId === 'm-2' && (targetName.includes('naty') || targetName.includes('natalia'))) return true
+      if (mId === 'm-3' && targetName.includes('santi')) return true
+      if (mId === 'm-4' && targetName.includes('vicente')) return true
+      return false
+    })
+  }
+
+  function isTaskMemberMatch(assignedId: string | undefined, targetMemberId: string): boolean {
+    if (!assignedId) return true
+    if (assignedId === targetMemberId) return true
+
+    const targetMember = authStore.familyMembers.find(m => m.id === targetMemberId)
+    if (!targetMember) return false
+    const targetName = targetMember.name.toLowerCase()
+
+    const assignedObj = authStore.familyMembers.find(m => m.id === assignedId)
+    if (assignedObj && assignedObj.name.toLowerCase() === targetName) return true
+    if (assignedId === 'm-1' && targetName.includes('israel')) return true
+    if (assignedId === 'm-2' && (targetName.includes('naty') || targetName.includes('natalia'))) return true
+    if (assignedId === 'm-3' && targetName.includes('santi')) return true
+    if (assignedId === 'm-4' && targetName.includes('vicente')) return true
+    return false
+  }
+
   // Eventos filtrados según la vista (Mi día vs Familia vs Filtro de Miembro)
   const filteredEvents = computed(() => {
     return events.value.filter(event => {
       // Filtro por Mi día
       if (viewMode.value === 'my_day') {
-        if (!event.memberIds.includes(activeMemberId.value)) return false
+        if (event.isFamilyEvent || !event.memberIds || event.memberIds.length === 0) return true
+        return isMemberMatch(event.memberIds, activeMemberId.value)
       }
       // Filtro específico por integrante
       else if (filterMemberId.value !== 'all') {
-        if (!event.memberIds.includes(filterMemberId.value)) return false
+        if (event.isFamilyEvent) return true
+        return isMemberMatch(event.memberIds, filterMemberId.value)
       }
       return true
     })
@@ -57,21 +111,47 @@ export const useCalendarStore = defineStore('calendar', () => {
       })
   })
 
-  // Tareas pendientes del día seleccionado (Capa separada de Eventos)
+  // Tareas pendientes del día seleccionado (Sincronizadas con taskStore)
   const selectedDayTasks = computed(() => {
-    return tasks.value.filter(t => {
-      if (t.dueDate !== selectedDate.value) return false
+    return taskStore.tasks.filter(t => {
+      const taskDueDate = t.dueDate ? parseDateString(t.dueDate) : ''
+      if (taskDueDate !== selectedDate.value) return false
       if (viewMode.value === 'my_day') {
-        return t.assignedToMemberId === activeMemberId.value
+        return isTaskMemberMatch(t.assignedToMemberId, activeMemberId.value)
       }
       if (filterMemberId.value !== 'all') {
-        return t.assignedToMemberId === filterMemberId.value
+        return isTaskMemberMatch(t.assignedToMemberId, filterMemberId.value)
       }
       return true
     })
   })
 
   // Acciones de Supabase & Persistencia
+
+  const COMPLETION_STORAGE_KEY = 'family_hub_event_completion'
+
+  function getStoredCompletionStatuses(): Record<string, 'pending' | 'approved' | 'failed'> {
+    try {
+      const raw = localStorage.getItem(COMPLETION_STORAGE_KEY)
+      return raw ? JSON.parse(raw) : {}
+    } catch (err) {
+      return {}
+    }
+  }
+
+  function persistCompletionStatus(eventId: string, status: 'pending' | 'approved' | 'failed') {
+    try {
+      const map = getStoredCompletionStatuses()
+      if (status === 'pending') {
+        delete map[eventId]
+      } else {
+        map[eventId] = status
+      }
+      localStorage.setItem(COMPLETION_STORAGE_KEY, JSON.stringify(map))
+    } catch (err) {
+      console.warn('⚠️ Error al guardar estado en localStorage:', err)
+    }
+  }
 
   /**
    * Carga los miembros reales y eventos reales desde Supabase si hay sesión activa
@@ -87,24 +167,15 @@ export const useCalendarStore = defineStore('calendar', () => {
     loadError.value = null
 
     try {
-      // Cargar miembros reales
-      const { data: dbMembers } = await supabase.from('family_members').select('*')
-      if (dbMembers && dbMembers.length > 0) {
-        members.value = dbMembers.map((m: any) => ({
-          id: m.id,
-          name: m.name,
-          avatarId: m.avatar_id,
-          color: m.color,
-          role: m.role,
-          isActive: m.is_active
-        }))
-        if (members.value.length > 0) {
-          activeMemberId.value = members.value[0].id
-        }
-      }
-
-      // Cargar eventos reales
+      // Cargar eventos reales y fusionar estados persistentes
       const dbEvents = await calendarService.getEvents()
+      const savedStatuses = getStoredCompletionStatuses()
+      dbEvents.forEach(e => {
+        if (savedStatuses[e.id]) {
+          e.completionStatus = savedStatuses[e.id]
+        }
+      })
+
       if (dbEvents.length > 0) {
         events.value = dbEvents
       }
@@ -121,7 +192,7 @@ export const useCalendarStore = defineStore('calendar', () => {
   }
 
   function setViewMode(mode: ViewMode) {
-    viewMode.value = mode
+    familyStore.setViewMode(mode)
   }
 
   function setFilterMember(memberId: string) {
@@ -214,11 +285,21 @@ export const useCalendarStore = defineStore('calendar', () => {
     selectedDate.value = getChileTodayString()
   }
 
-  function toggleTask(taskId: string) {
-    const t = tasks.value.find(item => item.id === taskId)
-    if (t) {
-      t.completed = !t.completed
+  function setEventCompletionStatus(eventId: string, status: 'pending' | 'approved' | 'failed') {
+    const ev = events.value.find(e => e.id === eventId)
+    if (ev) {
+      // Toggle de alternancia: si se vuelve a hacer clic en el mismo estado, vuelve a 'pending'
+      if (ev.completionStatus === status) {
+        ev.completionStatus = 'pending'
+      } else {
+        ev.completionStatus = status
+      }
+      persistCompletionStatus(eventId, ev.completionStatus)
     }
+  }
+
+  function toggleTask(taskId: string) {
+    taskStore.toggleTaskStatus(taskId)
   }
 
   return {
@@ -229,7 +310,6 @@ export const useCalendarStore = defineStore('calendar', () => {
     filterMemberId,
     members,
     events,
-    tasks,
     isLoading,
     loadError,
     isSheetOpen,
@@ -244,6 +324,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     setFilterMember,
     setSelectedDate,
     resetToToday,
+    setEventCompletionStatus,
     openCreateSheet,
     closeCreateSheet,
     addEventWithSupabase,
@@ -251,3 +332,4 @@ export const useCalendarStore = defineStore('calendar', () => {
     toggleTask
   }
 })
+

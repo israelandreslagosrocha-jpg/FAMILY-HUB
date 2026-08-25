@@ -8,31 +8,8 @@ export const usePWAStore = defineStore('pwaStore', () => {
   const isInstallPromptVisible = ref<boolean>(true)
   const lastStaleTime = ref<string | null>(null)
 
-  // Cola Offline Simulada
-  const offlineQueue = ref<OfflineQueueItem[]>([
-    {
-      id: 'q-101',
-      operation: 'CREATE',
-      entity: 'expense',
-      riskLevel: 'high',
-      payload: { title: 'Compra Supermercado Offline', amount: 32500, date: '2026-08-19' },
-      createdAt: '2026-08-19 12:30',
-      attempts: 0,
-      status: 'pending',
-      idempotencyKey: 'idemp-exp-32500-178715'
-    },
-    {
-      id: 'q-102',
-      operation: 'UPDATE',
-      entity: 'task',
-      riskLevel: 'low',
-      payload: { taskId: 't-1', completed: true },
-      createdAt: '2026-08-19 12:45',
-      attempts: 0,
-      status: 'pending',
-      idempotencyKey: 'idemp-tsk-complete-t1'
-    }
-  ])
+  // Cola Offline Simulada (Inicializada limpia)
+  const offlineQueue = ref<OfflineQueueItem[]>([])
 
   // Cómputo del Estado General de Sincronización
   const syncState = computed<SyncStateEnum>(() => {
