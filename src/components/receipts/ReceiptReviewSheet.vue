@@ -92,8 +92,8 @@ function handleConfirm() {
 </script>
 
 <template>
-  <div v-if="receiptStore.isReviewSheetOpen && receiptStore.currentSession" class="review-backdrop" @click="handleClose">
-    <div class="review-modal glass-card" @click.stopPropagation>
+  <div v-if="receiptStore.isReviewSheetOpen && receiptStore.currentSession" class="review-backdrop" @click.self="handleClose">
+    <div class="review-modal glass-card" @click.stop @mousedown.stop>
       <div class="modal-header">
         <h3 class="modal-title">✏️ Revisión Táctil de Boleta (Human-in-the-Loop)</h3>
         <button class="close-btn" @click="handleClose">×</button>

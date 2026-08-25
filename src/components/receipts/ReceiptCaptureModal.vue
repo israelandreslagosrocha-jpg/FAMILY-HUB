@@ -26,8 +26,8 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
 </script>
 
 <template>
-  <div v-if="receiptStore.isScannerOpen" class="capture-modal-backdrop" @click="handleClose">
-    <div class="capture-modal-card glass-card" @click.stopPropagation>
+  <div v-if="receiptStore.isScannerOpen" class="capture-modal-backdrop" @click.self="handleClose">
+    <div class="capture-modal-card glass-card" @click.stop @mousedown.stop>
       <div class="modal-header">
         <h3 class="modal-title">📷 Capturar Boleta para OCR</h3>
         <button class="close-btn" @click="handleClose">×</button>

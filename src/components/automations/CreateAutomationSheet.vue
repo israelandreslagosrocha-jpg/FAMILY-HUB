@@ -45,8 +45,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div v-if="automationStore.isCreateSheetOpen" class="sheet-backdrop" @click="handleClose">
-    <div class="sheet-modal glass-card" @click.stopPropagation>
+  <div v-if="automationStore.isCreateSheetOpen" class="sheet-backdrop" @click.self="handleClose">
+    <div class="sheet-modal glass-card" @click.stop @mousedown.stop>
       <div class="sheet-header">
         <h3 class="sheet-title">⚡ Nueva Automatización</h3>
         <button class="close-btn" @click="handleClose">×</button>
