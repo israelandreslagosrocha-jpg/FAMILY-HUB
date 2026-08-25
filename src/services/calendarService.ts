@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import type { CalendarEvent, CalendarRecurrence } from '../types'
+import { parseDateString, parseTimeString } from '../utils/dateUtils'
 
 export interface CreateEventPayload {
   title: string
@@ -19,7 +20,7 @@ export interface CreateEventPayload {
 
 export const calendarService = {
   /**
-   * Obtiene todos los eventos de la familia en 1 sola consulta relacional
+   * Obtiene todos los eventos de la familia autenticada desde Supabase
    */
   async getEvents(): Promise<CalendarEvent[]> {
     const { data, error } = await supabase
@@ -35,26 +36,12 @@ export const calendarService = {
     if (!data) return []
 
     return data.map((item: any) => {
-      const startDateObj = new Date(item.start_time)
-      const yyyy = startDateObj.getFullYear()
-      const mm = String(startDateObj.getMonth() + 1).padStart(2, '0')
-      const dd = String(startDateObj.getDate()).padStart(2, '0')
-      const eventDate = `${yyyy}-${mm}-${dd}`
-
-      const startTime = startDateObj.toLocaleTimeString('es-CL', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      })
+      const eventDate = parseDateString(item.start_time)
+      const startTime = parseTimeString(item.start_time)
 
       let endTime: string | undefined = undefined
       if (item.end_time) {
-        const endDateObj = new Date(item.end_time)
-        endTime = endDateObj.toLocaleTimeString('es-CL', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        })
+        endTime = parseTimeString(item.end_time)
       }
 
       const memberIds = item.event_members ? item.event_members.map((em: any) => em.member_id) : []

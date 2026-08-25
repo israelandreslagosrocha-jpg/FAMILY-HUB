@@ -63,9 +63,9 @@ function handleClose() {
 function handleSubmit() {
   if (!title.value.trim() || selectedMemberIds.value.length === 0) return
 
-  // Construir fechas en formato ISO 8601 UTC
-  const startISO = `${eventDate.value}T${startTime.value}:00Z`
-  const endISO = `${eventDate.value}T${endTime.value}:00Z`
+  // Construir fechas locales de inicio y fin
+  const startISO = `${eventDate.value}T${startTime.value}:00`
+  const endISO = `${eventDate.value}T${endTime.value}:00`
 
   calendarStore.addEventWithSupabase({
     title: title.value.trim(),

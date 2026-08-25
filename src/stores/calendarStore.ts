@@ -4,7 +4,7 @@ import type { CalendarEvent, TaskItem, CalendarViewType, ViewMode, FamilyMember 
 import { mockMembers } from '../mocks/familyData'
 import { calendarService, type CreateEventPayload } from '../services/calendarService'
 import { supabase } from '../services/supabaseClient'
-import { getChileTodayString } from '../utils/dateUtils'
+import { getChileTodayString, parseDateString, parseTimeString } from '../utils/dateUtils'
 
 export const useCalendarStore = defineStore('calendar', () => {
   // Estado Principal
@@ -147,18 +147,8 @@ export const useCalendarStore = defineStore('calendar', () => {
   async function addEventWithSupabase(payload: CreateEventPayload) {
     const tempId = `temp-${Date.now()}`
     
-    // Extraer YYYY-MM-DD de la fecha ISO de inicio
-    const startDateObj = new Date(payload.startTime)
-    const yyyy = startDateObj.getFullYear()
-    const mm = String(startDateObj.getMonth() + 1).padStart(2, '0')
-    const dd = String(startDateObj.getDate()).padStart(2, '0')
-    const eventDate = `${yyyy}-${mm}-${dd}`
-
-    const startTimeStr = startDateObj.toLocaleTimeString('es-CL', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    })
+    const eventDate = parseDateString(payload.startTime)
+    const startTimeStr = parseTimeString(payload.startTime)
 
     // 1. Agregar inmediatamente a Pinia con estado visual 'saving' (Respuesta en UI en <50ms)
     const tempEvent: CalendarEvent = {

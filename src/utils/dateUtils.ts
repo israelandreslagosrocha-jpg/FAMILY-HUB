@@ -64,3 +64,36 @@ export function toChileDateString(dateInput: Date | string): string {
   })
   return formatter.format(d)
 }
+
+/**
+ * Extrae la hora en formato HH:mm de forma literal sin sufrir desfases por huso horario UTC
+ */
+export function parseTimeString(timeInput?: string | null): string {
+  if (!timeInput) return '00:00'
+  const trimmed = timeInput.trim()
+  if (/^\d{2}:\d{2}$/.test(trimmed)) return trimmed
+  if (/^\d{2}:\d{2}:\d{2}/.test(trimmed)) return trimmed.slice(0, 5)
+  
+  const match = trimmed.match(/(?:T|\s)(\d{2}:\d{2})/)
+  if (match && match[1]) {
+    return match[1]
+  }
+
+  return '00:00'
+}
+
+/**
+ * Extrae la fecha en formato YYYY-MM-DD de forma literal sin sufrir desfases por huso horario UTC
+ */
+export function parseDateString(dateInput?: string | null): string {
+  if (!dateInput) return getChileTodayString()
+  const trimmed = dateInput.trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+  
+  const match = trimmed.match(/(\d{4}-\d{2}-\d{2})/)
+  if (match && match[1]) {
+    return match[1]
+  }
+
+  return getChileTodayString()
+}
