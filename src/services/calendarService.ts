@@ -63,9 +63,30 @@ export const calendarService = {
         color: item.categories?.color || '#3b82f6',
         memberIds,
         isFamilyEvent: item.is_family_event,
-        recurrence
+        recurrence,
+        completionStatus: item.completion_status || 'pending'
       }
     })
+  },
+
+  /**
+   * Actualiza el estado de cumplimiento (approved / failed / pending) en Supabase en tiempo real para todos los dispositivos
+   */
+  async updateEventCompletionStatus(eventId: string, completionStatus: 'approved' | 'failed' | 'pending'): Promise<void> {
+    if (eventId.startsWith('e-') || eventId.startsWith('temp-')) return
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ completion_status: completionStatus })
+        .eq('id', eventId)
+
+      if (error) {
+        console.warn('⚠️ Error al actualizar completion_status en Supabase:', error.message)
+      }
+    } catch (err: any) {
+      console.warn('⚠️ Excepción al actualizar completion_status en Supabase:', err.message)
+    }
   },
 
   /**

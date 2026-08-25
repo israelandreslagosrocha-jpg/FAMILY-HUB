@@ -298,3 +298,38 @@ p, span {
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* ============================================================================
+   📱 DIRECTRICES DE DISEÑO MOBILE-FIRST (10/10 EN TELÉFONO)
+   ============================================================================ */
+
+/* Prevenir auto-zoom de iOS en inputs móviles */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Touch Targets Mínimos (44px) para botones y chips */
+  button,
+  .member-chip,
+  .filter-chip,
+  .action-btn,
+  .status-btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Safe Area Insets para iPhone Notch / Dynamic Island */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

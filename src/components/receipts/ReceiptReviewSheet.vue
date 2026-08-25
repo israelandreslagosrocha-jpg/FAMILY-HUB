@@ -195,6 +195,13 @@ function handleConfirm() {
             </div>
 
             <div v-if="items.length > 0" class="items-list">
+              <div class="items-header-row">
+                <span class="col-hdr qty-hdr">Cant.</span>
+                <span class="col-hdr desc-hdr">Descripción Producto</span>
+                <span class="col-hdr price-hdr">P. Unit</span>
+                <span class="col-hdr total-hdr">Total ($)</span>
+                <span class="col-hdr act-hdr"></span>
+              </div>
               <div v-for="(item, idx) in items" :key="item.id || idx" class="item-row">
                 <input 
                   v-model.number="item.quantity" 
@@ -420,6 +427,12 @@ function handleConfirm() {
 }
 
 .items-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
+.items-header-row { display: flex; align-items: center; gap: 0.35rem; padding: 0 0.2rem; font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.qty-hdr { width: 55px; text-align: center; }
+.desc-hdr { flex: 1; }
+.price-hdr { width: 85px; }
+.total-hdr { width: 65px; text-align: right; }
+.act-hdr { width: 24px; }
 .item-row { display: flex; align-items: center; gap: 0.35rem; }
 .item-qty { width: 55px !important; text-align: center; padding: 0.4rem !important; }
 .item-desc { flex: 1; padding: 0.4rem !important; }

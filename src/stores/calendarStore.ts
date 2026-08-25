@@ -295,6 +295,8 @@ export const useCalendarStore = defineStore('calendar', () => {
         ev.completionStatus = status
       }
       persistCompletionStatus(eventId, ev.completionStatus)
+      // Sincronizar estado en Supabase para todos los dispositivos (PC y Teléfono)
+      calendarService.updateEventCompletionStatus(eventId, ev.completionStatus)
     }
   }
 
