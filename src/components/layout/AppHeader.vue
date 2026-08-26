@@ -383,14 +383,24 @@ async function handleLogout() {
 }
 
 @media (max-width: 640px) {
-  .logo-title {
-    display: none;
+  .app-header {
+    padding: 0.5rem 0.75rem;
   }
-  .clock-date {
+  .logo-titles {
     display: none;
   }
   .chile-clock-badge {
-    padding: 4px 6px;
+    display: none;
+  }
+  .member-name-label {
+    display: none;
+  }
+  .header-right-controls {
+    gap: 0.35rem;
+  }
+  .active-member-btn {
+    padding: 2px;
+    border-radius: 50%;
   }
 }
 </style>

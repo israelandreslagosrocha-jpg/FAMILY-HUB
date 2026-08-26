@@ -636,4 +636,23 @@ function handleDeleteEvent(eventId: string) {
   padding: 0.2rem 0.55rem;
   border-radius: 8px;
 }
+
+@media (max-width: 600px) {
+  .event-footer-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+  .status-action-buttons {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+  .status-btn {
+    flex: 1;
+    min-height: 44px;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+}
 </style>

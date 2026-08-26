@@ -219,4 +219,36 @@ function handleScope(scope: FinancialScope | 'all') {
   background: #059669;
   transform: translateY(-1px);
 }
+
+@media (max-width: 640px) {
+  .finance-header {
+    padding: 1rem;
+    border-radius: 20px;
+  }
+  .financial-summary-cards {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .summary-card {
+    padding: 1rem 1.1rem;
+  }
+  .bento-metric-large {
+    font-size: 2.2rem;
+  }
+  .tab-selector-bar {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .action-buttons-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .add-movement-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+}
 </style>

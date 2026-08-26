@@ -333,3 +333,16 @@ p, span {
     padding-right: env(safe-area-inset-right);
   }
 }
+
+/* Tirador visual tactil (Grabber Handle) para modales tipo Bottom Sheet */
+.sheet-grabber {
+  width: 42px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  margin: -0.2rem auto 0.75rem auto;
+}
+
+:root[data-theme="light"] .sheet-grabber {
+  background: rgba(0, 0, 0, 0.2);
+}

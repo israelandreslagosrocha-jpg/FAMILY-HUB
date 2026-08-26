@@ -86,6 +86,7 @@ function handleSubmit() {
 <template>
   <div v-if="financeStore.isCreateSheetOpen" class="sheet-backdrop" @click.self="handleClose">
     <div class="sheet-modal glass-card" @click.stop>
+      <div class="sheet-grabber"></div>
       <div class="sheet-header">
         <h3 class="sheet-title">💳 Registrar Movimiento Financiero</h3>
         <button class="close-btn" @click="handleClose">×</button>

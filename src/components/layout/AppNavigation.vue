@@ -19,6 +19,14 @@ const navItems = [
   { name: 'Familia', path: '/family', icon: Users },
   { name: 'Ajustes', path: '/settings', icon: Settings }
 ]
+
+const mobileNavItems = [
+  { name: 'Inicio', path: '/', icon: Home },
+  { name: 'Calendario', path: '/calendar', icon: Calendar },
+  { name: 'Tareas', path: '/tasks', icon: CheckSquare },
+  { name: 'Finanzas', path: '/finance', icon: DollarSign },
+  { name: 'Familia', path: '/family', icon: Users }
+]
 </script>
 
 <template>
@@ -38,10 +46,10 @@ const navItems = [
     </div>
   </aside>
 
-  <!-- Barra Inferior (Móvil - iOS/Android Style) -->
+  <!-- Barra Inferior (Móvil - iOS/Android Style 5 Tabs) -->
   <nav class="bottom-nav">
     <router-link 
-      v-for="item in navItems" 
+      v-for="item in mobileNavItems" 
       :key="item.path" 
       :to="item.path" 
       class="nav-link-mobile"

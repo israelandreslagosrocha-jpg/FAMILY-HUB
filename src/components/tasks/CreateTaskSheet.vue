@@ -98,6 +98,7 @@ function handleSubmit() {
 <template>
   <div v-if="taskStore.isCreateTaskSheetOpen" class="sheet-backdrop" @click.self="handleClose">
     <div class="sheet-modal glass-card" @click.stop>
+      <div class="sheet-grabber"></div>
       <div class="sheet-header">
         <h3 class="sheet-title">
           <template v-if="taskStore.editingTask">✏️ Editar Tarea</template>

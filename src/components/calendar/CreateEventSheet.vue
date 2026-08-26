@@ -85,6 +85,7 @@ function handleSubmit() {
 <template>
   <div v-if="calendarStore.isSheetOpen" class="sheet-backdrop" @click.self="handleClose">
     <div class="sheet-modal glass-card" @click.stop>
+      <div class="sheet-grabber"></div>
       <!-- Header de la Hoja Táctil -->
       <div class="sheet-header">
         <h3 class="sheet-title">📅 Nuevo Evento</h3>
