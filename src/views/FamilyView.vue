@@ -186,9 +186,10 @@ async function handleDeleteMember(memberId: string, memberName: string) {
       </button>
     </div>
 
-    <!-- Modal Formulario Agregar / Editar Miembro -->
+    <!-- Modal Formulario Agregar / Editar Miembro (Mobile Bottom Sheet) -->
     <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeModal">
-      <div class="modal-card glass-card">
+      <div class="modal-card glass-card" @click.stop>
+        <div class="sheet-grabber"></div>
         <div class="modal-header">
           <h3 class="modal-title">{{ modalMode === 'edit' ? '✏️ Editar Integrante' : '✨ Agregar Miembro Familiar' }}</h3>
           <button class="close-btn" @click="closeModal">✕</button>
@@ -267,55 +268,180 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 .family-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-4);
+  padding-bottom: 5rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .header-section {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .header-section {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
 }
 
 .page-title {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 4.5vw, 1.5rem);
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .page-subtitle {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin: 0.2rem 0 0 0;
+  line-height: 1.35;
 }
 
 .add-member-btn {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: #fff;
   border: none;
-  padding: 0.65rem 1.1rem;
+  padding: 0.75rem 1.25rem;
+  min-height: 48px;
   border-radius: 14px;
-  font-weight: 700;
-  font-size: 0.88rem;
+  font-weight: 800;
+  font-size: 0.9rem;
   cursor: pointer;
+  touch-action: manipulation;
   box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
-  transition: transform 0.15s;
+  transition: transform 0.15s, background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .add-member-btn {
+    width: auto;
+  }
 }
 
 .add-member-btn:hover {
-  transform: scale(1.03);
+  transform: translateY(-1px);
+}
+
+.invite-code-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.12));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .invite-code-card {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+.invite-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.invite-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #3b82f6;
+  letter-spacing: 0.06em;
+}
+
+:root[data-theme="dark"] .invite-tag {
+  color: #60a5fa;
+}
+
+.invite-code-text {
+  font-size: clamp(1.4rem, 5vw, 1.8rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0;
+  font-family: monospace, var(--font-main);
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.invite-sub {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.copy-code-btn {
+  padding: 0.75rem 1.2rem;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .copy-code-btn {
+    width: auto;
+  }
+}
+
+:root[data-theme="dark"] .copy-code-btn {
+  color: #60a5fa;
+}
+
+.copy-code-btn:hover {
+  background: #3b82f6;
+  color: #ffffff;
 }
 
 .members-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 480px) {
+  .members-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
 }
 
 .member-card {
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -323,18 +449,21 @@ async function handleDeleteMember(memberId: string, memberName: string) {
   gap: 0.85rem;
   text-align: center;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .member-name {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
+  color: var(--text-primary);
 }
 
 .member-role {
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .card-actions {
@@ -343,18 +472,29 @@ async function handleDeleteMember(memberId: string, memberName: string) {
   gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
 }
 
 .edit-btn {
   background: rgba(59, 130, 246, 0.12);
   border: 1px solid rgba(59, 130, 246, 0.3);
   color: #3b82f6;
-  padding: 0.35rem 0.75rem;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 0.5rem 0.85rem;
+  min-height: var(--touch-target-min);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.15s, background 0.15s;
+  flex: 1;
+}
+
+:root[data-theme="dark"] .edit-btn {
+  color: #60a5fa;
 }
 
 .edit-btn:hover {
@@ -365,30 +505,26 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 .delete-btn {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #f87171;
-  padding: 0.35rem 0.75rem;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  color: #ef4444;
+  padding: 0.5rem 0.85rem;
+  min-height: var(--touch-target-min);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
 .delete-btn:hover {
   background: rgba(239, 68, 68, 0.2);
 }
 
-.head-of-household-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
-  padding: 0.35rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid rgba(245, 158, 11, 0.25);
-}
-
 .empty-state {
-  padding: 3rem 2rem;
+  padding: 3rem 1.5rem;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -403,8 +539,9 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 
 .empty-title {
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
+  color: var(--text-primary);
 }
 
 .empty-desc {
@@ -412,31 +549,79 @@ async function handleDeleteMember(memberId: string, memberName: string) {
   color: var(--text-secondary);
   max-width: 400px;
   margin: 0;
+  line-height: 1.35;
 }
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 200;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 1.25rem;
+  animation: fadeIn 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .modal-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-card {
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
   background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 24px;
-  padding: 1.75rem;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 1.25rem 1.25rem calc(1.25rem + var(--sab));
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  gap: 1.15rem;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  max-height: min(90dvh, 90vh);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 640px) {
+  .modal-card {
+    border-radius: 24px;
+    padding: 1.75rem;
+    max-height: 85vh;
+  }
+}
+
+.sheet-grabber {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: -0.25rem auto 0.5rem auto;
+}
+
+@media (min-width: 640px) {
+  .sheet-grabber {
+    display: none;
+  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .modal-header {
@@ -446,17 +631,25 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 }
 
 .modal-title {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
   margin: 0;
+  color: var(--text-primary);
 }
 
 .close-btn {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.08);
   border: none;
   color: var(--text-secondary);
   font-size: 1.2rem;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border-radius: 50%;
   cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-form {
@@ -472,21 +665,23 @@ async function handleDeleteMember(memberId: string, memberName: string) {
 }
 
 .form-label {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-secondary);
 }
 
 .form-input {
   width: 100%;
-  padding: 0.65rem 0.85rem;
+  padding: 0.75rem 0.9rem;
+  min-height: var(--touch-target-min);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(30, 41, 59, 0.8);
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 16px; /* Evita auto-zoom en iOS */
   outline: none;
   box-sizing: border-box;
+  touch-action: manipulation;
 }
 
 .avatar-picker {
@@ -499,34 +694,39 @@ async function handleDeleteMember(memberId: string, memberName: string) {
   background: transparent;
   border: 2px solid transparent;
   border-radius: 16px;
-  padding: 4px;
+  padding: 6px;
+  min-height: var(--touch-target-min);
   cursor: pointer;
+  touch-action: manipulation;
   display: flex;
   align-items: center;
   justify-content: center;
+}
 
-  &.selected {
-    border-color: #3b82f6;
-    background: rgba(59, 130, 246, 0.15);
-  }
+.avatar-option.selected {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .color-picker {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.65rem;
+  flex-wrap: wrap;
 }
 
 .color-chip {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
+  touch-action: manipulation;
+}
 
-  &.selected {
-    border-color: #fff;
-    transform: scale(1.15);
-  }
+.color-chip.selected {
+  border-color: #fff;
+  transform: scale(1.12);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .modal-footer {
@@ -540,79 +740,33 @@ async function handleDeleteMember(memberId: string, memberName: string) {
   background: rgba(255, 255, 255, 0.08);
   border: none;
   color: var(--text-secondary);
-  padding: 0.65rem 1rem;
+  padding: 0.75rem 1.15rem;
+  min-height: 48px;
   border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-weight: 800;
+  font-size: 0.88rem;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .submit-btn {
   background: #3b82f6;
   border: none;
   color: #fff;
-  padding: 0.65rem 1.25rem;
+  padding: 0.75rem 1.35rem;
+  min-height: 48px;
   border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.invite-code-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.12));
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.invite-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.invite-tag {
-  font-size: 0.7rem;
   font-weight: 800;
-  color: #3b82f6;
-  letter-spacing: 0.06em;
-}
-
-.invite-code-text {
-  font-size: 1.6rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  margin: 0;
-  font-family: monospace, var(--font-main);
-  color: var(--text-primary);
-}
-
-.invite-sub {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-.copy-code-btn {
-  padding: 0.65rem 1.2rem;
-  border-radius: 14px;
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-  font-weight: 800;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  touch-action: manipulation;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  flex: 1;
 }
 
-.copy-code-btn:hover {
-  background: #3b82f6;
-  color: #ffffff;
+@media (min-width: 640px) {
+  .submit-btn {
+    flex: none;
+  }
 }
 </style>

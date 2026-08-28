@@ -53,8 +53,12 @@ onMounted(async () => {
 <style scoped>
 .app-layout {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .app-body {
@@ -63,17 +67,22 @@ onMounted(async () => {
   max-width: 1300px;
   width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .main-content {
   flex: 1;
-  padding: 1.25rem;
-  padding-bottom: 5rem; /* Espacio para barra inferior en móvil */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-3);
+  padding-bottom: calc(var(--bottom-nav-height) + max(var(--space-4), var(--sab)));
 }
 
 @media (min-width: 768px) {
   .main-content {
-    padding-bottom: 2rem;
+    padding: var(--space-5);
+    padding-bottom: var(--space-6);
   }
 }
 </style>

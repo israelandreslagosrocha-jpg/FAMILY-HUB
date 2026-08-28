@@ -196,67 +196,79 @@ const monthlyComparisonData = computed(() => {
 .overview-summary-container {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .section-card {
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .card-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .section-title {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: clamp(1rem, 3.5vw, 1.15rem);
+  font-weight: 800;
   margin: 0;
   color: var(--text-primary);
 }
 
 .total-badge {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #f43f5e;
-  background: rgba(244, 63, 94, 0.1);
-  padding: 0.2rem 0.5rem;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  padding: 0.25rem 0.6rem;
   border-radius: 8px;
+  white-space: nowrap;
 }
 
 .view-all-btn {
   background: transparent;
   border: none;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #3b82f6;
   cursor: pointer;
-}
-
-.categories.mov-right {
-  display: flex;
+  touch-action: manipulation;
+  min-height: var(--touch-target-min);
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
 }
 
 .delete-mov-btn {
-  background: transparent;
-  border: none;
-  font-size: 0.85rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: 10px;
+  font-size: 0.95rem;
   cursor: pointer;
-  opacity: 0.6;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 0.15s, transform 0.15s;
-  padding: 2px;
+  flex-shrink: 0;
 }
 
 .delete-mov-btn:hover {
-  opacity: 1;
-  transform: scale(1.2);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .categories-list {
@@ -274,20 +286,21 @@ const monthlyComparisonData = computed(() => {
 .cat-info-col {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
-.cat-icon { font-size: 1.2rem; }
+.cat-icon { font-size: 1.2rem; flex-shrink: 0; }
 
 .cat-text {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
   font-size: 0.88rem;
 }
 
-.cat-name { font-weight: 600; color: var(--text-primary); }
-.cat-amount { font-weight: 700; color: var(--text-secondary); }
+.cat-name { font-weight: 700; color: var(--text-primary); }
+.cat-amount { font-weight: 800; color: var(--text-secondary); }
 
 .progress-bar-bg {
   height: 8px;
@@ -296,8 +309,8 @@ const monthlyComparisonData = computed(() => {
   overflow: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
-  .progress-bar-bg { background: rgba(255, 255, 255, 0.1); }
+:root[data-theme="dark"] .progress-bar-bg {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .progress-bar-fill {
@@ -309,39 +322,54 @@ const monthlyComparisonData = computed(() => {
 .recent-movements-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .recent-mov-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 0.8rem;
-  border-radius: 12px;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
   background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .recent-mov-item { background: rgba(255, 255, 255, 0.04); }
+@media (min-width: 480px) {
+  .recent-mov-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+:root[data-theme="dark"] .recent-mov-item {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .mov-left {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  min-width: 0;
 }
 
-.mov-icon { font-size: 1.3rem; }
+.mov-icon { font-size: 1.3rem; flex-shrink: 0; }
 
 .mov-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .mov-title {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.92rem;
+  font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mov-subtitle {
@@ -349,9 +377,24 @@ const monthlyComparisonData = computed(() => {
   color: var(--text-secondary);
 }
 
+.mov-right {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .mov-right {
+    justify-content: flex-end;
+    text-align: right;
+  }
+}
+
 .mov-amount {
-  font-size: 0.95rem;
-  font-weight: 800;
+  font-size: 0.98rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .income-val { color: #10b981; }
@@ -366,14 +409,16 @@ const monthlyComparisonData = computed(() => {
 
 /* CHART CARD & BAR CHART STYLES */
 .month-select-pill {
-  padding: 0.4rem 0.8rem;
+  padding: 0.45rem 0.8rem;
+  min-height: var(--touch-target-min);
   border-radius: 12px;
   border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .section-sub {
@@ -387,6 +432,7 @@ const monthlyComparisonData = computed(() => {
   flex-direction: column;
   gap: 1rem;
   margin-top: 0.5rem;
+  width: 100%;
 }
 
 .chart-bars-row {
@@ -410,12 +456,18 @@ const monthlyComparisonData = computed(() => {
 .bars-pair {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: 4px;
   height: 120px;
 }
 
+@media (min-width: 480px) {
+  .bars-pair {
+    gap: 8px;
+  }
+}
+
 .bar {
-  width: 14px;
+  width: clamp(10px, 3vw, 16px);
   border-radius: 6px 6px 0 0;
   transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   min-height: 4px;
@@ -430,7 +482,7 @@ const monthlyComparisonData = computed(() => {
 }
 
 .month-label {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-secondary);
 }
@@ -444,9 +496,10 @@ const monthlyComparisonData = computed(() => {
 .chart-legend {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
   font-size: 0.8rem;
   font-weight: 700;
+  flex-wrap: wrap;
 }
 
 .legend-item {

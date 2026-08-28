@@ -94,10 +94,15 @@ function handleConfirm() {
 <template>
   <div v-if="receiptStore.isReviewSheetOpen && receiptStore.currentSession" class="review-backdrop" @click.self="handleClose">
     <div class="review-modal glass-card" @click.stop @mousedown.stop>
+      <!-- Tirador táctil para móvil -->
       <div class="sheet-grabber"></div>
+
       <div class="modal-header">
-        <h3 class="modal-title">✏️ Revisión Táctil de Boleta (Human-in-the-Loop)</h3>
-        <button class="close-btn" @click="handleClose">×</button>
+        <div class="header-titles">
+          <span class="badge-pill">HUMAN-IN-THE-LOOP</span>
+          <h3 class="modal-title">✏️ Revisión de Boleta OCR</h3>
+        </div>
+        <button class="close-btn" @click="handleClose" title="Cerrar revisión">×</button>
       </div>
 
       <!-- Alerta de Advertencia de Posible Duplicado (Caso 4) -->
@@ -114,7 +119,30 @@ function handleConfirm() {
         <span class="alert-icon">🔴</span>
         <div class="alert-text">
           <strong>Lectura OCR Incompleta</strong>
-          <span>No se pudieron extraer algunos datos. Ingresa el monto y comercio manualmente a continuación.</span>
+          <span>No se pudieron extraer algunos datos. Ingresa el monto y comercio manualmente a continuación antes de confirmar.</span>
+        </div>
+      </div>
+
+      <!-- Badges de Métricas de Confianza OCR y Extracción -->
+      <div class="confidence-summary-bar">
+        <div class="conf-item">
+          <span class="conf-label">Lectura OCR:</span>
+          <span 
+            class="confidence-badge"
+            :class="(receiptStore.currentSession.extractedData?.ocrConfidence || 95) >= 80 ? 'high' : 'low'"
+          >
+            {{ receiptStore.currentSession.extractedData?.ocrConfidence || 95 }}%
+          </span>
+        </div>
+
+        <div class="conf-item">
+          <span class="conf-label">Extracción Datos:</span>
+          <span 
+            class="confidence-badge"
+            :class="(receiptStore.currentSession.extractedData?.extractionConfidence || 90) >= 80 ? 'high' : 'low'"
+          >
+            {{ receiptStore.currentSession.extractedData?.extractionConfidence || 90 }}%
+          </span>
         </div>
       </div>
 
@@ -128,7 +156,7 @@ function handleConfirm() {
           </div>
         </div>
 
-        <!-- Columna Derecha: Formulario de Verificación con Badges de Confianza % -->
+        <!-- Columna Derecha: Formulario de Verificación -->
         <form class="form-col" @submit.prevent="handleConfirm">
           <!-- Campo Comercio / Proveedor -->
           <div class="form-group">
@@ -142,7 +170,7 @@ function handleConfirm() {
                   low: receiptStore.currentSession.extractedData.merchantConfidence < 90
                 }"
               >
-                Confianza: {{ receiptStore.currentSession.extractedData.merchantConfidence }}%
+                Comercio: {{ receiptStore.currentSession.extractedData.merchantConfidence }}%
               </span>
             </div>
             <input 
@@ -188,46 +216,69 @@ function handleConfirm() {
             </div>
           </div>
 
-          <!-- DESGLOSE DE PRODUCTOS / ÍTEMS DE LA BOLETA -->
+          <!-- DESGLOSE DE PRODUCTOS / ÍTEMS DE LA BOLETA (RESPONSIVE) -->
           <div class="form-group items-section">
             <div class="label-row">
-              <label class="form-label">🛒 Productos / Desglose Boleta ({{ items.length }})</label>
+              <label class="form-label">🛒 Desglose de Productos ({{ items.length }})</label>
               <button type="button" class="add-item-btn" @click="addItem">+ Agregar Producto</button>
             </div>
 
             <div v-if="items.length > 0" class="items-list">
-              <div class="items-header-row">
+              <!-- Encabezado visible únicamente en Desktop (>=640px) -->
+              <div class="items-header-row desktop-only">
                 <span class="col-hdr qty-hdr">Cant.</span>
                 <span class="col-hdr desc-hdr">Descripción Producto</span>
                 <span class="col-hdr price-hdr">P. Unit</span>
                 <span class="col-hdr total-hdr">Total ($)</span>
                 <span class="col-hdr act-hdr"></span>
               </div>
-              <div v-for="(item, idx) in items" :key="item.id || idx" class="item-row">
-                <input 
-                  v-model.number="item.quantity" 
-                  type="number" 
-                  min="1" 
-                  class="form-input item-qty" 
-                  placeholder="Cant." 
-                  @input="recalculateItemTotal(item)" 
-                />
-                <input 
-                  v-model="item.description" 
-                  type="text" 
-                  class="form-input item-desc" 
-                  placeholder="Descripción producto (Ej. Pan Corriente)" 
-                />
-                <input 
-                  v-model.number="item.unitPrice" 
-                  type="number" 
-                  min="0" 
-                  class="form-input item-price" 
-                  placeholder="P. Unit" 
-                  @input="recalculateItemTotal(item)" 
-                />
-                <span class="item-total-badge">${{ (item.totalPrice || 0).toLocaleString('es-CL') }}</span>
-                <button type="button" class="remove-item-btn" @click="removeItem(idx)">🗑️</button>
+
+              <!-- Fila de Producto: Card en Móvil, Fila en Desktop -->
+              <div v-for="(item, idx) in items" :key="item.id || idx" class="item-card-row">
+                <!-- Línea 1 en Móvil: Descripción completa -->
+                <div class="item-desc-wrap">
+                  <input 
+                    v-model="item.description" 
+                    type="text" 
+                    class="form-input item-desc" 
+                    placeholder="Descripción producto (Ej. Pan Corriente)" 
+                  />
+                </div>
+
+                <!-- Línea 2 en Móvil: Cantidad, Precio Unitario, Total y Eliminar -->
+                <div class="item-calc-wrap">
+                  <div class="item-input-mini">
+                    <span class="mini-label mobile-only">Cant:</span>
+                    <input 
+                      v-model.number="item.quantity" 
+                      type="number" 
+                      min="1" 
+                      class="form-input item-qty" 
+                      placeholder="Cant." 
+                      @input="recalculateItemTotal(item)" 
+                    />
+                  </div>
+
+                  <div class="item-input-mini price-col">
+                    <span class="mini-label mobile-only">Unit:</span>
+                    <input 
+                      v-model.number="item.unitPrice" 
+                      type="number" 
+                      min="0" 
+                      class="form-input item-price" 
+                      placeholder="$ Unit" 
+                      @input="recalculateItemTotal(item)" 
+                    />
+                  </div>
+
+                  <div class="item-total-badge-wrap">
+                    <span class="item-total-badge">${{ (item.totalPrice || 0).toLocaleString('es-CL') }}</span>
+                  </div>
+
+                  <button type="button" class="remove-item-btn" @click="removeItem(idx)" title="Eliminar ítem">
+                    🗑️
+                  </button>
+                </div>
               </div>
             </div>
             <div v-else class="empty-items-notice">
@@ -277,11 +328,13 @@ function handleConfirm() {
             </div>
           </div>
 
-          <!-- Botones de Acción -->
+          <!-- Botones de Acción Human-in-the-Loop -->
           <div class="modal-footer">
-            <button type="button" class="cancel-btn" @click="handleClose">Cancelar</button>
+            <button type="button" class="cancel-btn" @click="handleClose">
+              Cancelar
+            </button>
             <button type="submit" class="confirm-btn" :disabled="!merchantName.trim() || !totalAmount">
-              ✅ Confirmar y Crear Gasto
+              ✅ Confirmar y Registrar Gasto
             </button>
           </div>
         </form>
@@ -293,13 +346,16 @@ function handleConfirm() {
 <style scoped>
 .review-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px);
-  z-index: 1100;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
   display: flex;
   justify-content: center;
   align-items: flex-end;
+  padding: 0;
+  box-sizing: border-box;
   animation: fadeIn 0.2s ease;
 }
 
@@ -307,31 +363,77 @@ function handleConfirm() {
 
 .review-modal {
   width: 100%;
-  max-width: 740px;
-  background: #ffffff;
+  max-width: 100%;
+  max-height: calc(100dvh - 1.5rem);
+  background: var(--bg-card, #ffffff);
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
-  padding: 1.5rem;
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
+  border-bottom: none;
+  padding: 1.25rem;
+  padding-bottom: max(1.5rem, var(--sab));
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 92vh;
+  box-sizing: border-box;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .review-modal { background: #0f172a; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
 }
 
-.modal-title { font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--text-primary); }
-.close-btn { background: rgba(0, 0, 0, 0.05); border: none; font-size: 1.4rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.badge-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #3b82f6;
+  letter-spacing: 0.05em;
+}
+
+.modal-title {
+  font-size: clamp(1.15rem, 3.5vw, 1.3rem);
+  font-weight: 800;
+  margin: 0.1rem 0 0;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  font-size: 1.2rem;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  touch-action: manipulation;
+}
+
+:root[data-theme="dark"] .close-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
 
 .alert-box {
   display: flex;
@@ -345,16 +447,45 @@ function handleConfirm() {
 .alert-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
 .alert-danger { background: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
 
+:root[data-theme="dark"] .alert-warning {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+
+:root[data-theme="dark"] .alert-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
 .alert-text { display: flex; flex-direction: column; gap: 0.15rem; }
+
+.confidence-summary-bar {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px dashed rgba(59, 130, 246, 0.25);
+  border-radius: 12px;
+}
+
+.conf-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.conf-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
 
 .review-body-grid {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 1.25rem;
-}
-
-@media (max-width: 600px) {
-  .review-body-grid { grid-template-columns: 1fr; }
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
 
 .preview-col { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -363,97 +494,368 @@ function handleConfirm() {
 .image-wrapper {
   position: relative;
   width: 100%;
-  height: 280px;
+  height: 200px;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.receipt-img { width: 100%; height: 100%; object-fit: cover; }
+.receipt-img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: contain; 
+  background: rgba(0, 0, 0, 0.2);
+}
+
 .scanner-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
 
 .form-col { display: flex; flex-direction: column; gap: 0.85rem; }
-.form-group { display: flex; flex-direction: column; gap: 0.3rem; }
-.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.form-row-2 { 
+  display: grid; 
+  grid-template-columns: 1fr; 
+  gap: 0.75rem; 
+}
+
+@media (min-width: 480px) {
+  .form-row-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 
 .label-row { display: flex; justify-content: space-between; align-items: center; }
 .form-label { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
 
-.confidence-badge { font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
+.confidence-badge { font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 8px; }
 .confidence-badge.high { background: #dcfce7; color: #15803d; }
 .confidence-badge.low { background: #fef9c3; color: #a16207; }
 
-.amount-wrapper { display: flex; align-items: center; background: rgba(0,0,0,0.03); border: 1.5px solid #3b82f6; border-radius: 12px; padding: 0.1rem 0.6rem; }
-.tax-wrapper { border-color: rgba(0, 0, 0, 0.12); background: transparent; }
-.currency-prefix { font-size: 1.1rem; font-weight: 800; color: #3b82f6; margin-right: 0.3rem; }
+:root[data-theme="dark"] .confidence-badge.high {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+:root[data-theme="dark"] .confidence-badge.low {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.amount-wrapper { 
+  display: flex; 
+  align-items: center; 
+  background: rgba(0,0,0,0.03); 
+  border: 1.5px solid #3b82f6; 
+  border-radius: 12px; 
+  padding: 0.1rem 0.6rem; 
+  min-height: var(--touch-target-min);
+}
+
+:root[data-theme="dark"] .amount-wrapper {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tax-wrapper { border-color: var(--border-subtle); background: transparent; }
+.currency-prefix { font-size: 1.2rem; font-weight: 800; color: #3b82f6; margin-right: 0.3rem; }
 .tax-prefix { color: #64748b; }
-.amount-input { font-size: 1.1rem !important; font-weight: 800 !important; border: none !important; background: transparent !important; }
+.amount-input { font-size: 1.15rem !important; font-weight: 800 !important; border: none !important; background: transparent !important; }
 
 .form-input, .form-select {
   width: 100%;
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.85rem;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.8);
-  font-size: 0.88rem;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 16px;
+  line-height: 1.4;
   color: var(--text-primary);
   box-sizing: border-box;
+  min-height: var(--touch-target-min);
 }
 
-@media (prefers-color-scheme: dark) {
-  .form-input, .form-select { background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); }
-}
-
-/* ESTILOS DE ÍTEMS / DESGLOSE DE PRODUCTOS */
+/* ============================================================================
+   ESTILOS DE PRODUCTOS / DESGLOSE RESPONSIVE (CARD EN MÓVIL, TABLA EN DESKTOP)
+   ============================================================================ */
 .items-section {
   background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 0.75rem;
-  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  padding: 0.85rem;
+  border-radius: 16px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .items-section { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); }
+:root[data-theme="dark"] .items-section {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .add-item-btn {
   background: #3b82f6;
   color: #fff;
   border: none;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  padding: 0.25rem 0.6rem;
-  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  min-height: var(--touch-target-min);
+  border-radius: 10px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
-.items-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
-.items-header-row { display: flex; align-items: center; gap: 0.35rem; padding: 0 0.2rem; font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
-.qty-hdr { width: 55px; text-align: center; }
-.desc-hdr { flex: 1; }
-.price-hdr { width: 85px; }
-.total-hdr { width: 65px; text-align: right; }
-.act-hdr { width: 24px; }
-.item-row { display: flex; align-items: center; gap: 0.35rem; }
-.item-qty { width: 55px !important; text-align: center; padding: 0.4rem !important; }
-.item-desc { flex: 1; padding: 0.4rem !important; }
-.item-price { width: 85px !important; padding: 0.4rem !important; }
-.item-total-badge { font-size: 0.82rem; font-weight: 800; color: #10b981; min-width: 65px; text-align: right; }
-.remove-item-btn { background: transparent; border: none; font-size: 0.9rem; cursor: pointer; padding: 0.2rem; }
-
-.empty-items-notice { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.3rem; font-style: italic; }
-
-.scope-bar { display: flex; background: rgba(0,0,0,0.05); padding: 3px; border-radius: 10px; gap: 2px; }
-.scope-btn { flex: 1; border: none; background: transparent; padding: 0.45rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; color: var(--text-secondary); cursor: pointer; }
-.scope-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
-
-@media (prefers-color-scheme: dark) {
-  .scope-btn.active { background: #1e293b; color: #f8fafc; }
+.items-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.6rem; 
+  margin-top: 0.5rem; 
 }
 
-.modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
-.cancel-btn { padding: 0.65rem 1rem; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); background: transparent; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
-.confirm-btn { padding: 0.65rem 1.25rem; border-radius: 12px; border: none; background: #10b981; color: #fff; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: background 0.15s; }
-.confirm-btn:hover:not(:disabled) { background: #059669; }
-.confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Mobile-First Item Card */
+.item-card-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.65rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+}
+
+.item-desc-wrap {
+  width: 100%;
+}
+
+.item-desc {
+  width: 100%;
+}
+
+.item-calc-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.item-input-mini {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mini-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.item-qty {
+  width: 65px !important;
+  text-align: center;
+  padding: 0.5rem !important;
+}
+
+.item-price {
+  width: 85px !important;
+  padding: 0.5rem !important;
+}
+
+.price-col {
+  flex: 1;
+}
+
+.item-total-badge-wrap {
+  min-width: 65px;
+  text-align: right;
+}
+
+.item-total-badge { 
+  font-size: 0.88rem; 
+  font-weight: 800; 
+  color: #10b981; 
+}
+
+.remove-item-btn { 
+  background: rgba(239, 68, 68, 0.08); 
+  border: 1px solid rgba(239, 68, 68, 0.2); 
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: 10px;
+  font-size: 0.95rem; 
+  cursor: pointer; 
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.empty-items-notice { 
+  font-size: 0.78rem; 
+  color: var(--text-secondary); 
+  margin-top: 0.4rem; 
+  font-style: italic; 
+}
+
+.scope-bar { 
+  display: flex; 
+  background: rgba(0,0,0,0.05); 
+  padding: 4px; 
+  border-radius: 12px; 
+  gap: 4px; 
+}
+
+:root[data-theme="dark"] .scope-bar {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.scope-btn { 
+  flex: 1; 
+  border: none; 
+  background: transparent; 
+  padding: 0.55rem; 
+  min-height: var(--touch-target-min);
+  font-size: 0.82rem; 
+  font-weight: 700; 
+  border-radius: 10px; 
+  color: var(--text-secondary); 
+  cursor: pointer; 
+  touch-action: manipulation;
+}
+
+.scope-btn.active { 
+  background: #3b82f6; 
+  color: #ffffff; 
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); 
+}
+
+.modal-footer { 
+  display: flex; 
+  flex-direction: column;
+  gap: 0.6rem; 
+  margin-top: 0.75rem; 
+}
+
+.cancel-btn { 
+  padding: 0.75rem 1rem; 
+  min-height: var(--touch-target-min);
+  border-radius: 12px; 
+  border: 1px solid var(--border-subtle); 
+  background: transparent; 
+  font-size: 0.88rem; 
+  font-weight: 700; 
+  color: var(--text-secondary); 
+  cursor: pointer; 
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-btn { 
+  padding: 0.85rem 1.25rem; 
+  min-height: 48px;
+  border-radius: 14px; 
+  border: none; 
+  background: #10b981; 
+  color: #fff; 
+  font-size: 0.95rem; 
+  font-weight: 800; 
+  cursor: pointer; 
+  touch-action: manipulation;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transition: background 0.15s, transform 0.15s; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-btn:hover:not(:disabled) { 
+  background: #059669; 
+  transform: translateY(-1px);
+}
+
+.confirm-btn:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed; 
+}
+
+.desktop-only { display: none !important; }
+.mobile-only { display: inline-block; }
+
+/* ============================================================================
+   🖥️ DESKTOP / TABLET (>= 640px)
+   ============================================================================ */
+@media (min-width: 640px) {
+  .desktop-only { display: flex !important; }
+  .mobile-only { display: none !important; }
+
+  .review-modal {
+    max-width: 760px;
+    border-radius: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1.75rem;
+    animation: none;
+  }
+
+  .review-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .sheet-grabber {
+    display: none;
+  }
+
+  .review-body-grid {
+    grid-template-columns: 240px 1fr;
+    gap: 1.25rem;
+  }
+
+  .image-wrapper {
+    height: 300px;
+  }
+
+  /* Desktop Table Row */
+  .item-card-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+
+  .item-desc-wrap {
+    flex: 1;
+  }
+
+  .item-calc-wrap {
+    width: auto;
+    gap: 0.35rem;
+  }
+
+  .items-header-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.35rem; 
+    padding: 0 0.2rem; 
+    font-size: 0.72rem; 
+    font-weight: 800; 
+    color: var(--text-secondary); 
+    text-transform: uppercase; 
+    letter-spacing: 0.04em; 
+  }
+
+  .qty-hdr { width: 55px; text-align: center; }
+  .desc-hdr { flex: 1; }
+  .price-hdr { width: 85px; }
+  .total-hdr { width: 65px; text-align: right; }
+  .act-hdr { width: var(--touch-target-min); }
+
+  .modal-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .cancel-btn, .confirm-btn {
+    width: auto;
+  }
+}
 </style>

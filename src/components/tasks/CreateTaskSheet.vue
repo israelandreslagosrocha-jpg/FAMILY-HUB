@@ -229,13 +229,21 @@ function handleSubmit() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
   justify-content: center;
   align-items: flex-end;
   animation: fadeIn 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .sheet-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
 }
 
 @keyframes fadeIn {
@@ -249,18 +257,45 @@ function handleSubmit() {
   background: #ffffff;
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
-  padding: 1.5rem;
+  padding: 1.25rem 1.25rem calc(1.25rem + var(--sab));
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: 90vh;
+  max-height: min(90dvh, 90vh);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (min-width: 640px) {
   .sheet-modal {
-    background: #0f172a;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 1.5rem;
+    max-height: 85vh;
   }
+}
+
+:root[data-theme="dark"] .sheet-modal {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sheet-grabber {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.18);
+  margin: -0.25rem auto 0.75rem auto;
+}
+
+@media (min-width: 640px) {
+  .sheet-grabber {
+    display: none;
+  }
+}
+
+:root[data-theme="dark"] .sheet-grabber {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 @keyframes slideUp {
@@ -272,22 +307,20 @@ function handleSubmit() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .sheet-mode-toggle {
   display: flex;
   background: rgba(0, 0, 0, 0.05);
   padding: 4px;
-  border-radius: 16px;
+  border-radius: 14px;
   gap: 4px;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.15rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  .sheet-mode-toggle {
-    background: rgba(255, 255, 255, 0.08);
-  }
+:root[data-theme="dark"] .sheet-mode-toggle {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .mode-pill-btn {
@@ -295,11 +328,16 @@ function handleSubmit() {
   border: none;
   background: transparent;
   padding: 0.55rem 0.85rem;
+  min-height: var(--touch-target-min);
   font-size: 0.85rem;
   font-weight: 700;
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
 }
 
@@ -310,8 +348,8 @@ function handleSubmit() {
 }
 
 .sheet-title {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 800;
   margin: 0;
   color: var(--text-primary);
 }
@@ -320,31 +358,43 @@ function handleSubmit() {
   background: rgba(0, 0, 0, 0.05);
   border: none;
   font-size: 1.4rem;
-  width: 32px;
-  height: 32px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   border-radius: 50%;
   cursor: pointer;
+  touch-action: manipulation;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
 }
 
+:root[data-theme="dark"] .close-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .sheet-form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .form-row {
   display: flex;
+  flex-direction: column;
   gap: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .form-row {
+    flex-direction: row;
+  }
 }
 
 .flex-1 { flex: 1; }
@@ -352,30 +402,30 @@ function handleSubmit() {
 .form-label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary);
 }
 
 .form-input, .form-select {
   width: 100%;
   padding: 0.75rem 0.9rem;
+  min-height: var(--touch-target-min);
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.8);
-  font-size: 0.95rem;
+  font-size: 16px; /* Evita auto-zoom en iOS */
   color: var(--text-primary);
   box-sizing: border-box;
+  touch-action: manipulation;
 }
 
-@media (prefers-color-scheme: dark) {
-  .form-input, .form-select {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(255, 255, 255, 0.12);
-  }
+:root[data-theme="dark"] .form-input,
+:root[data-theme="dark"] .form-select {
+  background: rgba(30, 41, 59, 0.8);
 }
 
 .main-title-input {
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: 700;
   border-color: #3b82f6;
 }
 
@@ -388,15 +438,17 @@ function handleSubmit() {
 .member-select-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.85rem;
+  gap: 0.45rem;
+  padding: 0.5rem 0.85rem;
+  min-height: var(--touch-target-min);
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-subtle);
   background: transparent;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s;
 }
 
@@ -410,6 +462,7 @@ function handleSubmit() {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .sheet-actions {
@@ -419,13 +472,16 @@ function handleSubmit() {
 .submit-task-btn {
   width: 100%;
   padding: 0.85rem;
+  min-height: 48px;
   border-radius: 14px;
   border: none;
   background: #3b82f6;
   color: #ffffff;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
   transition: transform 0.15s, background 0.15s;
 }
 
@@ -442,7 +498,7 @@ function handleSubmit() {
 .suggestion-notice-pill {
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #f59e0b;
+  color: #d97706;
   padding: 0.65rem 0.85rem;
   border-radius: 12px;
   font-size: 0.82rem;

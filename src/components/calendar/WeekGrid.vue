@@ -70,7 +70,7 @@ function handleContextAdd(dateStr: string, e: Event) {
           <span class="day-name">{{ day.dayName }}</span>
           <span class="day-num">{{ day.dayNumber }}</span>
           <button 
-            class="add-quick-icon" 
+            class="add-quick-icon desktop-only-btn" 
             title="Nuevo evento este día"
             @click="handleContextAdd(day.dateStr, $event)"
           >
@@ -99,39 +99,48 @@ function handleContextAdd(dateStr: string, e: Event) {
 
 <style scoped>
 .week-grid-container {
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   border-radius: 20px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .week-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  grid-template-columns: repeat(7, minmax(100px, 1fr));
   gap: 8px;
+  min-width: 700px;
 }
 
 .week-day-column {
   background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 8px;
-  min-height: 220px;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .week-day-column {
-    background: rgba(30, 41, 59, 0.4);
-    border-color: rgba(255, 255, 255, 0.05);
-  }
+:root[data-theme="dark"] .week-day-column {
+  background: rgba(30, 41, 59, 0.4);
 }
 
 .week-day-column:hover {
   transform: translateY(-2px);
   background: rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme="dark"] .week-day-column:hover {
+  background: rgba(30, 41, 59, 0.8);
 }
 
 .week-day-column.is-today {
@@ -149,13 +158,13 @@ function handleContextAdd(dateStr: string, e: Event) {
   align-items: center;
   justify-content: space-between;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 6px;
 }
 
 .day-name {
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-secondary);
 }
 
@@ -165,22 +174,29 @@ function handleContextAdd(dateStr: string, e: Event) {
   color: var(--text-primary);
 }
 
-.add-quick-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.06);
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
+.desktop-only-btn {
+  display: none;
 }
 
-.week-day-column:hover .add-quick-icon {
-  opacity: 1;
+@media (min-width: 768px) {
+  .desktop-only-btn {
+    display: flex;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.06);
+    font-size: 0.85rem;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .week-day-column:hover .desktop-only-btn {
+    opacity: 1;
+  }
 }
 
 .events-stack {
@@ -209,20 +225,18 @@ function handleContextAdd(dateStr: string, e: Event) {
   gap: 1px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .week-event-chip {
-    background: rgba(15, 23, 42, 0.7);
-  }
+:root[data-theme="dark"] .week-event-chip {
+  background: rgba(15, 23, 42, 0.7);
 }
 
 .chip-time {
-  font-weight: 700;
+  font-weight: 800;
   color: #3b82f6;
   font-size: 0.68rem;
 }
 
 .chip-title {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;

@@ -7,6 +7,7 @@ import FamilyView from '../views/FamilyView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import ReceiptsView from '../views/ReceiptsView.vue'
 import OfflineCenterView from '../views/OfflineCenterView.vue'
+import AutomationsView from '../views/AutomationsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,6 +28,11 @@ const router = createRouter({
       component: TasksView
     },
     {
+      path: '/automations',
+      name: 'automations',
+      component: AutomationsView
+    },
+    {
       path: '/finance',
       name: 'finance',
       component: FinanceView
@@ -38,6 +44,7 @@ const router = createRouter({
     },
     {
       path: '/offline',
+      alias: '/offline-center',
       name: 'offline',
       component: OfflineCenterView
     },

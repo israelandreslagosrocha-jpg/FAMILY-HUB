@@ -4,11 +4,33 @@
   /* Tipografía de Sistema */
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
 
-  /* Paleta Base */
+  /* Tokens de Espaciado Fluido Mobile-First */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-7: 2rem;     /* 32px */
+
+  /* Touch Targets y Ergonomía Táctil (Apple HIG / Android Touch) */
+  --touch-target-min: 44px;
+  --touch-target-comfortable: 48px;
+  --header-height-mobile: 56px;
+  --header-height-desktop: 64px;
+  --bottom-nav-height: 64px;
+
+  /* Safe Area Insets con Fallbacks */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
+  /* Paleta Base (Modo Oscuro Predeterminado) */
   --bg-dark: #090d16;
   --bg-card: #131b2e;
   --bg-card-hover: #1c273e;
-  --bg-glass: rgba(19, 27, 46, 0.75);
+  --bg-glass: rgba(19, 27, 46, 0.85);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(59, 130, 246, 0.5);
 
@@ -32,8 +54,8 @@
   --status-gray: #64748b;    /* Neutral / Archivada */
 
   /* Transiciones y Sombras */
-  --radius-lg: 18px;
-  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
   --radius-sm: 8px;
   --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -64,37 +86,43 @@
 
 html, body {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   background-color: var(--bg-dark);
   color: var(--text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
 }
 
 #app {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
 }
 
-/* Tipografía y Jerarquía */
+/* Tipografía Fluida Mobile-First */
 h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: clamp(1.4rem, 4vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 
 h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: clamp(1.15rem, 3.5vw, 1.4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 h3 {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: clamp(1rem, 3vw, 1.15rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
 p, span {
@@ -108,6 +136,47 @@ p, span {
 
 .text-muted {
   color: var(--text-muted);
+}
+
+/* ============================================================================
+   📱 TOUCH & INPUT BASELINE (Apple HIG / Android Touch)
+   ============================================================================ */
+
+/* Interacción Táctil Ágil sin Retardo de Tap */
+button,
+a,
+input,
+select,
+textarea,
+.touch-target,
+.clickable {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Regla Base para controles interactivos principales: asegurar área táctil mínima de 44px */
+button,
+select,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  min-height: var(--touch-target-min);
+}
+
+/* Inputs de formulario: mínimo 16px para prevenir auto-zoom de iOS al enfocar */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+  font-size: 16px;
+  line-height: 1.4;
+  min-height: var(--touch-target-min);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 /* Badges de Estado Semántico */
@@ -144,11 +213,15 @@ p, span {
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  padding: 6px 16px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all var(--transition-fast);
 }
 
@@ -163,9 +236,12 @@ p, span {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  padding: var(--space-4);
   box-shadow: var(--shadow-card);
   transition: transform var(--transition-fast), border-color var(--transition-fast);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .glass-card:hover {
@@ -186,51 +262,71 @@ p, span {
 }
 
 /* ============================================================================
-   🍱 SISTEMA DE DISEÑO APPLE BENTO GRID (hubeiqiao/apple-bento-grid)
+   🍱 SISTEMA DE DISEÑO APPLE BENTO GRID (Mobile-First)
    ============================================================================ */
 
+/* Base Móvil (320px – 899px): 1 Columna fluida */
 .bento-grid {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 1.25rem;
-}
-
-@media (min-width: 900px) {
-  .bento-grid {
-    grid-template-columns: repeat(12, 1fr);
-  }
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .bento-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 28px;
-  padding: 1.5rem;
+  border-radius: 24px;
+  padding: var(--space-4);
   box-shadow: var(--shadow-card);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s, box-shadow 0.25s;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .bento-card:hover {
-  transform: translateY(-3px) scale(1.01);
+  transform: translateY(-2px);
   border-color: rgba(59, 130, 246, 0.4);
-  box-shadow: 0 15px 35px -10px rgba(59, 130, 246, 0.2);
 }
 
-.bento-col-12 { grid-column: span 12; }
-.bento-col-8 { grid-column: span 12; }
-.bento-col-7 { grid-column: span 12; }
-.bento-col-5 { grid-column: span 12; }
-.bento-col-6 { grid-column: span 12; }
-.bento-col-4 { grid-column: span 12; }
+/* En móvil, todas las columnas ocupan el 100% de la grilla */
+.bento-col-12,
+.bento-col-8,
+.bento-col-7,
+.bento-col-6,
+.bento-col-5,
+.bento-col-4 {
+  grid-column: span 1;
+}
 
+/* Progressive Enhancement: Tablet / Desktop (>= 900px) */
 @media (min-width: 900px) {
+  .bento-grid {
+    grid-template-columns: repeat(12, 1fr);
+    gap: var(--space-5);
+  }
+
+  .bento-card {
+    border-radius: 28px;
+    padding: var(--space-6);
+  }
+
+  .bento-card:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 15px 35px -10px rgba(59, 130, 246, 0.2);
+  }
+
+  .bento-col-12 { grid-column: span 12; }
   .bento-col-8 { grid-column: span 8; }
   .bento-col-7 { grid-column: span 7; }
-  .bento-col-5 { grid-column: span 5; }
   .bento-col-6 { grid-column: span 6; }
+  .bento-col-5 { grid-column: span 5; }
   .bento-col-4 { grid-column: span 4; }
 }
 
@@ -253,16 +349,22 @@ p, span {
   color: #ffffff !important;
 }
 
+.bento-card-warning {
+  background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+  color: #ffffff !important;
+  border: none;
+}
+
 /* Números y Métricas Ultra-Bold estilo Apple Keynote */
 .bento-metric-large {
-  font-size: 2.8rem;
+  font-size: clamp(2rem, 6vw, 2.8rem);
   font-weight: 900;
   letter-spacing: -0.04em;
   line-height: 1;
 }
 
 .bento-metric-title {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -271,15 +373,24 @@ p, span {
 
 /* Banner de Frase / Quote al Pie */
 .bento-quote-banner {
-  grid-column: span 12;
+  grid-column: span 1;
   background: #0f172a;
-  border-radius: 24px;
-  padding: 1.25rem 2rem;
+  border-radius: 20px;
+  padding: clamp(1rem, 3vw, 1.25rem);
   text-align: center;
-  font-size: 1.15rem;
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
   font-weight: 800;
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+  .bento-quote-banner {
+    grid-column: span 12;
+    border-radius: 24px;
+    padding: 1.25rem 2rem;
+  }
 }
 
 .bento-quote-banner .hl-cyan { color: #38bdf8; }
@@ -291,50 +402,15 @@ p, span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.12);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
-/* ============================================================================
-   📱 DIRECTRICES DE DISEÑO MOBILE-FIRST (10/10 EN TELÉFONO)
-   ============================================================================ */
-
-/* Prevenir auto-zoom de iOS en inputs móviles */
-@media (max-width: 768px) {
-  input[type="text"],
-  input[type="number"],
-  input[type="date"],
-  input[type="email"],
-  input[type="password"],
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-
-  /* Touch Targets Mínimos (44px) para botones y chips */
-  button,
-  .member-chip,
-  .filter-chip,
-  .action-btn,
-  .status-btn {
-    min-height: 44px;
-    touch-action: manipulation;
-  }
-
-  /* Safe Area Insets para iPhone Notch / Dynamic Island */
-  body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-}
-
-/* Tirador visual tactil (Grabber Handle) para modales tipo Bottom Sheet */
+/* Tirador visual táctil (Grabber Handle) para modales tipo Bottom Sheet */
 .sheet-grabber {
   width: 42px;
   height: 5px;

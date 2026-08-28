@@ -137,25 +137,30 @@ function setTheme(theme: 'dark' | 'light') {
 .settings-bento-page {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding-bottom: 3rem;
+  gap: var(--space-4);
+  padding-bottom: 5rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .settings-hero-header {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .hero-icon-box {
-  font-size: 2.5rem;
+  font-size: clamp(2rem, 6vw, 2.5rem);
+  flex-shrink: 0;
 }
 
 .settings-title {
-  font-size: 1.8rem;
+  font-size: clamp(1.3rem, 5vw, 1.8rem);
   font-weight: 900;
   margin: 0.2rem 0;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .bento-title-group {
@@ -168,13 +173,20 @@ function setTheme(theme: 'dark' | 'light') {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin: 0.75rem 0;
+  line-height: 1.35;
 }
 
 .theme-options-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 0.75rem;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .theme-options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .theme-select-card {
@@ -182,18 +194,19 @@ function setTheme(theme: 'dark' | 'light') {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.2rem;
+  padding: 1.15rem 1rem;
+  min-height: 48px;
   border-radius: 16px;
   background: rgba(0, 0, 0, 0.04);
   border: 2px solid transparent;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .theme-select-card {
-    background: rgba(255, 255, 255, 0.05);
-  }
+:root[data-theme="dark"] .theme-select-card {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .theme-select-card.active {
@@ -204,13 +217,13 @@ function setTheme(theme: 'dark' | 'light') {
 .theme-icon { font-size: 1.8rem; margin-bottom: 0.3rem; }
 
 .theme-name {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: var(--text-primary);
 }
 
 .theme-sub {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
@@ -221,12 +234,12 @@ function setTheme(theme: 'dark' | 'light') {
   padding: 1rem;
   border-radius: 16px;
   margin-top: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .family-info-box {
-    background: rgba(255, 255, 255, 0.04);
-  }
+:root[data-theme="dark"] .family-info-box {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .fam-label {
@@ -243,11 +256,18 @@ function setTheme(theme: 'dark' | 'light') {
   font-size: 0.9rem;
   font-weight: 800;
   color: var(--text-primary);
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .light-pill {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(59, 130, 246, 0.12);
   color: #3b82f6;
+  font-weight: 800;
+}
+
+:root[data-theme="dark"] .light-pill {
+  color: #60a5fa;
 }
 
 .text-amber { color: #f59e0b; }

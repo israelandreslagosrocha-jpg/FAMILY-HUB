@@ -50,12 +50,15 @@ function handleTab(tab: AutomationTabType) {
 
 <style scoped>
 .automation-header {
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  gap: var(--space-3);
+  margin-bottom: 1rem;
   border-radius: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .header-main-row {
@@ -65,8 +68,8 @@ function handleTab(tab: AutomationTabType) {
 }
 
 .header-title {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: clamp(1.1rem, 4vw, 1.3rem);
+  font-weight: 800;
   margin: 0;
   color: var(--text-primary);
 }
@@ -75,60 +78,71 @@ function handleTab(tab: AutomationTabType) {
   font-size: 0.83rem;
   color: var(--text-secondary);
   margin: 0.2rem 0 0;
+  line-height: 1.35;
 }
 
 .tab-selector-bar {
   display: flex;
   background: rgba(0, 0, 0, 0.05);
-  padding: 3px;
-  border-radius: 12px;
-  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  gap: 4px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tab-selector-bar {
-    background: rgba(255, 255, 255, 0.1);
-  }
+.tab-selector-bar::-webkit-scrollbar {
+  display: none;
+}
+
+:root[data-theme="dark"] .tab-selector-bar {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .tab-btn {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 0.5rem 0.85rem;
+  padding: 0.55rem 0.85rem;
+  min-height: var(--touch-target-min);
   font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 9px;
-  color: var(--text-secondary, #64748b);
+  font-weight: 700;
+  border-radius: 10px;
+  color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
   white-space: nowrap;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tab-btn.active {
   background: #ffffff;
   color: #0f172a;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .tab-btn.active {
-    background: #1e293b;
-    color: #f8fafc;
-  }
+:root[data-theme="dark"] .tab-btn.active {
+  background: #1e293b;
+  color: #f8fafc;
 }
 
 .count-badge {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 800;
   background: rgba(59, 130, 246, 0.15);
   color: #2563eb;
-  padding: 0.1rem 0.4rem;
+  padding: 0.15rem 0.45rem;
   border-radius: 10px;
+}
+
+:root[data-theme="dark"] .count-badge {
+  color: #60a5fa;
 }
 </style>

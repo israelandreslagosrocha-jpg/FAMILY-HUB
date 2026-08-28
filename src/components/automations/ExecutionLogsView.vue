@@ -45,39 +45,48 @@ const automationStore = useAutomationStore()
 .execution-logs-container {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .section-intro-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
+  gap: 0.85rem;
+  padding: 0.9rem 1.15rem;
   border-radius: 16px;
+  box-sizing: border-box;
 }
 
-.intro-icon { font-size: 1.8rem; }
-.intro-title { font-size: 1rem; font-weight: 700; margin: 0; color: var(--text-primary); }
-.intro-desc { font-size: 0.83rem; color: var(--text-secondary); margin: 0.15rem 0 0; }
+.intro-icon { font-size: 1.6rem; flex-shrink: 0; }
+.intro-title { font-size: 0.95rem; font-weight: 800; margin: 0; color: var(--text-primary); }
+.intro-desc { font-size: 0.8rem; color: var(--text-secondary); margin: 0.15rem 0 0; line-height: 1.35; }
 
 .logs-list {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  width: 100%;
 }
 
 .log-card {
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.15rem;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .log-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .log-title-row {
@@ -86,11 +95,11 @@ const automationStore = useAutomationStore()
   gap: 0.5rem;
 }
 
-.status-icon { font-size: 1rem; }
+.status-icon { font-size: 1rem; flex-shrink: 0; }
 
 .rule-name {
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
   color: var(--text-primary);
 }
@@ -98,11 +107,13 @@ const automationStore = useAutomationStore()
 .triggered-time {
   font-size: 0.78rem;
   color: var(--text-secondary);
+  font-weight: 700;
 }
 
 .log-details {
   font-size: 0.85rem;
   color: var(--text-secondary);
+  line-height: 1.35;
   margin: 0;
 }
 
@@ -112,21 +123,23 @@ const automationStore = useAutomationStore()
   align-items: center;
   margin-top: 0.2rem;
   padding-top: 0.4rem;
-  border-top: 1px dashed rgba(0, 0, 0, 0.06);
+  border-top: 1px dashed var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .idempotent-tag {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #059669;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 0.15rem 0.45rem;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 0.15rem 0.5rem;
   border-radius: 6px;
 }
 
 .status-tag.success {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #2563eb;
 }
 </style>

@@ -150,138 +150,200 @@ function handleFilterMember(memberId: string) {
 
 <style scoped>
 .calendar-header {
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  gap: var(--space-3);
+  margin-bottom: 1rem;
   border-radius: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .header-top-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .header-top-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
 }
 
 .view-mode-toggle, .view-type-selector {
   display: flex;
   background: rgba(0, 0, 0, 0.05);
-  padding: 3px;
-  border-radius: 12px;
-  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (min-width: 640px) {
   .view-mode-toggle, .view-type-selector {
-    background: rgba(255, 255, 255, 0.1);
+    width: auto;
   }
 }
 
+:root[data-theme="dark"] .view-mode-toggle,
+:root[data-theme="dark"] .view-type-selector {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .mode-btn, .type-btn {
+  flex: 1;
   border: none;
   background: transparent;
-  padding: 0.45rem 0.85rem;
+  padding: 0.55rem 0.85rem;
+  min-height: var(--touch-target-min);
   font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 9px;
-  color: var(--text-secondary, #64748b);
+  font-weight: 700;
+  border-radius: 10px;
+  color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mode-btn.active, .type-btn.active {
   background: #ffffff;
   color: #0f172a;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .mode-btn.active, .type-btn.active {
-    background: #1e293b;
-    color: #f8fafc;
-  }
+:root[data-theme="dark"] .mode-btn.active,
+:root[data-theme="dark"] .type-btn.active {
+  background: #1e293b;
+  color: #f8fafc;
 }
 
 .header-nav-row {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .date-controls {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
 .icon-nav-btn {
-  width: 34px;
-  height: 34px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: transparent;
-  font-size: 1.2rem;
-  display: flex;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 1.4rem;
+  line-height: 1;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
   color: var(--text-primary);
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
+}
+
+:root[data-theme="dark"] .icon-nav-btn {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .icon-nav-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.icon-nav-btn:active {
+  transform: scale(0.92);
 }
 
 .today-btn {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: transparent;
-  padding: 0.35rem 0.75rem;
-  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.03);
+  padding: 0.45rem 0.9rem;
+  min-height: var(--touch-target-min);
+  border-radius: 10px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
   color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:root[data-theme="dark"] .today-btn {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .date-title {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: clamp(1.05rem, 4vw, 1.25rem);
+  font-weight: 800;
   color: var(--text-primary);
   margin: 0;
+  text-align: right;
+  flex: 1;
 }
 
 .member-filter-bar {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.member-filter-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.75rem;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  min-height: var(--touch-target-min);
   border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-subtle);
   background: transparent;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
   white-space: nowrap;
   transition: all 0.2s ease;
 }
 
 .filter-chip.active {
   border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(59, 130, 246, 0.12);
   color: #2563eb;
+}
+
+:root[data-theme="dark"] .filter-chip.active {
+  color: #60a5fa;
 }
 
 .color-badge {
@@ -289,5 +351,6 @@ function handleFilterMember(memberId: string) {
   height: 10px;
   border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
 }
 </style>

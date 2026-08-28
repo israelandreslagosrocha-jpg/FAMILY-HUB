@@ -288,7 +288,10 @@ function toggleOptionsMenu(taskId: string) {
 .my-tasks-container {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .empty-card {
@@ -303,7 +306,7 @@ function toggleOptionsMenu(taskId: string) {
 
 .empty-title {
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
   margin: 0.5rem 0 0.25rem;
 }
@@ -316,17 +319,20 @@ function toggleOptionsMenu(taskId: string) {
 .priority-groups {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-4);
+  width: 100%;
 }
 
 .priority-section {
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   border-radius: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .priority-title {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: clamp(1rem, 3.5vw, 1.15rem);
+  font-weight: 800;
   margin: 0 0 1rem;
   display: flex;
   align-items: center;
@@ -339,8 +345,8 @@ function toggleOptionsMenu(taskId: string) {
 
 .count-pill {
   font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
   border-radius: 12px;
 }
 
@@ -351,26 +357,25 @@ function toggleOptionsMenu(taskId: string) {
 .tasks-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .task-card-item {
   display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
+  align-items: center;
+  gap: 0.65rem;
   padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.55);
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
   position: relative;
   transition: all 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
-  .task-card-item {
-    background: rgba(30, 41, 59, 0.55);
-    border-color: rgba(255, 255, 255, 0.05);
-  }
+:root[data-theme="dark"] .task-card-item {
+  background: rgba(30, 41, 59, 0.55);
 }
 
 .task-card-item.status-completed {
@@ -384,13 +389,20 @@ function toggleOptionsMenu(taskId: string) {
 }
 
 .checkbox-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   cursor: pointer;
-  padding-top: 2px;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  margin: -6px;
 }
 
 .checkbox-wrapper input {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
   accent-color: #3b82f6;
 }
@@ -399,14 +411,16 @@ function toggleOptionsMenu(taskId: string) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
   cursor: pointer;
+  min-width: 0;
 }
 
 .task-title-text {
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
+  line-height: 1.35;
 }
 
 .task-title-text.strike {
@@ -416,6 +430,7 @@ function toggleOptionsMenu(taskId: string) {
 .task-desc-text {
   font-size: 0.82rem;
   color: var(--text-secondary);
+  line-height: 1.35;
 }
 
 .task-sub-meta {
@@ -423,41 +438,62 @@ function toggleOptionsMenu(taskId: string) {
   align-items: center;
   gap: 0.6rem;
   margin-top: 0.2rem;
+  flex-wrap: wrap;
 }
 
 .category-tag {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
   background: rgba(0, 0, 0, 0.05);
-  padding: 0.1rem 0.45rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 6px;
+}
+
+:root[data-theme="dark"] .category-tag {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .completed-at-text {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #059669;
 }
 
 .skipped-at-text {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #64748b;
 }
 
 .task-actions-col {
   position: relative;
+  flex-shrink: 0;
 }
 
 .options-trigger-btn {
   background: transparent;
   border: none;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  line-height: 1;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
+  touch-action: manipulation;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+
+.options-trigger-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="dark"] .options-trigger-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dropdown-menu {
@@ -465,57 +501,65 @@ function toggleOptionsMenu(taskId: string) {
   top: 100%;
   right: 0;
   z-index: 100;
-  width: 170px;
+  width: 200px;
   padding: 0.5rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   background: #ffffff;
+  border: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  .dropdown-menu {
-    background: #1e293b;
-  }
+:root[data-theme="dark"] .dropdown-menu {
+  background: #1e293b;
 }
 
 .menu-item {
   background: transparent;
   border: none;
-  padding: 0.45rem 0.6rem;
-  font-size: 0.82rem;
-  font-weight: 600;
+  padding: 0.6rem 0.75rem;
+  min-height: var(--touch-target-min);
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--text-primary);
   text-align: left;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  touch-action: manipulation;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .menu-item:hover {
   background: rgba(59, 130, 246, 0.1);
 }
 
+.menu-item.delete-item {
+  color: #ef4444;
+}
+
 .menu-divider {
   height: 1px;
-  background: rgba(0, 0, 0, 0.08);
-  margin: 0.2rem 0;
+  background: var(--border-subtle);
+  margin: 0.3rem 0;
 }
 
 .menu-header-text {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 800;
   color: var(--text-secondary);
-  padding: 0.2rem 0.6rem;
+  padding: 0.3rem 0.6rem 0.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .m-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 </style>

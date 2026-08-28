@@ -241,12 +241,17 @@ function handleDeleteEvent(eventId: string) {
 .day-timeline-container {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .section-card {
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   border-radius: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-header {
@@ -254,11 +259,12 @@ function handleDeleteEvent(eventId: string) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  gap: 0.75rem;
 }
 
 .section-title {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: clamp(1rem, 3.5vw, 1.15rem);
+  font-weight: 800;
   margin: 0;
   display: flex;
   align-items: center;
@@ -270,9 +276,13 @@ function handleDeleteEvent(eventId: string) {
   background: rgba(59, 130, 246, 0.12);
   color: #2563eb;
   font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
   border-radius: 12px;
+}
+
+:root[data-theme="dark"] .count-badge {
+  color: #60a5fa;
 }
 
 .count-badge.badge-amber {
@@ -284,11 +294,16 @@ function handleDeleteEvent(eventId: string) {
   background: #3b82f6;
   color: #ffffff;
   border: none;
-  padding: 0.4rem 0.85rem;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  padding: 0.5rem 0.95rem;
+  min-height: var(--touch-target-min);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.15s, background 0.15s;
 }
 
@@ -311,12 +326,12 @@ function handleDeleteEvent(eventId: string) {
 }
 
 .empty-icon {
-  font-size: 2rem;
+  font-size: 2.5rem;
 }
 
 .empty-text {
   font-size: 0.9rem;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -324,11 +339,15 @@ function handleDeleteEvent(eventId: string) {
   background: transparent;
   border: none;
   color: #3b82f6;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
+  min-height: var(--touch-target-min);
   text-decoration: underline;
   margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .events-list {
@@ -340,46 +359,43 @@ function handleDeleteEvent(eventId: string) {
 .event-card {
   display: flex;
   background: rgba(255, 255, 255, 0.6);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   transition: transform 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .event-card {
-    background: rgba(30, 41, 59, 0.6);
-    border-color: rgba(255, 255, 255, 0.05);
-  }
-}
-
-.event-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+:root[data-theme="dark"] .event-card {
+  background: rgba(30, 41, 59, 0.6);
 }
 
 .event-color-bar {
   width: 6px;
+  flex-shrink: 0;
   background-color: var(--event-accent, #3b82f6);
 }
 
 .event-content {
   flex: 1;
-  padding: 0.9rem 1.1rem;
+  padding: 0.9rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
+  min-width: 0;
 }
 
 .event-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .time-pill {
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #3b82f6;
 }
 
@@ -394,6 +410,7 @@ function handleDeleteEvent(eventId: string) {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .saving-pill {
@@ -403,7 +420,6 @@ function handleDeleteEvent(eventId: string) {
   background: rgba(59, 130, 246, 0.12);
   padding: 0.15rem 0.5rem;
   border-radius: 8px;
-  animation: pulse 1.2s infinite;
 }
 
 .error-pill {
@@ -415,47 +431,52 @@ function handleDeleteEvent(eventId: string) {
   border-radius: 8px;
 }
 
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
 .category-badge {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
   background: rgba(0, 0, 0, 0.05);
   padding: 0.15rem 0.5rem;
   border-radius: 8px;
 }
 
+:root[data-theme="dark"] .category-badge {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .delete-event-btn {
-  background: transparent;
-  border: none;
-  font-size: 0.85rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: 10px;
+  font-size: 0.95rem;
   cursor: pointer;
-  opacity: 0.6;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 0.15s, transform 0.15s;
-  padding: 2px 4px;
+  flex-shrink: 0;
 }
 
 .delete-event-btn:hover {
-  opacity: 1;
-  transform: scale(1.2);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .event-card-title {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
   margin: 0;
+  line-height: 1.35;
 }
 
 .event-description {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin: 0;
+  line-height: 1.35;
 }
 
 .participants-row {
@@ -468,19 +489,21 @@ function handleDeleteEvent(eventId: string) {
 
 .participants-label {
   font-size: 0.78rem;
+  font-weight: 700;
   color: var(--text-secondary);
 }
 
 .avatars-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 
 .member-avatar-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.15rem 0.5rem;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 12px;
   font-size: 0.78rem;
   font-weight: 700;
@@ -491,25 +514,30 @@ function handleDeleteEvent(eventId: string) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .glassy-gradient-card {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
-}
-
-.glassy-gradient-card:hover {
-  transform: translateY(-2px) scale(1.008);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .event-footer-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
   margin-top: 0.5rem;
-  flex-wrap: wrap;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+@media (min-width: 640px) {
+  .event-footer-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .completion-badge {
@@ -517,7 +545,6 @@ function handleDeleteEvent(eventId: string) {
   font-weight: 800;
   padding: 0.2rem 0.55rem;
   border-radius: 8px;
-  letter-spacing: 0.02em;
 }
 
 .badge-approved {
@@ -540,25 +567,45 @@ function handleDeleteEvent(eventId: string) {
 
 .status-action-buttons {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.5rem;
   align-items: center;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .status-action-buttons {
+    width: auto;
+  }
 }
 
 .status-btn {
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(0, 0, 0, 0.12);
+  flex: 1;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.05);
   color: var(--text-secondary);
-  padding: 0.3rem 0.65rem;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 0.5rem 0.85rem;
+  min-height: var(--touch-target-min);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:root[data-theme="light"] .status-btn {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: rgba(0, 0, 0, 0.1);
+@media (min-width: 640px) {
+  .status-btn {
+    flex: none;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+:root[data-theme="dark"] .status-btn {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .approve-btn:hover, .approve-btn.active {
@@ -579,16 +626,18 @@ function handleDeleteEvent(eventId: string) {
 .tasks-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .task-item-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 0.9rem;
+  padding: 0.85rem 1rem;
   border-radius: 14px;
+  min-height: var(--touch-target-min);
   transition: opacity 0.2s;
+  box-sizing: border-box;
 }
 
 .task-item-row.completed {
@@ -596,14 +645,20 @@ function handleDeleteEvent(eventId: string) {
 }
 
 .checkbox-container {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  margin: -6px;
 }
 
 .checkbox-container input {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
   accent-color: #3b82f6;
 }
@@ -613,12 +668,14 @@ function handleDeleteEvent(eventId: string) {
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  min-width: 0;
 }
 
 .task-title {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-primary);
+  line-height: 1.35;
 }
 
 .task-title.strike {
@@ -630,29 +687,14 @@ function handleDeleteEvent(eventId: string) {
   color: var(--text-secondary);
 }
 
-.member-tag {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.2rem 0.55rem;
-  border-radius: 8px;
+.task-meta {
+  flex-shrink: 0;
 }
 
-@media (max-width: 600px) {
-  .event-footer-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
-  }
-  .status-action-buttons {
-    width: 100%;
-    display: flex;
-    gap: 0.5rem;
-  }
-  .status-btn {
-    flex: 1;
-    min-height: 44px;
-    justify-content: center;
-    font-size: 0.85rem;
-  }
+.member-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
 }
 </style>

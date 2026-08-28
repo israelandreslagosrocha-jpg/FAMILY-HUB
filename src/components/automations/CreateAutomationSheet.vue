@@ -47,6 +47,7 @@ function handleSubmit() {
 <template>
   <div v-if="automationStore.isCreateSheetOpen" class="sheet-backdrop" @click.self="handleClose">
     <div class="sheet-modal glass-card" @click.stop @mousedown.stop>
+      <div class="sheet-grabber"></div>
       <div class="sheet-header">
         <h3 class="sheet-title">⚡ Nueva Automatización</h3>
         <button class="close-btn" @click="handleClose">×</button>
@@ -146,14 +147,25 @@ function handleSubmit() {
 <style scoped>
 .sheet-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
   justify-content: center;
   align-items: flex-end;
   animation: fadeIn 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .sheet-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -164,15 +176,45 @@ function handleSubmit() {
   background: #ffffff;
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
-  padding: 1.5rem;
+  padding: 1.25rem 1.25rem calc(1.25rem + var(--sab));
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: 90vh;
+  max-height: min(90dvh, 90vh);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .sheet-modal { background: #0f172a; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+@media (min-width: 640px) {
+  .sheet-modal {
+    border-radius: 24px;
+    padding: 1.5rem;
+    max-height: 85vh;
+  }
+}
+
+:root[data-theme="dark"] .sheet-modal {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sheet-grabber {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.18);
+  margin: -0.25rem auto 0.75rem auto;
+}
+
+@media (min-width: 640px) {
+  .sheet-grabber {
+    display: none;
+  }
+}
+
+:root[data-theme="dark"] .sheet-grabber {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -181,65 +223,132 @@ function handleSubmit() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.15rem;
 }
 
-.sheet-title { font-size: 1.2rem; font-weight: 700; margin: 0; color: var(--text-primary); }
-.close-btn { background: rgba(0, 0, 0, 0.05); border: none; font-size: 1.4rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+.sheet-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-primary);
+}
 
-.sheet-form { display: flex; flex-direction: column; gap: 1.1rem; }
-.form-group { display: flex; flex-direction: column; gap: 0.4rem; }
-.form-label { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary, #64748b); }
+.close-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  font-size: 1.4rem;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+:root[data-theme="dark"] .close-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sheet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
 
 .form-input, .form-select {
   width: 100%;
   padding: 0.75rem 0.9rem;
+  min-height: var(--touch-target-min);
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.8);
-  font-size: 0.92rem;
+  font-size: 16px; /* Evita auto-zoom en iOS */
   color: var(--text-primary);
+  box-sizing: border-box;
+  touch-action: manipulation;
+}
+
+:root[data-theme="dark"] .form-input,
+:root[data-theme="dark"] .form-select {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.main-title-input {
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-color: #3b82f6;
+}
+
+.form-block {
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  border: 1px solid var(--border-subtle);
   box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .form-input, .form-select { background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); }
-}
-
-.main-title-input { font-size: 1.05rem; font-weight: 600; border-color: #3b82f6; }
-
-.form-block {
-  padding: 0.85rem;
-  border-radius: 14px;
+.block-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
-.block-header { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 800; }
-.block-when { background: rgba(245, 158, 11, 0.06); border-color: rgba(245, 158, 11, 0.2); }
+.block-when { background: rgba(245, 158, 11, 0.06); border-color: rgba(245, 158, 11, 0.25); }
 .block-when .b-title { color: #d97706; }
-.block-if { background: rgba(59, 130, 246, 0.06); border-color: rgba(59, 130, 246, 0.2); }
+
+.block-if { background: rgba(59, 130, 246, 0.06); border-color: rgba(59, 130, 246, 0.25); }
 .block-if .b-title { color: #2563eb; }
-.block-then { background: rgba(16, 185, 129, 0.06); border-color: rgba(16, 185, 129, 0.2); }
+
+.block-then { background: rgba(16, 185, 129, 0.06); border-color: rgba(16, 185, 129, 0.25); }
 .block-then .b-title { color: #059669; }
 
-.sheet-actions { margin-top: 0.5rem; }
+.sheet-actions {
+  margin-top: 0.5rem;
+}
 
 .submit-auto-btn {
   width: 100%;
   padding: 0.85rem;
+  min-height: 48px;
   border-radius: 14px;
   border: none;
   background: #3b82f6;
   color: #ffffff;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
   transition: transform 0.15s, background 0.15s;
 }
 
-.submit-auto-btn:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); }
-.submit-auto-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.submit-auto-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.submit-auto-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 </style>

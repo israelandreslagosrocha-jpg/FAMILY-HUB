@@ -175,24 +175,29 @@ function setQuickCredentials(e: string, p: string) {
 
 <style scoped>
 .login-page-container {
-  min-height: 80vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: max(1rem, var(--sat)) var(--space-4) max(1.5rem, var(--sab)) var(--space-4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .login-card {
   width: 100%;
   max-width: 440px;
-  padding: 2.25rem;
-  border-radius: 28px;
+  padding: clamp(1.25rem, 5vw, 2.25rem);
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.4);
+  box-sizing: border-box;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -208,7 +213,7 @@ function setQuickCredentials(e: string, p: string) {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .brand-badge {
@@ -226,7 +231,7 @@ function setQuickCredentials(e: string, p: string) {
 }
 
 .brand-title {
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   margin: 0;
@@ -234,7 +239,7 @@ function setQuickCredentials(e: string, p: string) {
 }
 
 .brand-subtitle {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
   margin: 0;
 }
@@ -247,13 +252,14 @@ function setQuickCredentials(e: string, p: string) {
   gap: 4px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .mode-tabs { background: rgba(255, 255, 255, 0.06); }
+:root[data-theme="dark"] .mode-tabs {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .tab-btn {
   flex: 1;
   padding: 0.55rem;
+  min-height: var(--touch-target-min);
   border-radius: 10px;
   border: none;
   background: transparent;
@@ -261,6 +267,10 @@ function setQuickCredentials(e: string, p: string) {
   font-weight: 700;
   color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
 }
 
@@ -270,11 +280,9 @@ function setQuickCredentials(e: string, p: string) {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .tab-btn.active {
-    background: #334155;
-    color: #ffffff;
-  }
+:root[data-theme="dark"] .tab-btn.active {
+  background: #334155;
+  color: #ffffff;
 }
 
 .auth-error-alert {
@@ -315,15 +323,17 @@ function setQuickCredentials(e: string, p: string) {
 
 .form-input {
   width: 100%;
-  padding: 0.65rem 0.85rem;
+  padding: 0.75rem 0.9rem;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   background: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
+  font-size: 16px;
+  line-height: 1.4;
   color: var(--text-primary);
   box-sizing: border-box;
   outline: none;
   transition: border-color 0.2s;
+  min-height: var(--touch-target-min);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -341,14 +351,16 @@ function setQuickCredentials(e: string, p: string) {
 
 .submit-btn {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.85rem;
+  min-height: 48px;
   border-radius: 14px;
   border: none;
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: #ffffff;
-  font-size: 0.92rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
   box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
   transition: transform 0.15s;
   display: flex;
@@ -386,14 +398,19 @@ function setQuickCredentials(e: string, p: string) {
 }
 
 .quick-chip {
-  padding: 0.35rem 0.65rem;
+  padding: 0.45rem 0.75rem;
+  min-height: var(--touch-target-min);
   border-radius: 10px;
   border: 1px solid rgba(59, 130, 246, 0.3);
   background: rgba(59, 130, 246, 0.08);
   color: #3b82f6;
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s;
 }
 

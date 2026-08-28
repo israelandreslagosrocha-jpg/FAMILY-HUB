@@ -30,7 +30,7 @@ const mobileNavItems = [
 </script>
 
 <template>
-  <!-- Menú Lateral (Desktop) -->
+  <!-- Menú Lateral (Desktop >= 768px) -->
   <aside class="sidebar-nav">
     <div class="sidebar-menu">
       <router-link 
@@ -46,7 +46,7 @@ const mobileNavItems = [
     </div>
   </aside>
 
-  <!-- Barra Inferior (Móvil - iOS/Android Style 5 Tabs) -->
+  <!-- Barra Inferior Táctil (Móvil < 768px - iOS/Android HIG 5 Tabs) -->
   <nav class="bottom-nav">
     <router-link 
       v-for="item in mobileNavItems" 
@@ -55,14 +55,73 @@ const mobileNavItems = [
       class="nav-link-mobile"
       :class="{ active: route.path === item.path }"
     >
-      <component :is="item.icon" :size="22" />
+      <component :is="item.icon" :size="22" class="mobile-icon" />
       <span class="mobile-label">{{ item.name }}</span>
     </router-link>
   </nav>
 </template>
 
 <style scoped>
-/* Estilos Menú Lateral Desktop (Apple HIG Sidebar) */
+/* ============================================================================
+   📱 BARRA INFERIOR MÓVIL (iOS TabBar HIG / Android BottomNav)
+   ============================================================================ */
+.bottom-nav {
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  min-height: var(--bottom-nav-height);
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-subtle);
+  z-index: 90;
+  padding-bottom: max(6px, var(--sab));
+  padding-top: 4px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.nav-link-mobile {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-muted);
+  text-decoration: none;
+  min-height: var(--touch-target-min);
+  padding: 4px 0;
+  touch-action: manipulation;
+  transition: color 0.15s, transform 0.15s;
+  user-select: none;
+}
+
+.mobile-icon {
+  flex-shrink: 0;
+}
+
+.nav-link-mobile:active {
+  transform: scale(0.92);
+}
+
+.nav-link-mobile.active {
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+.mobile-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+/* ============================================================================
+   🖥️ MENÚ LATERAL DESKTOP (Tablet / Desktop >= 768px)
+   ============================================================================ */
 .sidebar-nav {
   display: none;
   width: 230px;
@@ -72,6 +131,7 @@ const mobileNavItems = [
   height: calc(100vh - 60px);
   position: sticky;
   top: 60px;
+  box-sizing: border-box;
 }
 
 .sidebar-menu {
@@ -91,6 +151,7 @@ const mobileNavItems = [
   font-weight: 600;
   font-size: 0.92rem;
   letter-spacing: -0.01em;
+  min-height: var(--touch-target-min);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -117,50 +178,6 @@ const mobileNavItems = [
   transform: scale(1.1);
 }
 
-/* Estilos Barra Inferior Móvil (iOS TabBar HIG) */
-.bottom-nav {
-  display: flex;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--border-subtle);
-  z-index: 90;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.nav-link-mobile {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: color 0.15s, transform 0.15s;
-}
-
-.nav-link-mobile:active {
-  transform: scale(0.92);
-}
-
-.nav-link-mobile.active {
-  color: #3b82f6;
-  font-weight: 700;
-}
-
-.mobile-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-/* Media Queries para Responsive Breakpoint */
 @media (min-width: 768px) {
   .sidebar-nav {
     display: block;

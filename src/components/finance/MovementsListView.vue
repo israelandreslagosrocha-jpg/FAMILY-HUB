@@ -29,7 +29,7 @@ function handleDeleteMovement(movId: string) {
         :class="{ active: financeStore.filterMemberId === 'all' }"
         @click="handleFilterMember('all')"
       >
-        <span>Todos los integrantes</span>
+        <span>👥 Todos</span>
       </button>
 
       <button 
@@ -98,38 +98,50 @@ function handleDeleteMovement(movId: string) {
 .movements-list-container {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .member-filter-scroll {
   display: flex;
   gap: 0.5rem;
-  padding: 0.75rem;
+  padding: 0.65rem;
   border-radius: 16px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.member-filter-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .member-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   padding: 0.45rem 0.85rem;
+  min-height: var(--touch-target-min);
   border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.6);
   font-size: 0.83rem;
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.15s;
 }
 
-@media (prefers-color-scheme: dark) {
-  .member-chip {
-    background: rgba(30, 41, 59, 0.6);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
+:root[data-theme="dark"] .member-chip {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .member-chip.active {
@@ -142,6 +154,7 @@ function handleDeleteMovement(movId: string) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .empty-card {
@@ -157,56 +170,71 @@ function handleDeleteMovement(movId: string) {
 .movements-card-list {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .movement-card {
-  padding: 1rem 1.25rem;
+  padding: 0.85rem 1.1rem;
   border-radius: 18px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.65rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+@media (min-width: 520px) {
+  .movement-card {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .mov-card-left {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .category-icon-bg {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.3rem;
+  flex-shrink: 0;
 }
 
 .mov-details {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  min-width: 0;
 }
 
 .mov-title-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
 }
 
 .mov-title {
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   font-weight: 700;
   margin: 0;
   color: var(--text-primary);
+  word-break: break-word;
 }
 
 .type-pill {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   padding: 0.1rem 0.4rem;
   border-radius: 6px;
@@ -217,35 +245,48 @@ function handleDeleteMovement(movId: string) {
 .type-pill.transfer { background: rgba(139, 92, 246, 0.15); color: #7c3aed; }
 
 .mov-meta {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--text-secondary);
 }
 
 .mov-card-right {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
-  text-align: right;
+}
+
+@media (min-width: 520px) {
+  .mov-card-right {
+    justify-content: flex-end;
+    text-align: right;
+  }
 }
 
 .delete-mov-btn {
-  background: transparent;
-  border: none;
-  font-size: 0.85rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: 10px;
+  font-size: 0.95rem;
   cursor: pointer;
-  opacity: 0.6;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 0.15s, transform 0.15s;
-  padding: 2px;
+  flex-shrink: 0;
 }
 
 .delete-mov-btn:hover {
-  opacity: 1;
-  transform: scale(1.2);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .mov-amount {
   font-size: 1.05rem;
-  font-weight: 800;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .income-val { color: #10b981; }

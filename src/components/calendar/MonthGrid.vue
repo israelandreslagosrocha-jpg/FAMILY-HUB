@@ -102,7 +102,7 @@ function handleContextAdd(dateStr: string, e: Event) {
         <div class="day-cell-top">
           <span class="day-number">{{ day.dayNumber }}</span>
           <button 
-            class="context-add-btn" 
+            class="context-add-btn desktop-only-btn" 
             title="Nuevo evento este día"
             @click="handleContextAdd(day.fullDate, $event)"
           >
@@ -126,46 +126,61 @@ function handleContextAdd(dateStr: string, e: Event) {
 
 <style scoped>
 .month-grid-container {
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   border-radius: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .weekday-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-secondary, #64748b);
-  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  margin-bottom: 0.6rem;
 }
 
 .month-days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  gap: 4px;
+}
+
+@media (min-width: 480px) {
+  .month-days-grid {
+    gap: 6px;
+  }
 }
 
 .day-cell {
   aspect-ratio: 1 / 1;
-  min-height: 54px;
+  min-height: 48px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 6px;
+  border: 1px solid var(--border-subtle);
+  padding: 4px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (min-width: 480px) {
   .day-cell {
-    background: rgba(30, 41, 59, 0.4);
-    border-color: rgba(255, 255, 255, 0.05);
+    padding: 6px;
+    min-height: 56px;
   }
+}
+
+:root[data-theme="dark"] .day-cell {
+  background: rgba(30, 41, 59, 0.4);
 }
 
 .day-cell:hover {
@@ -174,8 +189,12 @@ function handleContextAdd(dateStr: string, e: Event) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
+:root[data-theme="dark"] .day-cell:hover {
+  background: rgba(30, 41, 59, 0.8);
+}
+
 .day-cell.other-month {
-  opacity: 0.35;
+  opacity: 0.3;
 }
 
 .day-cell.is-today {
@@ -193,35 +212,50 @@ function handleContextAdd(dateStr: string, e: Event) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
 .day-number {
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 800;
 }
 
-.context-add-btn {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.08);
-  font-size: 0.8rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
+@media (min-width: 480px) {
+  .day-number {
+    font-size: 0.95rem;
+  }
 }
 
-.day-cell:hover .context-add-btn {
-  opacity: 1;
+/* En móvil, el botón "+" se oculta para no estorbar el tap del día completo; en desktop aparece al hover */
+.desktop-only-btn {
+  display: none;
 }
 
-.day-cell.is-selected .context-add-btn {
-  background: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
+@media (min-width: 768px) {
+  .desktop-only-btn {
+    display: flex;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.08);
+    font-size: 0.85rem;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.2s, background 0.2s;
+  }
+
+  .day-cell:hover .desktop-only-btn {
+    opacity: 1;
+  }
+
+  .day-cell.is-selected .desktop-only-btn {
+    background: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+  }
 }
 
 .dots-row {
@@ -229,13 +263,20 @@ function handleContextAdd(dateStr: string, e: Event) {
   gap: 3px;
   justify-content: center;
   align-items: center;
-  min-height: 8px;
+  min-height: 6px;
 }
 
 .event-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   display: inline-block;
+}
+
+@media (min-width: 480px) {
+  .event-dot {
+    width: 6px;
+    height: 6px;
+  }
 }
 </style>

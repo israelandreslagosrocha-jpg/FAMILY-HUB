@@ -71,21 +71,34 @@ function handleDelete(respId: string) {
 .responsibilities-container {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .resp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .resp-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
 }
 
 .resp-card {
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
   border-top: 4px solid var(--resp-color, #3b82f6);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .resp-card-header {
@@ -96,12 +109,14 @@ function handleDelete(respId: string) {
 
 .resp-icon {
   font-size: 2rem;
+  flex-shrink: 0;
 }
 
 .resp-title-col {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .resp-title-row {
@@ -113,7 +128,7 @@ function handleDelete(respId: string) {
 
 .resp-title {
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
   color: var(--text-primary);
 }
@@ -127,19 +142,29 @@ function handleDelete(respId: string) {
   border-radius: 8px;
 }
 
+:root[data-theme="dark"] .fixed-time-chip {
+  color: #60a5fa;
+}
+
 .resp-actions {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .action-btn-sm {
   background: transparent;
   border: none;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   cursor: pointer;
-  padding: 3px 5px;
-  border-radius: 6px;
+  touch-action: manipulation;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   transition: background 0.15s;
 }
 
@@ -147,10 +172,14 @@ function handleDelete(respId: string) {
   background: rgba(0, 0, 0, 0.08);
 }
 
+:root[data-theme="dark"] .action-btn-sm:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .resp-tag {
   font-size: 0.75rem;
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .resp-desc {
@@ -165,39 +194,40 @@ function handleDelete(respId: string) {
   align-items: center;
   justify-content: space-between;
   padding-top: 0.6rem;
-  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  border-top: 1px dashed var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .footer-label {
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
 }
 
 .member-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   background: rgba(0, 0, 0, 0.05);
-  padding: 0.25rem 0.6rem;
+  padding: 0.3rem 0.65rem;
   border-radius: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .member-pill {
-    background: rgba(255, 255, 255, 0.1);
-  }
+:root[data-theme="dark"] .member-pill {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .m-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .m-name {
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
 }
 </style>

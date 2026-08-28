@@ -88,72 +88,87 @@ function getStatusLabel(percent: number): string {
 .budgets-progress-container {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .section-intro-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
+  gap: 0.85rem;
+  padding: 0.9rem 1.15rem;
   border-radius: 16px;
+  box-sizing: border-box;
 }
 
-.intro-icon { font-size: 1.8rem; }
-.intro-title { font-size: 1rem; font-weight: 700; margin: 0; color: var(--text-primary); }
-.intro-desc { font-size: 0.83rem; color: var(--text-secondary); margin: 0.15rem 0 0; }
+.intro-icon { font-size: 1.6rem; flex-shrink: 0; }
+.intro-title { font-size: 0.95rem; font-weight: 800; margin: 0; color: var(--text-primary); }
+.intro-desc { font-size: 0.8rem; color: var(--text-secondary); margin: 0.15rem 0 0; line-height: 1.35; }
 
 .budgets-grid {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .budget-card {
-  padding: 1.25rem;
+  padding: 1.15rem;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .budget-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .b-cat-info {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
-.b-cat-icon { font-size: 1.8rem; }
+.b-cat-icon { font-size: 1.6rem; flex-shrink: 0; }
 
 .b-cat-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .b-cat-name {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 0.98rem;
+  font-weight: 800;
   margin: 0;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .b-limit-label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
 .status-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 800;
   padding: 0.2rem 0.55rem;
   border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .status-success { background: rgba(16, 185, 129, 0.15); color: #059669; }
@@ -163,13 +178,13 @@ function getStatusLabel(percent: number): string {
 .progress-col {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .progress-numbers {
   display: flex;
   justify-content: space-between;
-  font-size: 0.83rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
@@ -180,8 +195,8 @@ function getStatusLabel(percent: number): string {
   overflow: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
-  .progress-bar-track { background: rgba(255, 255, 255, 0.1); }
+:root[data-theme="dark"] .progress-bar-track { 
+  background: rgba(255, 255, 255, 0.1); 
 }
 
 .progress-bar-bar {
@@ -197,9 +212,9 @@ function getStatusLabel(percent: number): string {
 .budget-footer {
   display: flex;
   justify-content: flex-end;
-  font-size: 0.83rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
   padding-top: 0.4rem;
-  border-top: 1px dashed rgba(0, 0, 0, 0.06);
+  border-top: 1px dashed var(--border-subtle);
 }
 </style>

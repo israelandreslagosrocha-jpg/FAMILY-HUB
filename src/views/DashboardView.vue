@@ -13,6 +13,8 @@ const calendarStore = useCalendarStore()
 const financeStore = useFinanceStore()
 
 onMounted(async () => {
+  financeStore.setScope('all')
+  financeStore.setFilterMember('all')
   await authStore.loadFamilyMembers()
   await taskStore.loadDataFromSupabase()
   await calendarStore.loadDataFromSupabase()
@@ -94,13 +96,13 @@ function formatCurrency(val: number): string {
         </div>
       </div>
 
-      <!-- 📌 BENTO CARD HERO (8 COLS): Saludo e Identidad Familiar -->
+      <!-- 📌 BENTO CARD HERO (7 COLS): Saludo e Identidad Familiar -->
       <div class="bento-card bento-col-7 bento-card-hero">
         <div class="hero-header-bento">
           <div class="hero-avatar-wrap" v-if="activeMember">
             <AvatarImage 
               :avatarId="activeMember.avatarId" 
-              :size="64" 
+              :size="56" 
               :borderColor="activeMember.color" 
             />
           </div>
@@ -122,21 +124,34 @@ function formatCurrency(val: number): string {
         </div>
       </div>
 
-      <!-- 📌 BENTO CARD STAT CYAN (5 COLS): Finanzas del Hogar -->
-      <div class="bento-card bento-col-5 bento-card-cyan">
+      <!-- 📌 BENTO CARD STAT CYAN (5 COLS): Balance del Mes -->
+      <div 
+        class="bento-card bento-col-5"
+        :class="financeStore.netBalance >= 0 ? 'bento-card-cyan' : 'bento-card-warning'"
+      >
         <div class="bento-card-top">
-          <span class="bento-metric-title">💡 Finanzas del Hogar</span>
+          <div class="bento-title-group">
+            <span class="bento-metric-title">💡 Balance del Mes</span>
+          </div>
           <router-link to="/finance" class="bento-arrow-link">Ver todo →</router-link>
         </div>
 
         <div class="bento-metric-col">
-          <span class="bento-metric-large">{{ formatCurrency(financeStore.totalExpenses) }}</span>
-          <span class="bento-metric-sub">Total gastos registrados en el período</span>
+          <span class="bento-metric-large">{{ formatCurrency(financeStore.netBalance) }}</span>
+          <span class="bento-metric-sub">
+            {{ financeStore.netBalance > 0 ? '✓ Superávit a favor del hogar' : (financeStore.netBalance === 0 ? '✓ Al día sin saldo pendiente' : '⚠️ Déficit registrado este mes') }}
+          </span>
         </div>
 
-        <div class="bento-stat-footer">
+        <div class="bento-stat-footer finance-pills-row">
+          <span class="bento-tag-pill income-mini-pill" title="Total Ingresos del Mes">
+            ↑ +{{ formatCurrency(financeStore.totalIncome) }}
+          </span>
+          <span class="bento-tag-pill expense-mini-pill" title="Total Gastos del Mes">
+            ↓ -{{ formatCurrency(financeStore.totalExpenses) }}
+          </span>
           <span class="bento-tag-pill light-pill">
-            {{ financeStore.movements.length === 0 ? '✓ Al día ($0 CLP)' : `${financeStore.movements.length} Movimientos` }}
+            {{ financeStore.movements.length === 0 ? 'Sin movimientos' : `${financeStore.movements.length} Mov.` }}
           </span>
         </div>
       </div>
@@ -203,7 +218,7 @@ function formatCurrency(val: number): string {
 
       <!-- 📌 BENTO QUOTE BANNER (12 COLS): Frase Familiar de Cierre -->
       <div class="bento-quote-banner">
-        "Organización <span class="hl-cyan">familiar en equipo</span>, máxima <span class="hl-green">tranquilidad cotidianidad</span>."
+        "Organización <span class="hl-cyan">familiar en equipo</span>, máxima <span class="hl-green">tranquilidad en el hogar</span>."
       </div>
     </div>
   </div>
@@ -213,19 +228,31 @@ function formatCurrency(val: number): string {
 .dashboard-bento-view {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding-bottom: 3rem;
+  gap: var(--space-4);
+  padding-bottom: 2rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .bento-filter-row {
   display: flex;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   padding-bottom: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bento-filter-row::-webkit-scrollbar {
+  display: none;
 }
 
 .filter-pills-bento {
   display: flex;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .bento-pill {
@@ -233,6 +260,7 @@ function formatCurrency(val: number): string {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
+  min-height: var(--touch-target-min);
   border-radius: 20px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -240,6 +268,7 @@ function formatCurrency(val: number): string {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s ease;
 }
 
@@ -252,40 +281,53 @@ function formatCurrency(val: number): string {
 /* Bento Card Hero */
 .bento-card-hero {
   background: var(--bg-card);
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .hero-header-bento {
   display: flex;
   align-items: flex-start;
-  gap: 1.25rem;
+  gap: 1rem;
+}
+
+.hero-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.hero-titles-bento {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
 .hero-badge {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
   color: #3b82f6;
   letter-spacing: 0.06em;
 }
 
 .hero-headline {
-  font-size: 1.8rem;
+  font-size: clamp(1.3rem, 4vw, 1.8rem);
   font-weight: 900;
-  margin: 0.2rem 0;
+  margin: 0.1rem 0;
   letter-spacing: -0.03em;
   color: var(--text-primary);
+  line-height: 1.15;
 }
 
 .hero-subtext {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
   margin: 0;
+  line-height: 1.4;
 }
 
 .hero-tags-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .bento-card-top {
@@ -301,18 +343,29 @@ function formatCurrency(val: number): string {
   color: currentColor;
   text-decoration: none;
   opacity: 0.9;
+  min-height: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  touch-action: manipulation;
+}
+
+.bento-arrow-link:hover, .bento-link-btn:hover {
+  opacity: 1;
 }
 
 .bento-metric-col {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  margin: 1rem 0;
+  gap: 0.25rem;
+  margin: 0.75rem 0;
 }
 
 .bento-metric-sub {
-  font-size: 0.83rem;
+  font-size: 0.82rem;
   opacity: 0.9;
+  line-height: 1.35;
 }
 
 .light-pill {
@@ -320,10 +373,37 @@ function formatCurrency(val: number): string {
   color: #ffffff;
 }
 
+.finance-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.income-mini-pill {
+  background: rgba(16, 185, 129, 0.35);
+  color: #ffffff;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.expense-mini-pill {
+  background: rgba(244, 63, 94, 0.35);
+  color: #ffffff;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 .bento-title-group {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.bento-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .bento-card-title {
@@ -346,23 +426,21 @@ function formatCurrency(val: number): string {
 .bento-events-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
 }
 
 .bento-event-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   padding: 0.65rem 0.85rem;
   border-radius: 14px;
   background: rgba(0, 0, 0, 0.03);
 }
 
-@media (prefers-color-scheme: dark) {
-  .bento-event-row {
-    background: rgba(255, 255, 255, 0.04);
-  }
+:root[data-theme="dark"] .bento-event-row {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .bento-time-chip {
@@ -372,127 +450,163 @@ function formatCurrency(val: number): string {
   background: rgba(168, 85, 247, 0.15);
   padding: 4px 8px;
   border-radius: 8px;
-  min-width: 65px;
+  min-width: 60px;
+  flex-shrink: 0;
 }
 
 .bento-time {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 800;
   color: #c084fc;
 }
 
-.bento-date { font-size: 0.65rem; }
+.bento-date { 
+  font-size: 0.65rem; 
+}
 
 .bento-event-text {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .bento-event-title {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bento-event-cat {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
 }
 
 .suggestion-bento-card {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.12));
   border: 1px solid rgba(245, 158, 11, 0.3);
+}
 
-  .suggestion-emoji {
-    font-size: 1.6rem;
-  }
+.suggestion-emoji {
+  font-size: 1.5rem;
+}
 
-  .suggestion-subtitle {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    display: block;
-  }
+.suggestion-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  display: block;
+}
 
-  .count-pill-amber {
-    background: rgba(245, 158, 11, 0.2);
-    color: #f59e0b;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.78rem;
-    font-weight: 800;
-  }
+.count-pill-amber {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
 
-  .suggestions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    margin-top: 0.75rem;
-  }
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
 
+.suggestion-item-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (min-width: 480px) {
   .suggestion-item-row {
-    display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
   }
+}
 
-  .suggestion-item-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
+.suggestion-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.suggestion-item-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.suggestion-item-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.suggestion-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.accept-btn {
+  flex: 1;
+  padding: 0.5rem 0.9rem;
+  min-height: var(--touch-target-min);
+  border-radius: 12px;
+  border: none;
+  background: #10b981;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accept-btn:hover {
+  transform: scale(1.02);
+  background: #059669;
+}
+
+.reject-btn {
+  padding: 0.5rem 0.8rem;
+  min-height: var(--touch-target-min);
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reject-btn:hover {
+  transform: scale(1.02);
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Progressive Enhancement Tablet / Desktop */
+@media (min-width: 768px) {
+  .hero-headline {
+    font-size: 1.8rem;
   }
-
-  .suggestion-item-title {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-
-  .suggestion-item-meta {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-  }
-
-  .suggestion-item-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .accept-btn {
-    padding: 0.5rem 0.9rem;
-    border-radius: 10px;
-    border: none;
-    background: #10b981;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: transform 0.15s;
-  }
-
-  .accept-btn:hover {
-    transform: scale(1.04);
-    background: #059669;
-  }
-
-  .reject-btn {
-    padding: 0.5rem 0.8rem;
-    border-radius: 10px;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    font-weight: 700;
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: transform 0.15s;
-  }
-
-  .reject-btn:hover {
-    transform: scale(1.04);
-    background: rgba(239, 68, 68, 0.2);
+  .accept-btn, .reject-btn {
+    flex: initial;
   }
 }
 </style>

@@ -31,12 +31,13 @@ function handleToggleDrawer() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.08);
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.15s;
 }
 
@@ -56,8 +57,8 @@ function handleToggleDrawer() {
 
 .unread-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: 2px;
+  right: 2px;
   background: #ef4444;
   color: #ffffff;
   font-size: 0.65rem;

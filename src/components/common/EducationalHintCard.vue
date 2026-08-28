@@ -65,53 +65,72 @@ const isDismissed = ref(false)
 
 <style scoped>
 .educational-hint-card {
-  padding: 1.25rem 1.5rem;
-  border-radius: 24px;
+  padding: 1.15rem 1.25rem;
+  border-radius: 20px;
   background: var(--bg-card);
   border: 2px solid rgba(59, 130, 246, 0.3);
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   box-shadow: var(--shadow-card);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .hint-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .hint-title-group {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.55rem;
+  min-width: 0;
 }
 
 .hint-icon {
   font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .hint-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #3b82f6;
   margin: 0;
 }
 
+:root[data-theme="dark"] .hint-title {
+  color: #60a5fa;
+}
+
 .dismiss-btn {
   background: rgba(0, 0, 0, 0.05);
   border: none;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 4px 10px;
+  touch-action: manipulation;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
-  font-weight: 700;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+:root[data-theme="dark"] .dismiss-btn {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dismiss-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
 }
 
@@ -122,7 +141,7 @@ const isDismissed = ref(false)
 }
 
 .hint-intro {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: var(--text-primary);
   margin: 0;
   line-height: 1.4;
@@ -131,15 +150,15 @@ const isDismissed = ref(false)
 .hint-examples-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding-left: 0.5rem;
+  gap: 0.45rem;
+  padding-left: 0.25rem;
   list-style: none;
   margin: 0;
 }
 
 .hint-examples-list li {
-  font-size: 0.85rem;
+  font-size: 0.83rem;
   color: var(--text-primary);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 </style>

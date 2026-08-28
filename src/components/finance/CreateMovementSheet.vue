@@ -243,13 +243,16 @@ function handleSubmit() {
 <style scoped>
 .sheet-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
-  z-index: 1000;
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
   display: flex;
   justify-content: center;
   align-items: flex-end;
+  padding: 0;
+  box-sizing: border-box;
   animation: fadeIn 0.2s ease;
 }
 
@@ -257,23 +260,26 @@ function handleSubmit() {
 
 .sheet-modal {
   width: 100%;
-  max-width: 540px;
-  background: #ffffff;
+  max-width: 100%;
+  max-height: calc(100dvh - 1.5rem);
+  background: var(--bg-card, #ffffff);
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
-  padding: 1.6rem;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
+  border-bottom: none;
+  padding: 1.25rem;
+  padding-bottom: max(1.5rem, var(--sab));
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-sizing: border-box;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-@media (prefers-color-scheme: dark) {
-  .sheet-modal {
-    background: #0f172a;
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-  }
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -282,67 +288,69 @@ function handleSubmit() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
 }
 
 .sheet-title {
-  font-size: 1.25rem;
+  font-size: clamp(1.15rem, 3.5vw, 1.25rem);
   font-weight: 800;
   margin: 0;
   color: var(--text-primary, #ffffff);
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   border: none;
-  font-size: 1.4rem;
-  width: 34px;
-  height: 34px;
+  font-size: 1.2rem;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   border-radius: 50%;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-primary, #ffffff);
-  transition: background 0.15s;
+  color: var(--text-secondary);
+  touch-action: manipulation;
 }
 
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+:root[data-theme="dark"] .close-btn {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .sheet-form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 0.9rem;
 }
 
 .type-selector-bar {
   display: flex;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.05);
   padding: 4px;
   border-radius: 14px;
   gap: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+}
+
+:root[data-theme="dark"] .type-selector-bar {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .type-btn {
   flex: 1;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.65rem 0.5rem;
-  font-size: 0.88rem;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.6rem 0.4rem;
+  min-height: var(--touch-target-min);
+  font-size: 0.85rem;
   font-weight: 700;
   border-radius: 10px;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-:root[data-theme="light"] .type-btn {
-  background: rgba(0, 0, 0, 0.04);
-  color: #475569;
-  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .expense-btn.active {
@@ -372,114 +380,102 @@ function handleSubmit() {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .form-row-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .form-row-2 {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .form-label {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 800;
-  color: #e2e8f0;
+  color: var(--text-secondary);
   letter-spacing: 0.01em;
-}
-
-:root[data-theme="light"] .form-label {
-  color: #1e293b;
 }
 
 .amount-input-wrapper {
   display: flex;
   align-items: center;
-  background: #1e293b;
+  background: rgba(0, 0, 0, 0.03);
   border: 2px solid #3b82f6;
   border-radius: 16px;
-  padding: 0.3rem 0.9rem;
+  padding: 0.2rem 0.8rem;
+  min-height: 52px;
+}
+
+:root[data-theme="dark"] .amount-input-wrapper {
+  background: #1e293b;
   box-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
 }
 
-:root[data-theme="light"] .amount-input-wrapper {
-  background: #ffffff;
-}
-
 .currency-symbol {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 900;
   color: #3b82f6;
-  margin-right: 0.5rem;
+  margin-right: 0.4rem;
 }
 
 .amount-input {
-  font-size: 1.6rem !important;
+  font-size: 1.5rem !important;
   font-weight: 900 !important;
   border: none !important;
   background: transparent !important;
-  color: #f8fafc !important;
+  color: var(--text-primary) !important;
   width: 100%;
-}
-
-:root[data-theme="light"] .amount-input {
-  color: #0f172a !important;
 }
 
 .form-input, .form-select {
   width: 100%;
-  padding: 0.75rem 0.9rem;
+  padding: 0.75rem 0.85rem;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: #1e293b;
-  font-size: 0.92rem;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 16px;
+  line-height: 1.4;
   font-weight: 600;
-  color: #f8fafc;
+  color: var(--text-primary);
   box-sizing: border-box;
-}
-
-:root[data-theme="light"] .form-input, 
-:root[data-theme="light"] .form-select {
-  background: #ffffff;
-  color: #0f172a;
-  border-color: rgba(0, 0, 0, 0.15);
-}
-
-.form-select option {
-  background: #1e293b;
-  color: #f8fafc;
-  padding: 0.5rem;
-}
-
-:root[data-theme="light"] .form-select option {
-  background: #ffffff;
-  color: #0f172a;
+  min-height: var(--touch-target-min);
 }
 
 .scope-toggle-bar {
   display: flex;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.05);
   padding: 4px;
   border-radius: 14px;
   gap: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+}
+
+:root[data-theme="dark"] .scope-toggle-bar {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .scope-toggle-btn {
   flex: 1;
   border: none;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 0.6rem;
+  background: transparent;
+  padding: 0.55rem;
+  min-height: var(--touch-target-min);
   font-size: 0.82rem;
   font-weight: 700;
   border-radius: 10px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.15s;
-}
-
-:root[data-theme="light"] .scope-toggle-btn {
-  color: #475569;
 }
 
 .scope-toggle-btn.active {
@@ -490,21 +486,26 @@ function handleSubmit() {
 }
 
 .sheet-actions {
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
 }
 
 .submit-mov-btn {
   width: 100%;
-  padding: 0.95rem;
+  padding: 0.85rem;
+  min-height: 48px;
   border-radius: 16px;
   border: none;
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: #ffffff;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  touch-action: manipulation;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
   transition: transform 0.15s, box-shadow 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .submit-mov-btn:hover:not(:disabled) {
@@ -517,5 +518,24 @@ function handleSubmit() {
   color: rgba(255, 255, 255, 0.5);
   box-shadow: none;
   cursor: not-allowed;
+}
+
+@media (min-width: 768px) {
+  .sheet-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .sheet-modal {
+    max-width: 540px;
+    border-radius: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1.6rem;
+    animation: none;
+  }
+
+  .sheet-grabber {
+    display: none;
+  }
 }
 </style>

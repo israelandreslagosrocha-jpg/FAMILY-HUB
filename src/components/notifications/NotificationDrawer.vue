@@ -19,12 +19,15 @@ function handleMarkAllAsRead() {
 <template>
   <div v-if="notificationStore.isDrawerOpen" class="drawer-backdrop" @click.self="handleClose">
     <div class="drawer-panel glass-card" @click.stop>
+      <!-- Tirador táctil en móvil -->
+      <div class="sheet-grabber mobile-grabber"></div>
+
       <div class="drawer-header">
         <div class="header-left">
           <span class="header-icon">🔔</span>
           <h3 class="drawer-title">Notificaciones del Hogar</h3>
         </div>
-        <button class="close-btn" @click="handleClose">×</button>
+        <button class="close-btn" title="Cerrar" @click="handleClose">✕</button>
       </div>
 
       <div class="drawer-toolbar">
@@ -66,71 +69,194 @@ function handleMarkAllAsRead() {
 <style scoped>
 .drawer-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 1200;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: flex-end;
   animation: fadeIn 0.2s ease;
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn { 
+  from { opacity: 0; } 
+  to { opacity: 1; } 
+}
 
+/* Base Móvil (<768px): Bottom Sheet Táctil */
 .drawer-panel {
   width: 100%;
-  max-width: 400px;
-  height: 100%;
-  background: #ffffff;
-  padding: 1.5rem;
+  max-width: 100%;
+  max-height: calc(100dvh - 1.5rem);
+  background: var(--bg-card);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  padding: 1.25rem;
+  padding-bottom: max(1.5rem, var(--sab));
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  box-shadow: -10px 0 30px rgba(0,0,0,0.15);
+  gap: 0.85rem;
+  box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.3);
   box-sizing: border-box;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .drawer-panel { background: #0f172a; border-left: 1px solid rgba(255,255,255,0.1); }
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
-.drawer-header { display: flex; justify-content: space-between; align-items: center; }
-.header-left { display: flex; align-items: center; gap: 0.5rem; }
-.header-icon { font-size: 1.4rem; }
-.drawer-title { font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--text-primary); }
-.close-btn { background: rgba(0,0,0,0.05); border: none; font-size: 1.3rem; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; color: var(--text-secondary); }
+.mobile-grabber {
+  display: block;
+}
 
-.drawer-toolbar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); }
-.unread-status { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
-.mark-all-btn { background: transparent; border: none; font-size: 0.78rem; font-weight: 700; color: #3b82f6; cursor: pointer; }
+.drawer-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
 
-.notifications-list { display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; flex: 1; }
+.header-left { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem; 
+}
+
+.header-icon { 
+  font-size: 1.4rem; 
+}
+
+.drawer-title { 
+  font-size: 1.1rem; 
+  font-weight: 700; 
+  margin: 0; 
+  color: var(--text-primary); 
+}
+
+.close-btn { 
+  background: rgba(0, 0, 0, 0.05); 
+  border: none; 
+  font-size: 1.1rem; 
+  min-width: var(--touch-target-min); 
+  min-height: var(--touch-target-min); 
+  border-radius: 50%; 
+  cursor: pointer; 
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: all 0.15s;
+}
+
+:root[data-theme="dark"] .close-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.drawer-toolbar { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding-bottom: 0.5rem; 
+  border-bottom: 1px solid var(--border-subtle); 
+}
+
+.unread-status { 
+  font-size: 0.8rem; 
+  font-weight: 700; 
+  color: var(--text-secondary); 
+}
+
+.mark-all-btn { 
+  background: transparent; 
+  border: none; 
+  font-size: 0.82rem; 
+  font-weight: 700; 
+  color: #3b82f6; 
+  cursor: pointer; 
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  touch-action: manipulation;
+}
+
+.mark-all-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.notifications-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.65rem; 
+  overflow-y: auto; 
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  flex: 1; 
+  padding-right: 2px;
+}
 
 .notification-item {
   padding: 0.85rem;
   border-radius: 14px;
-  background: rgba(0,0,0,0.02);
-  border: 1px solid rgba(0,0,0,0.06);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.15s;
 }
 
-@media (prefers-color-scheme: dark) {
-  .notification-item { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08); }
+:root[data-theme="dark"] .notification-item {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.notification-item:hover {
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .notification-item.unread {
   border-left: 4px solid #3b82f6;
-  background: rgba(59, 130, 246, 0.04);
+  background: rgba(59, 130, 246, 0.06);
 }
 
-.notif-header { display: flex; justify-content: space-between; align-items: center; }
-.notif-title { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
-.notif-time { font-size: 0.7rem; color: var(--text-secondary); }
-.notif-message { font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.35; }
+.notif-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
+
+.notif-title { 
+  font-size: 0.88rem; 
+  font-weight: 700; 
+  color: var(--text-primary); 
+}
+
+.notif-time { 
+  font-size: 0.72rem; 
+  color: var(--text-secondary); 
+}
+
+.notif-message { 
+  font-size: 0.82rem; 
+  color: var(--text-secondary); 
+  margin: 0; 
+  line-height: 1.35; 
+}
 
 .empty-notif-state {
   display: flex;
@@ -142,6 +268,46 @@ function handleMarkAllAsRead() {
   padding: 3rem 1rem;
 }
 
-.empty-icon { font-size: 2.5rem; opacity: 0.5; }
-.empty-txt { font-size: 0.88rem; color: var(--text-secondary); margin: 0; text-align: center; }
+.empty-icon { 
+  font-size: 2.5rem; 
+  opacity: 0.5; 
+}
+
+.empty-txt { 
+  font-size: 0.88rem; 
+  color: var(--text-secondary); 
+  margin: 0; 
+  text-align: center; 
+}
+
+/* ============================================================================
+   🖥️ DESKTOP / TABLET (>= 768px): Drawer Lateral Derecho
+   ============================================================================ */
+@media (min-width: 768px) {
+  .drawer-backdrop {
+    justify-content: flex-end;
+    align-items: stretch;
+  }
+
+  .drawer-panel {
+    width: 380px;
+    max-width: 400px;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    border-left: 1px solid var(--border-subtle);
+    border-top: none;
+    padding: 1.5rem;
+    animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideLeft {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  .mobile-grabber {
+    display: none;
+  }
+}
 </style>

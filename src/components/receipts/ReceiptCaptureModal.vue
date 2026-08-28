@@ -89,14 +89,16 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
 <style scoped>
 .capture-modal-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px);
-  z-index: 1100;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 1rem;
+  align-items: flex-end;
+  padding: 0;
+  box-sizing: border-box;
   animation: fadeIn 0.2s ease;
 }
 
@@ -104,21 +106,31 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
 
 .capture-modal-card {
   width: 100%;
-  max-width: 480px;
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 1.5rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-width: 100%;
+  max-height: calc(100dvh - 1.5rem);
+  background: var(--bg-card, #ffffff);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
+  border-bottom: none;
+  padding: 1.25rem;
+  padding-bottom: max(1.5rem, var(--sab));
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .capture-modal-card {
-    background: #0f172a;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .modal-header {
@@ -127,32 +139,63 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
   align-items: center;
 }
 
-.modal-title { font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--text-primary); }
-.close-btn { background: rgba(0, 0, 0, 0.05); border: none; font-size: 1.4rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+.modal-title { 
+  font-size: clamp(1.15rem, 3.5vw, 1.25rem); 
+  font-weight: 800; 
+  margin: 0; 
+  color: var(--text-primary); 
+}
 
-.modal-desc { font-size: 0.85rem; color: var(--text-secondary); margin: 0; line-height: 1.4; }
+.close-btn { 
+  background: rgba(0, 0, 0, 0.05); 
+  border: none; 
+  font-size: 1.2rem; 
+  min-width: var(--touch-target-min); 
+  min-height: var(--touch-target-min); 
+  border-radius: 50%; 
+  cursor: pointer; 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  color: var(--text-secondary); 
+  touch-action: manipulation;
+}
+
+:root[data-theme="dark"] .close-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.modal-desc { 
+  font-size: 0.83rem; 
+  color: var(--text-secondary); 
+  margin: 0; 
+  line-height: 1.35; 
+}
 
 .capture-actions-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
 .capture-btn {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  min-height: 52px;
   border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-subtle);
   background: rgba(0, 0, 0, 0.02);
   cursor: pointer;
+  touch-action: manipulation;
   text-align: left;
   transition: all 0.15s;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .capture-btn { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.08); }
+:root[data-theme="dark"] .capture-btn { 
+  background: rgba(255, 255, 255, 0.04); 
 }
 
 .capture-btn:hover {
@@ -160,36 +203,53 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
   border-color: #3b82f6;
 }
 
-.btn-big-icon { font-size: 2rem; }
-.btn-text-col { display: flex; flex-direction: column; }
-.btn-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
-.btn-sub { font-size: 0.78rem; color: var(--text-secondary); }
+.btn-big-icon { font-size: 1.8rem; flex-shrink: 0; }
+.btn-text-col { display: flex; flex-direction: column; min-width: 0; }
+.btn-title { font-size: 0.92rem; font-weight: 700; color: var(--text-primary); }
+.btn-sub { font-size: 0.75rem; color: var(--text-secondary); }
 
 .cases-simulator-box {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  padding: 1rem;
+  gap: 0.6rem;
+  padding: 0.85rem;
   border-radius: 16px;
   background: rgba(59, 130, 246, 0.05);
   border: 1px dashed rgba(59, 130, 246, 0.3);
 }
 
-.simulator-title { font-size: 0.82rem; font-weight: 700; margin: 0; color: #2563eb; }
+.simulator-title { 
+  font-size: 0.8rem; 
+  font-weight: 800; 
+  margin: 0; 
+  color: #3b82f6; 
+}
 
 .cases-buttons-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+}
+
+@media (min-width: 360px) {
+  .cases-buttons-row {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .case-chip {
-  padding: 0.45rem 0.6rem;
+  padding: 0.55rem 0.65rem;
+  min-height: var(--touch-target-min);
   border-radius: 10px;
   border: none;
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   transition: opacity 0.15s;
 }
 
@@ -199,4 +259,24 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
 .case-yellow { background: #fef9c3; color: #a16207; }
 .case-red { background: #ffe4e6; color: #be123c; }
 .case-orange { background: #ffedd5; color: #c2410c; }
+
+:root[data-theme="dark"] .case-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+:root[data-theme="dark"] .case-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+:root[data-theme="dark"] .case-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+:root[data-theme="dark"] .case-orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+
+@media (min-width: 768px) {
+  .capture-modal-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .capture-modal-card {
+    max-width: 480px;
+    border-radius: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1.5rem;
+    animation: none;
+  }
+}
 </style>

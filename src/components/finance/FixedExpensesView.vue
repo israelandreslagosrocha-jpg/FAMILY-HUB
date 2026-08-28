@@ -96,7 +96,7 @@ function handleAddFixedExpense() {
       </div>
 
       <button class="add-fixed-btn" @click="isAddModalOpen = true">
-        <Plus :size="16" />
+        <Plus :size="18" />
         <span>+ Nueva Cuenta Fija</span>
       </button>
     </div>
@@ -111,7 +111,7 @@ function handleAddFixedExpense() {
       </button>
     </div>
 
-    <!-- LISTA DE CUENTAS FIJAS EN BENTO GRID -->
+    <!-- LISTA DE CUENTAS FIJAS EN BENTO GRID (RESPONSIVE) -->
     <div v-else class="fixed-items-grid">
       <div 
         v-for="item in financeStore.fixedExpenses" 
@@ -120,31 +120,36 @@ function handleAddFixedExpense() {
         :class="{ 'is-paid': item.isPaid }"
         :style="{ borderLeftColor: item.color }"
       >
-        <div class="item-left">
-          <span class="item-icon" :style="{ backgroundColor: `${item.color}20` }">{{ item.icon }}</span>
-          <div class="item-details">
-            <h3 class="item-title">{{ item.title }}</h3>
-            <div class="item-tags">
-              <span class="tag-chip">Vence el día {{ item.dueDay }}</span>
-              <span class="tag-chip category-chip">{{ item.categoryName }}</span>
+        <div class="item-top-row">
+          <div class="item-identity">
+            <span class="item-icon" :style="{ backgroundColor: `${item.color}20` }">{{ item.icon }}</span>
+            <div class="item-details">
+              <h3 class="item-title">{{ item.title }}</h3>
+              <div class="item-tags">
+                <span class="tag-chip">Vence día {{ item.dueDay }}</span>
+                <span class="tag-chip category-chip">{{ item.categoryName }}</span>
+              </div>
             </div>
+          </div>
+
+          <!-- Monto visible en la cabecera del ítem en móvil -->
+          <div class="item-amount-badge">
+            {{ formatCurrency(item.amount) }}
           </div>
         </div>
 
-        <div class="item-right">
-          <span class="item-amount">{{ formatCurrency(item.amount) }}</span>
-
+        <div class="item-actions-row">
           <button 
             class="status-toggle-btn"
             :class="{ 'btn-paid': item.isPaid, 'btn-pending': !item.isPaid }"
             @click="togglePaid(item.id)"
           >
             <template v-if="item.isPaid">
-              <Check :size="14" />
+              <Check :size="16" />
               <span>✓ Pagada</span>
             </template>
             <template v-else>
-              <Clock :size="14" />
+              <Clock :size="16" />
               <span>⌛ Marcar Pagada</span>
             </template>
           </button>
@@ -156,34 +161,36 @@ function handleAddFixedExpense() {
       </div>
     </div>
 
-    <!-- MODAL REGISTRO NUEVA CUENTA FIJA -->
+    <!-- MODAL REGISTRO NUEVA CUENTA FIJA (BOTTOM SHEET EN MÓVIL) -->
     <div v-if="isAddModalOpen" class="modal-backdrop" @click.self="isAddModalOpen = false">
       <div class="modal-card glass-card" @click.stop>
+        <div class="sheet-grabber mobile-grabber"></div>
+
         <div class="modal-header">
-          <h3>📌 Nueva Cuenta Fija Mensual</h3>
+          <h3 class="modal-title">📌 Nueva Cuenta Fija Mensual</h3>
           <button class="close-btn" @click="isAddModalOpen = false">✕</button>
         </div>
 
         <form class="modal-form" @submit.prevent="handleAddFixedExpense">
           <div class="form-group">
-            <label>Nombre de la Cuenta / Servicio</label>
-            <input v-model="title" type="text" class="form-input" placeholder="Ej. Luz Enel, Agua, Arriendo..." required />
+            <label class="form-label">Nombre de la Cuenta / Servicio</label>
+            <input v-model="title" type="text" class="form-input" placeholder="Ej. Luz Enel, Agua, Arriendo..." required autofocus />
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
-              <label>Monto Estimado ($ CLP)</label>
+              <label class="form-label">Monto Estimado ($ CLP)</label>
               <input v-model.number="amount" type="number" class="form-input" placeholder="Ej. 45000" min="1" required />
             </div>
 
             <div class="form-group flex-1">
-              <label>Día de Vencimiento</label>
+              <label class="form-label">Día de Vencimiento</label>
               <input v-model.number="dueDay" type="number" class="form-input" min="1" max="31" required />
             </div>
           </div>
 
           <div class="form-group">
-            <label>Categoría</label>
+            <label class="form-label">Categoría</label>
             <select v-model="categoryName" class="form-input">
               <option value="Servicios del Hogar">💡 Servicios del Hogar</option>
               <option value="Vivienda">🏠 Vivienda / Arriendo</option>
@@ -208,17 +215,27 @@ function handleAddFixedExpense() {
 .fixed-expenses-view {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .summary-bento-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .summary-bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+  }
 }
 
 .summary-card {
-  padding: 1.25rem;
+  padding: 1.15rem;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -226,7 +243,7 @@ function handleAddFixedExpense() {
 }
 
 .card-label {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -234,14 +251,14 @@ function handleAddFixedExpense() {
 }
 
 .card-value {
-  font-size: 1.8rem;
+  font-size: clamp(1.4rem, 5vw, 1.8rem);
   font-weight: 900;
   letter-spacing: -0.02em;
 }
 
 .card-sub {
-  font-size: 0.78rem;
-  opacity: 0.8;
+  font-size: 0.76rem;
+  opacity: 0.85;
 }
 
 .bento-card-amber {
@@ -253,29 +270,37 @@ function handleAddFixedExpense() {
 .section-title-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
+  align-items: flex-start;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
+.title-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .section-title {
-  font-size: 1.3rem;
+  font-size: clamp(1.15rem, 3.5vw, 1.3rem);
   font-weight: 900;
   margin: 0;
   color: var(--text-primary);
 }
 
 .section-sub {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
-  margin: 0.2rem 0 0 0;
+  margin: 0.15rem 0 0 0;
+  line-height: 1.35;
 }
 
 .add-fixed-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 0.65rem 1.1rem;
+  min-height: var(--touch-target-min);
   border-radius: 14px;
   border: none;
   background: #3b82f6;
@@ -283,6 +308,7 @@ function handleAddFixedExpense() {
   font-weight: 700;
   font-size: 0.88rem;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.15s, background 0.15s;
 }
 
@@ -295,90 +321,116 @@ function handleAddFixedExpense() {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
+/* Tarjeta de Cuenta Fija: Mobile-First Layout */
 .fixed-item-card {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
   border-radius: 18px;
   border-left: 5px solid #3b82f6;
   background: var(--bg-card);
   transition: all 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .fixed-item-card.is-paid {
-  opacity: 0.75;
+  opacity: 0.85;
   background: rgba(16, 185, 129, 0.05);
 }
 
-.item-left {
+.item-top-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.item-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .item-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
+  flex-shrink: 0;
 }
 
 .item-details {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
 .item-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 800;
   margin: 0;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .item-tags {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .tag-chip {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.08);
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 8px;
 }
 
-.item-right {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.item-amount {
-  font-size: 1.15rem;
+.item-amount-badge {
+  font-size: 1.1rem;
   font-weight: 900;
   color: var(--text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.item-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
 }
 
 .status-toggle-btn {
-  display: flex;
+  flex: 1;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 0.5rem 0.9rem;
+  padding: 0.6rem 1rem;
+  min-height: var(--touch-target-min);
   border-radius: 12px;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s ease;
   border: 1px solid transparent;
 }
@@ -396,53 +448,132 @@ function handleAddFixedExpense() {
 }
 
 .status-toggle-btn:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
-/* MODAL */
-.modal-backdrop {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  z-index: 2000;
-  display: flex;
+.delete-fixed-btn {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.delete-fixed-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* ============================================================================
+   PROGRESSIVE ENHANCEMENT: Tablet / Desktop (>= 640px)
+   ============================================================================ */
+@media (min-width: 640px) {
+  .fixed-item-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+  }
+
+  .item-top-row {
+    width: auto;
+  }
+
+  .item-actions-row {
+    width: auto;
+    gap: 1rem;
+  }
+
+  .status-toggle-btn {
+    flex: initial;
+  }
+}
+
+/* MODAL / BOTTOM SHEET */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .modal-card {
   width: 100%;
-  max-width: 480px;
+  max-width: 100%;
+  max-height: calc(100dvh - 1.5rem);
   background: var(--bg-card);
-  border-radius: 24px;
-  padding: 1.5rem;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
   border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  padding: 1.25rem;
+  padding-bottom: max(1.5rem, var(--sab));
   box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.mobile-grabber {
+  display: block;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
 }
 
-.modal-header h3 {
+.modal-title {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
+  color: var(--text-primary);
 }
 
 .close-btn {
   background: rgba(0, 0, 0, 0.05);
   border: none;
-  font-size: 1.2rem;
-  width: 32px; height: 32px;
+  font-size: 1.1rem;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   border-radius: 50%;
   cursor: pointer;
   color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+:root[data-theme="dark"] .close-btn {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .modal-form {
@@ -454,7 +585,7 @@ function handleAddFixedExpense() {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .form-row {
@@ -464,8 +595,8 @@ function handleAddFixedExpense() {
 
 .flex-1 { flex: 1; }
 
-.form-group label {
-  font-size: 0.82rem;
+.form-label {
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--text-secondary);
 }
@@ -477,7 +608,9 @@ function handleAddFixedExpense() {
   border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: 16px;
+  line-height: 1.4;
+  min-height: var(--touch-target-min);
   box-sizing: border-box;
 }
 
@@ -488,13 +621,15 @@ function handleAddFixedExpense() {
 .submit-btn {
   width: 100%;
   padding: 0.85rem;
+  min-height: 48px;
   border-radius: 14px;
   border: none;
   background: #3b82f6;
   color: #ffffff;
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .empty-fixed-card {
@@ -530,6 +665,7 @@ function handleAddFixedExpense() {
 .add-first-btn {
   margin-top: 0.5rem;
   padding: 0.75rem 1.4rem;
+  min-height: var(--touch-target-min);
   border-radius: 14px;
   border: none;
   background: #3b82f6;
@@ -537,6 +673,7 @@ function handleAddFixedExpense() {
   font-weight: 800;
   font-size: 0.95rem;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.15s;
 }
 
@@ -544,18 +681,22 @@ function handleAddFixedExpense() {
   transform: scale(1.04);
 }
 
-.delete-fixed-btn {
-  background: transparent;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.15s, transform 0.15s;
-  padding: 4px;
-}
+@media (min-width: 768px) {
+  .modal-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
 
-.delete-fixed-btn:hover {
-  opacity: 1;
-  transform: scale(1.2);
+  .modal-card {
+    max-width: 480px;
+    border-radius: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1.5rem;
+    animation: none;
+  }
+
+  .mobile-grabber {
+    display: none;
+  }
 }
 </style>
