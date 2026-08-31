@@ -1,11 +1,43 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useReceiptStore } from '../stores/receiptStore'
+import { useFinanceStore } from '../stores/financeStore'
+import type { ReceiptScanSession } from '../types'
 import ReceiptScannerBtn from '../components/receipts/ReceiptScannerBtn.vue'
 import ReceiptCaptureModal from '../components/receipts/ReceiptCaptureModal.vue'
 import ReceiptProcessingState from '../components/receipts/ReceiptProcessingState.vue'
 import ReceiptReviewSheet from '../components/receipts/ReceiptReviewSheet.vue'
+import ReceiptDetailModal from '../components/receipts/ReceiptDetailModal.vue'
 
 const receiptStore = useReceiptStore()
+const financeStore = useFinanceStore()
+
+onMounted(async () => {
+  await receiptStore.loadReceiptsFromSupabase()
+})
+
+function handleOpenReceipt(rec: ReceiptScanSession) {
+  const mov = financeStore.movements.find(m => m.id === rec.id)
+  if (mov) {
+    receiptStore.openDetailModal(mov)
+  } else {
+    receiptStore.openDetailModal({
+      id: rec.id,
+      title: rec.extractedData?.merchantName ? `${rec.extractedData.merchantName} (Boleta Escaneada)` : 'Boleta Escaneada',
+      amount: rec.extractedData?.totalAmount || 0,
+      currency: 'CLP',
+      type: 'expense',
+      scope: 'family',
+      categoryId: rec.extractedData?.suggestedCategoryId || 'cat-general',
+      categoryName: rec.extractedData?.suggestedCategory || 'Supermercado y Alimentación',
+      categoryIcon: '🧾',
+      categoryColor: '#3b82f6',
+      registeredByMemberId: 'm-1',
+      date: rec.extractedData?.date || rec.createdAt || new Date().toISOString().split('T')[0],
+      receiptImageUrl: rec.storagePath
+    })
+  }
+}
 </script>
 
 <template>
@@ -29,7 +61,13 @@ const receiptStore = useReceiptStore()
         <h3 class="section-title">🖼️ Boletas Guardadas ({{ receiptStore.savedReceipts.length }})</h3>
       </div>
 
-      <div v-if="receiptStore.savedReceipts.length === 0" class="empty-card glass-card">
+      <div v-if="receiptStore.isLoadingReceipts" class="empty-card glass-card">
+        <span class="empty-icon">⏳</span>
+        <h4 class="empty-title">Cargando comprobantes...</h4>
+        <p class="empty-sub">Obteniendo tus fotografías y datos de Supabase.</p>
+      </div>
+
+      <div v-else-if="receiptStore.savedReceipts.length === 0" class="empty-card glass-card">
         <span class="empty-icon">🧾</span>
         <h4 class="empty-title">Sin boletas registradas</h4>
         <p class="empty-sub">Usa el botón de escanear para fotografiar o subir tu primera boleta.</p>
@@ -39,7 +77,9 @@ const receiptStore = useReceiptStore()
         <div 
           v-for="rec in receiptStore.savedReceipts" 
           :key="rec.id"
-          class="receipt-card glass-card"
+          class="receipt-card glass-card receipt-card-interactive"
+          @click="handleOpenReceipt(rec)"
+          title="Toca para ver la foto y editar los datos"
         >
           <div class="card-img-wrapper">
             <img :src="rec.imagePreviewUrl" alt="Boleta" class="card-img" />
@@ -59,10 +99,11 @@ const receiptStore = useReceiptStore()
       </div>
     </main>
 
-    <!-- Modales y Sheets del Ciclo OCR -->
+    <!-- Modales y Sheets del Ciclo OCR y Detalle/Edición -->
     <ReceiptCaptureModal />
     <ReceiptProcessingState />
     <ReceiptReviewSheet />
+    <ReceiptDetailModal />
   </div>
 </template>
 
@@ -114,6 +155,22 @@ const receiptStore = useReceiptStore()
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.receipt-card-interactive {
+  cursor: pointer;
+}
+
+.receipt-card-interactive:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+:root[data-theme="dark"] .receipt-card-interactive:hover {
+  background: rgba(30, 41, 59, 0.85);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .card-img-wrapper {

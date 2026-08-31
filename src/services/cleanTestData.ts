@@ -3,10 +3,9 @@ import { supabase } from './supabaseClient'
 export async function cleanTestData() {
   console.log('🧹 Limpiando registros de prueba de Supabase...')
 
-  // 1. Iniciar sesión
   const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-    email: 'israel@familyhub.cl',
-    password: 'P#2?hqfa2WK5Y$M'
+    email: import.meta.env.VITE_TEST_USER_EMAIL || 'israel@familyhub.cl',
+    password: import.meta.env.VITE_TEST_USER_PASSWORD || ''
   })
 
   if (authErr) {

@@ -40,8 +40,8 @@ export async function runTest8DFinalValidation() {
 
     // Autenticar para pruebas reales de BD
     const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-      email: 'israel@familyhub.cl',
-      password: 'P#2?hqfa2WK5Y$M'
+      email: import.meta.env.VITE_TEST_USER_EMAIL || 'israel@familyhub.cl',
+      password: import.meta.env.VITE_TEST_USER_PASSWORD || ''
     })
 
     if (authErr || !authData.user) {

@@ -1,20 +1,27 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
-import { Moon, Sun, Shield, Bell, Cloud, Smartphone } from 'lucide-vue-next'
+import { useReminderStore } from '../stores/reminderStore'
+import { Moon, Sun, Shield, Bell, Cloud, Smartphone, Mic } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const reminderStore = useReminderStore()
 const currentTheme = ref<'dark' | 'light'>('dark')
 
-onMounted(() => {
+onMounted(async () => {
   const saved = (localStorage.getItem('family_hub_theme') as 'dark' | 'light') || 'dark'
   currentTheme.value = saved
+  await reminderStore.checkPermissions()
 })
 
 function setTheme(theme: 'dark' | 'light') {
   currentTheme.value = theme
   document.documentElement.setAttribute('data-theme', theme)
   localStorage.setItem('family_hub_theme', theme)
+}
+
+async function handleRequestPermissions() {
+  await reminderStore.requestPermissions()
 }
 </script>
 
@@ -29,6 +36,75 @@ function setTheme(theme: 'dark' | 'light') {
             <span class="bento-tag-pill">FH CONTROL</span>
             <h1 class="settings-title">Ajustes & Preferencias</h1>
             <p class="text-secondary">Personaliza la apariencia, notificaciones y sincronización de tu hogar.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD NUEVA (12 COLS): Recordatorios, Alarmas & Captura de Voz -->
+      <div class="bento-card bento-col-12">
+        <div class="bento-card-top">
+          <div class="bento-title-group">
+            <Mic class="text-blue" />
+            <h3>Voz, Recordatorios & Alarmas de Dispositivo</h3>
+          </div>
+          <span class="bento-tag-pill">⚡ Captura Rápida</span>
+        </div>
+
+        <p class="setting-desc">
+          Estado de permisos en tu dispositivo para la captura por voz y avisos puntuales de tareas, eventos y pagos.
+        </p>
+
+        <div class="permissions-status-grid">
+          <!-- Micrófono -->
+          <div class="perm-card">
+            <div class="perm-header">
+              <span class="perm-icon">🎙️</span>
+              <span class="perm-title">Micrófono</span>
+            </div>
+            <span class="perm-badge" :class="{ ok: true }">
+              ✓ Web Speech API (es-CL)
+            </span>
+          </div>
+
+          <!-- Notificaciones -->
+          <div class="perm-card">
+            <div class="perm-header">
+              <span class="perm-icon">🔔</span>
+              <span class="perm-title">Recordatorios</span>
+            </div>
+            <span class="perm-badge" :class="{ ok: reminderStore.hasNotificationPermission }">
+              {{ reminderStore.hasNotificationPermission ? '✓ Permitido' : '⚠️ Pendiente' }}
+            </span>
+            <button 
+              v-if="!reminderStore.hasNotificationPermission" 
+              type="button" 
+              class="perm-action-btn"
+              @click="handleRequestPermissions"
+            >
+              Habilitar
+            </button>
+          </div>
+
+          <!-- Alarma del Sistema -->
+          <div class="perm-card">
+            <div class="perm-header">
+              <span class="perm-icon">⏰</span>
+              <span class="perm-title">Alarma del Sistema</span>
+            </div>
+            <span class="perm-badge" :class="{ ok: reminderStore.hasSystemAlarmAvailable }">
+              {{ reminderStore.hasSystemAlarmAvailable ? '✓ Disponible' : 'ℹ️ Vía Notificación' }}
+            </span>
+          </div>
+
+          <!-- Plataforma -->
+          <div class="perm-card">
+            <div class="perm-header">
+              <span class="perm-icon">📱</span>
+              <span class="perm-title">Plataforma</span>
+            </div>
+            <span class="perm-badge info">
+              Web PWA
+            </span>
           </div>
         </div>
       </div>
@@ -268,6 +344,70 @@ function setTheme(theme: 'dark' | 'light') {
 
 :root[data-theme="dark"] .light-pill {
   color: #60a5fa;
+}
+
+.permissions-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.perm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
+}
+
+:root[data-theme="dark"] .perm-card {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.perm-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.perm-icon { font-size: 1.1rem; }
+.perm-title { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+
+.perm-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  width: fit-content;
+}
+
+.perm-badge.ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.perm-badge.info {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.perm-action-btn {
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: none;
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .text-amber { color: #f59e0b; }

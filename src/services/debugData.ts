@@ -1,8 +1,8 @@
 import { supabase } from './supabaseClient'
 
 async function debugData() {
-  const email = 'israel@familyhub.cl'
-  const password = 'P#2?hqfa2WK5Y$M'
+  const email = import.meta.env.VITE_TEST_USER_EMAIL || 'israel@familyhub.cl'
+  const password = import.meta.env.VITE_TEST_USER_PASSWORD || ''
 
   await supabase.auth.signInWithPassword({ email, password })
 

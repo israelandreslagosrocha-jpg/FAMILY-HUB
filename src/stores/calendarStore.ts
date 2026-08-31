@@ -4,7 +4,7 @@ import type { CalendarEvent, CalendarViewType, ViewMode, FamilyMember } from '..
 import { mockMembers } from '../mocks/familyData'
 import { calendarService, type CreateEventPayload } from '../services/calendarService'
 import { supabase } from '../services/supabaseClient'
-import { getChileTodayString, parseDateString, parseTimeString } from '../utils/dateUtils'
+import { getChileTodayString, getChileTimeString, parseDateString, parseTimeString } from '../utils/dateUtils'
 import { useAuthStore } from './authStore'
 import { useFamilyStore } from './familyStore'
 import { useTaskStore } from './taskStore'
@@ -99,6 +99,38 @@ export const useCalendarStore = defineStore('calendar', () => {
       }
       return true
     })
+  })
+
+  // Próximos eventos (Filtrados por tiempo real de Chile, excluyendo fechas y horas pasadas)
+  const upcomingEvents = computed(() => {
+    const todayStr = getChileTodayString()
+    const nowTimeStr = getChileTimeString(false) // Formato HH:mm
+
+    return filteredEvents.value
+      .filter(event => {
+        // 1. Fechas estrictamente futuras
+        if (event.eventDate > todayStr) return true
+
+        // 2. Fecha de hoy: incluir si es todo el día o si su hora no ha pasado
+        if (event.eventDate === todayStr) {
+          if (event.isAllDay) return true
+          if (event.endTime && event.endTime >= nowTimeStr) return true
+          if (event.startTime >= nowTimeStr) return true
+          return false
+        }
+
+        // 3. Fechas pasadas (< todayStr)
+        return false
+      })
+      .sort((a, b) => {
+        // Orden cronológico ascendente (el más próximo primero)
+        if (a.eventDate !== b.eventDate) {
+          return a.eventDate.localeCompare(b.eventDate)
+        }
+        if (a.isAllDay && !b.isAllDay) return -1
+        if (!a.isAllDay && b.isAllDay) return 1
+        return a.startTime.localeCompare(b.startTime)
+      })
   })
 
   // Eventos del día seleccionado
@@ -318,6 +350,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     sheetContextDate,
     activeMember,
     filteredEvents,
+    upcomingEvents,
     selectedDayEvents,
     selectedDayTasks,
     loadDataFromSupabase,

@@ -6,8 +6,8 @@ const authStore = useAuthStore()
 
 const mode = ref<'login' | 'register'>('login')
 
-const email = ref('israel@familyhub.cl')
-const password = ref('P#2?hqfa2WK5Y$M')
+const email = ref('')
+const password = ref('')
 
 // Campos para registro de familiar
 const regName = ref('')
@@ -32,11 +32,6 @@ async function handleSubmit() {
       alert(`✅ Cuenta creada exitosamente para ${regName.value}. ¡Bienvenido(a) a FAMILY-HUB!`)
     }
   }
-}
-
-function setQuickCredentials(e: string, p: string) {
-  email.value = e
-  password.value = p
 }
 </script>
 
@@ -81,6 +76,7 @@ function setQuickCredentials(e: string, p: string) {
             class="form-input" 
             placeholder="ejemplo@familyhub.cl" 
             required 
+            autocomplete="email"
           />
         </div>
 
@@ -92,6 +88,7 @@ function setQuickCredentials(e: string, p: string) {
             class="form-input" 
             placeholder="••••••••" 
             required 
+            autocomplete="current-password"
           />
         </div>
 
@@ -99,19 +96,6 @@ function setQuickCredentials(e: string, p: string) {
           <span v-if="authStore.isLoading" class="spinner"></span>
           <span v-else>🚀 Ingresar a FAMILY-HUB</span>
         </button>
-
-        <div class="quick-access">
-          <span class="quick-title">Cuentas creadas para pruebas:</span>
-          <div class="quick-buttons">
-            <button 
-              type="button" 
-              class="quick-chip"
-              @click="setQuickCredentials('israel@familyhub.cl', 'P#2?hqfa2WK5Y$M')"
-            >
-              👨‍👩‍👦 Israel (israel@familyhub.cl)
-            </button>
-          </div>
-        </div>
       </form>
 
       <!-- Formulario de Registro para Esposa / Familiar -->
@@ -371,51 +355,6 @@ function setQuickCredentials(e: string, p: string) {
 
 .submit-btn:hover {
   transform: scale(1.02);
-}
-
-.quick-access {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding-top: 0.5rem;
-  border-top: 1px dashed rgba(0, 0, 0, 0.1);
-}
-
-@media (prefers-color-scheme: dark) {
-  .quick-access { border-top-color: rgba(255, 255, 255, 0.1); }
-}
-
-.quick-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.quick-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.quick-chip {
-  padding: 0.45rem 0.75rem;
-  min-height: var(--touch-target-min);
-  border-radius: 10px;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  background: rgba(59, 130, 246, 0.08);
-  color: #3b82f6;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  touch-action: manipulation;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-
-.quick-chip:hover {
-  background: rgba(59, 130, 246, 0.2);
 }
 
 .card-footer {

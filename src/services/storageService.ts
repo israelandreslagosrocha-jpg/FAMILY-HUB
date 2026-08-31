@@ -1,5 +1,7 @@
 import { supabase } from './supabaseClient'
 
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>()
+
 /**
  * Servicio desacoplado de Almacenamiento en Supabase Storage (Bucket 'receipts')
  */
@@ -31,17 +33,41 @@ export const storageService = {
   },
 
   /**
-   * Genera una URL firmada temporal de lectura privada para previsualización en UI.
+   * Genera una URL firmada temporal de lectura privada para previsualización en UI con caché en memoria.
    */
   async getSignedUrl(storagePath: string, expiresInSeconds: number = 3600): Promise<string> {
-    const { data, error } = await supabase.storage
-      .from('receipts')
-      .createSignedUrl(storagePath, expiresInSeconds)
-
-    if (error || !data?.signedUrl) {
-      throw new Error(`Error al generar URL firmada de la boleta: ${error?.message || 'URL no generada'}`)
+    if (!storagePath) return ''
+    if (storagePath.startsWith('http://') || storagePath.startsWith('https://') || storagePath.startsWith('blob:')) {
+      return storagePath
     }
 
-    return data.signedUrl
+    // Verificar si existe en caché vigente
+    const cached = signedUrlCache.get(storagePath)
+    const now = Date.now()
+    if (cached && cached.expiresAt > now + 60000) { // Margen de 1 minuto
+      return cached.url
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('receipts')
+        .createSignedUrl(storagePath, expiresInSeconds)
+
+      if (error || !data?.signedUrl) {
+        console.warn(`⚠️ Error al generar URL firmada para ${storagePath}:`, error?.message)
+        return ''
+      }
+
+      signedUrlCache.set(storagePath, {
+        url: data.signedUrl,
+        expiresAt: now + (expiresInSeconds * 1000)
+      })
+
+      return data.signedUrl
+    } catch (err: any) {
+      console.warn('⚠️ Excepción al generar URL firmada:', err?.message)
+      return ''
+    }
   }
 }
+

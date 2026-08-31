@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ReceiptScanSession, ExtractedReceiptData } from '../types'
+import type { ReceiptScanSession, ExtractedReceiptData, FinancialMovement } from '../types'
 import { receiptService } from '../services/receiptService'
+import { storageService } from '../services/storageService'
+import { financeService } from '../services/financeService'
 import { useFinanceStore } from './financeStore'
 import { useAuthStore } from './authStore'
 
@@ -12,26 +14,64 @@ export const useReceiptStore = defineStore('receiptStore', () => {
   // Estado Principal
   const isScannerOpen = ref<boolean>(false)
   const isReviewSheetOpen = ref<boolean>(false)
+  const isDetailModalOpen = ref<boolean>(false)
+  const selectedDetailMovement = ref<FinancialMovement | null>(null)
   const currentSession = ref<ReceiptScanSession | null>(null)
-  const savedReceipts = ref<ReceiptScanSession[]>([
-    {
-      id: 'rec-101',
-      familyId: '089b6b00-5aee-4d93-a44c-8c1a8558013f',
-      storagePath: '089b6b00-5aee-4d93-a44c-8c1a8558013f/2026/08/rec-101.png',
-      imagePreviewUrl: 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=300',
-      status: 'saved',
-      extractedData: {
-        merchantName: 'Supermercado Lider',
-        totalAmount: 145000,
-        date: '2026-08-18',
-        suggestedCategory: 'Supermercado',
-        ocrConfidence: 98,
-        extractionConfidence: 96,
-        isPossibleDuplicate: false
-      },
-      createdAt: '2026-08-18 18:30'
+  const isLoadingReceipts = ref<boolean>(false)
+  const savedReceipts = ref<ReceiptScanSession[]>([])
+
+  /**
+   * Carga desde Supabase todos los movimientos de gasto que tienen comprobante/boleta adjunta
+   */
+  async function loadReceiptsFromSupabase() {
+    isLoadingReceipts.value = true
+    try {
+      // 1. Obtener movimientos desde financeService (o usar los ya cargados en financeStore)
+      let movements = financeStore.movements
+      if (movements.length === 0) {
+        movements = await financeService.getMovements()
+        financeStore.movements = movements
+      }
+
+      // 2. Filtrar solo los que tienen receiptImageUrl
+      const movementsWithReceipt = movements.filter(m => !!m.receiptImageUrl)
+
+      // 3. Generar URLs firmadas para cada comprobante
+      const sessions: ReceiptScanSession[] = await Promise.all(
+        movementsWithReceipt.map(async (mov) => {
+          let previewUrl = ''
+          if (mov.receiptImageUrl) {
+            previewUrl = await storageService.getSignedUrl(mov.receiptImageUrl)
+          }
+
+          return {
+            id: mov.id,
+            familyId: '',
+            storagePath: mov.receiptImageUrl,
+            imagePreviewUrl: previewUrl || 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=300',
+            status: 'saved' as const,
+            extractedData: {
+              merchantName: mov.title.replace(' (Boleta Escaneada)', ''),
+              totalAmount: mov.amount,
+              date: mov.date,
+              suggestedCategory: mov.categoryName,
+              suggestedCategoryId: mov.categoryId,
+              ocrConfidence: 98,
+              extractionConfidence: 95,
+              isPossibleDuplicate: false
+            },
+            createdAt: mov.date
+          }
+        })
+      )
+
+      savedReceipts.value = sessions
+    } catch (err: any) {
+      console.warn('⚠️ Error al cargar boletas desde Supabase:', err?.message)
+    } finally {
+      isLoadingReceipts.value = false
     }
-  ])
+  }
 
   function openScanner() {
     isScannerOpen.value = true
@@ -40,6 +80,36 @@ export const useReceiptStore = defineStore('receiptStore', () => {
 
   function closeScanner() {
     isScannerOpen.value = false
+  }
+
+  function openDetailModal(movement: FinancialMovement) {
+    selectedDetailMovement.value = { ...movement }
+    isDetailModalOpen.value = true
+  }
+
+  function closeDetailModal() {
+    isDetailModalOpen.value = false
+    selectedDetailMovement.value = null
+  }
+
+  async function saveDetailChanges(id: string, updatedFields: Partial<FinancialMovement>) {
+    // 1. Actualizar en financeStore y persistir en Supabase
+    await financeStore.updateMovement(id, updatedFields)
+
+    // 2. Actualizar selectedDetailMovement
+    if (selectedDetailMovement.value && selectedDetailMovement.value.id === id) {
+      Object.assign(selectedDetailMovement.value, updatedFields)
+    }
+
+    // 3. Actualizar la lista en savedReceipts
+    const targetSession = savedReceipts.value.find(s => s.id === id)
+    if (targetSession && targetSession.extractedData) {
+      if (updatedFields.title) targetSession.extractedData.merchantName = updatedFields.title.replace(' (Boleta Escaneada)', '')
+      if (updatedFields.amount !== undefined) targetSession.extractedData.totalAmount = updatedFields.amount
+      if (updatedFields.date) targetSession.extractedData.date = updatedFields.date
+      if (updatedFields.categoryName) targetSession.extractedData.suggestedCategory = updatedFields.categoryName
+      if (updatedFields.categoryId) targetSession.extractedData.suggestedCategoryId = updatedFields.categoryId
+    }
   }
 
   // Carga Real de Archivo y Procesamiento con receiptService.ts (Paso 7C.4)
@@ -172,6 +242,7 @@ export const useReceiptStore = defineStore('receiptStore', () => {
     if (currentSession.value.storagePath && !currentSession.value.storagePath.includes('scan-')) {
       try {
         await receiptService.confirmAndRegisterExpense(currentSession.value, finalData, isFamilyScope)
+        await financeStore.loadDataFromSupabase()
       } catch (e: any) {
         console.warn('⚠️ Error al registrar en Supabase vía receiptService, aplicando fallback local:', e?.message)
       }
@@ -208,10 +279,17 @@ export const useReceiptStore = defineStore('receiptStore', () => {
   return {
     isScannerOpen,
     isReviewSheetOpen,
+    isDetailModalOpen,
+    selectedDetailMovement,
     currentSession,
     savedReceipts,
+    isLoadingReceipts,
     openScanner,
     closeScanner,
+    openDetailModal,
+    closeDetailModal,
+    saveDetailChanges,
+    loadReceiptsFromSupabase,
     processRealFile,
     startScanSimulated,
     confirmReceipt,

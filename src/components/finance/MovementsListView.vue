@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { useFinanceStore } from '../../stores/financeStore'
 import { useAuthStore } from '../../stores/authStore'
+import { useReceiptStore } from '../../stores/receiptStore'
+import type { FinancialMovement } from '../../types'
+import ReceiptDetailModal from '../receipts/ReceiptDetailModal.vue'
 
 const financeStore = useFinanceStore()
 const authStore = useAuthStore()
+const receiptStore = useReceiptStore()
 
 function formatCurrency(val: number): string {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(val)
@@ -13,7 +17,12 @@ function handleFilterMember(memberId: string) {
   financeStore.setFilterMember(memberId)
 }
 
-function handleDeleteMovement(movId: string) {
+function handleOpenDetail(mov: FinancialMovement) {
+  receiptStore.openDetailModal(mov)
+}
+
+function handleDeleteMovement(movId: string, e?: Event) {
+  if (e) e.stopPropagation()
   if (confirm('¿Deseas eliminar este movimiento financiero?')) {
     financeStore.deleteMovement(movId)
   }
@@ -25,7 +34,7 @@ function handleDeleteMovement(movId: string) {
     <!-- Barra de Filtro por Miembro Familiar (Con avatars y colores de miembros) -->
     <div class="member-filter-scroll glass-card">
       <button 
-        class="member-chip"
+        class="member-chip" 
         :class="{ active: financeStore.filterMemberId === 'all' }"
         @click="handleFilterMember('all')"
       >
@@ -35,7 +44,7 @@ function handleDeleteMovement(movId: string) {
       <button 
         v-for="member in authStore.familyMembers" 
         :key="member.id"
-        class="member-chip"
+        class="member-chip" 
         :class="{ active: financeStore.filterMemberId === member.id }"
         @click="handleFilterMember(member.id)"
       >
@@ -55,7 +64,8 @@ function handleDeleteMovement(movId: string) {
       <div 
         v-for="mov in financeStore.displayedMovements" 
         :key="mov.id"
-        class="movement-card glass-card"
+        class="movement-card glass-card movement-card-interactive"
+        @click="handleOpenDetail(mov)"
       >
         <div class="mov-card-left">
           <span class="category-icon-bg" :style="{ backgroundColor: mov.categoryColor + '20', color: mov.categoryColor }">
@@ -67,6 +77,15 @@ function handleDeleteMovement(movId: string) {
               <span class="type-pill" :class="mov.type">
                 {{ mov.type === 'income' ? 'Ingreso' : (mov.type === 'expense' ? 'Gasto' : 'Transferencia') }}
               </span>
+              <!-- Badge si tiene Boleta Escaneada -->
+              <button 
+                v-if="mov.receiptImageUrl" 
+                class="receipt-attached-chip"
+                @click.stop="handleOpenDetail(mov)"
+                title="Ver fotografía de la boleta"
+              >
+                🧾 Ver Boleta
+              </button>
             </div>
             <span class="mov-meta">
               {{ mov.date }} • {{ mov.categoryName }} • {{ mov.scope === 'family' ? '🏡 Familiar' : '👤 Personal' }}
@@ -85,12 +104,29 @@ function handleDeleteMovement(movId: string) {
           >
             {{ mov.type === 'income' ? '+' : (mov.type === 'expense' ? '-' : '🔄') }} {{ formatCurrency(mov.amount) }}
           </span>
-          <button class="delete-mov-btn" @click="handleDeleteMovement(mov.id)" title="Eliminar Movimiento">
-            🗑️
-          </button>
+
+          <div class="mov-actions-group">
+            <button 
+              class="action-icon-btn edit-btn" 
+              @click.stop="handleOpenDetail(mov)" 
+              title="Editar Movimiento y Ver Boleta"
+            >
+              ✏️
+            </button>
+            <button 
+              class="action-icon-btn delete-mov-btn" 
+              @click.stop="handleDeleteMovement(mov.id, $event)" 
+              title="Eliminar Movimiento"
+            >
+              🗑️
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Modal de Detalle, Visor de Comprobante y Edición -->
+    <ReceiptDetailModal />
   </div>
 </template>
 
@@ -263,9 +299,52 @@ function handleDeleteMovement(movId: string) {
   }
 }
 
-.delete-mov-btn {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+.movement-card-interactive {
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.movement-card-interactive:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme="dark"] .movement-card-interactive:hover {
+  background: rgba(30, 41, 59, 0.85);
+}
+
+.receipt-attached-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #3b82f6;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.1rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s, background 0.15s;
+}
+
+:root[data-theme="dark"] .receipt-attached-chip {
+  color: #60a5fa;
+}
+
+.receipt-attached-chip:hover {
+  background: rgba(59, 130, 246, 0.25);
+  transform: scale(1.04);
+}
+
+.mov-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.action-icon-btn {
   min-width: var(--touch-target-min);
   min-height: var(--touch-target-min);
   border-radius: 10px;
@@ -279,8 +358,24 @@ function handleDeleteMovement(movId: string) {
   flex-shrink: 0;
 }
 
+.edit-btn {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.edit-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(1.05);
+}
+
+.delete-mov-btn {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 .delete-mov-btn:hover {
   background: rgba(239, 68, 68, 0.2);
+  transform: scale(1.05);
 }
 
 .mov-amount {

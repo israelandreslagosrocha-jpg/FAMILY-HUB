@@ -4,10 +4,9 @@ export async function verify7C3Storage() {
   console.log('=== PASO 7C.3: VERIFICACIÓN EMPÍRICA POST-MIGRACIÓN DE SUPABASE STORAGE (V2.5) ===\n')
 
   // 1. Autenticación con israel@familyhub.cl
-  console.log('🔑 Autenticando usuario israel@familyhub.cl...')
   const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-    email: 'israel@familyhub.cl',
-    password: 'P#2?hqfa2WK5Y$M'
+    email: import.meta.env.VITE_TEST_USER_EMAIL || 'israel@familyhub.cl',
+    password: import.meta.env.VITE_TEST_USER_PASSWORD || ''
   })
 
   if (authErr || !authData.user) {

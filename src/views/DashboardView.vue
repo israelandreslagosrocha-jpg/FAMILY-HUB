@@ -187,14 +187,14 @@ function formatCurrency(val: number): string {
           <router-link to="/calendar" class="bento-link-btn">Ver Calendario →</router-link>
         </div>
 
-        <div v-if="calendarStore.events.length === 0" class="bento-empty-state">
+        <div v-if="calendarStore.upcomingEvents.length === 0" class="bento-empty-state">
           <span class="empty-emoji font-32">☕</span>
           <p class="empty-txt">Sin eventos próximos programados.</p>
         </div>
 
         <div v-else class="bento-events-list">
           <div 
-            v-for="event in calendarStore.events.slice(0, 3)" 
+            v-for="event in calendarStore.upcomingEvents.slice(0, 3)" 
             :key="event.id"
             class="bento-event-row"
           >

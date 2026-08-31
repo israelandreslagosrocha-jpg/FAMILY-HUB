@@ -128,6 +128,7 @@ export interface FinancialMovement {
   belongingToMemberId?: string  // A quién pertenece si es personal
   date: string                  // YYYY-MM-DD
   receiptImageUrl?: string
+  idempotencyKey?: string
 }
 
 export interface CategoryBudget {
@@ -241,3 +242,7 @@ export type ViewMode = 'my_day' | 'family'
 export type CalendarViewType = 'day' | 'week' | 'month'
 export type TaskFocusType = 'my_tasks' | 'family_tasks' | 'responsibilities'
 export type AutomationTabType = 'recipes' | 'active_rules' | 'execution_logs'
+
+// Exportaciones de Voz y Recordatorios
+export * from './voice'
+export * from './reminder'

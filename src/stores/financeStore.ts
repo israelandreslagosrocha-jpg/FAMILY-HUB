@@ -199,7 +199,8 @@ export const useFinanceStore = defineStore('financeStore', () => {
           isFamilyScope: payload.scope === 'family',
           date: payload.date,
           sourceAccount: payload.type === 'transfer' ? 'Cuenta Corriente' : undefined,
-          destinationAccount: payload.type === 'transfer' ? 'Caja Efectivo' : undefined
+          destinationAccount: payload.type === 'transfer' ? 'Caja Efectivo' : undefined,
+          idempotencyKey: payload.idempotencyKey
         })
 
         const target = movements.value.find(m => m.id === tempId)
@@ -283,6 +284,50 @@ export const useFinanceStore = defineStore('financeStore', () => {
     }
   }
 
+  async function updateMovement(id: string, payload: Partial<FinancialMovement>) {
+    const mov = movements.value.find(m => m.id === id)
+    if (!mov) return
+
+    // Actualizar campos localmente de forma reactiva (Optimistic UI)
+    if (payload.title !== undefined) mov.title = payload.title
+    if (payload.amount !== undefined) mov.amount = payload.amount
+    if (payload.categoryId !== undefined) mov.categoryId = payload.categoryId
+    if (payload.categoryName !== undefined) mov.categoryName = payload.categoryName
+    if (payload.categoryIcon !== undefined) mov.categoryIcon = payload.categoryIcon
+    if (payload.categoryColor !== undefined) mov.categoryColor = payload.categoryColor
+    if (payload.scope !== undefined) mov.scope = payload.scope
+    if (payload.belongingToMemberId !== undefined) mov.belongingToMemberId = payload.belongingToMemberId
+    if (payload.date !== undefined) mov.date = payload.date
+    if (payload.receiptImageUrl !== undefined) mov.receiptImageUrl = payload.receiptImageUrl
+
+    // Recalcular presupuestos
+    if (budgets.value.length > 0) {
+      budgets.value.forEach(b => {
+        b.spentAmount = movements.value
+          .filter(m => m.type === 'expense' && (m.categoryId === b.categoryId || m.categoryName === b.categoryName))
+          .reduce((sum, m) => sum + m.amount, 0)
+      })
+    }
+
+    // Persistir en Supabase
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (sessionData.session && !id.startsWith('mov-') && !id.startsWith('temp-')) {
+      try {
+        await financeService.updateMovement(id, mov.type, {
+          title: payload.title,
+          amount: payload.amount,
+          categoryId: payload.categoryId,
+          belongingToMemberId: payload.belongingToMemberId,
+          isFamilyScope: payload.scope === 'family',
+          date: payload.date,
+          receiptImageUrl: payload.receiptImageUrl
+        })
+      } catch (err: any) {
+        console.error('❌ Error al actualizar movimiento en Supabase:', err.message)
+      }
+    }
+  }
+
   return {
     activeTab,
     filterScope,
@@ -304,6 +349,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
     openCreateSheet,
     closeCreateSheet,
     addMovement,
+    updateMovement,
     deleteMovement,
     toggleFixedExpensePaid,
     addFixedExpense,

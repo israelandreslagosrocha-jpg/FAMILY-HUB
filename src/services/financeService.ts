@@ -16,6 +16,16 @@ export interface CreateMovementParams {
   idempotencyKey?: string
 }
 
+export interface UpdateMovementParams {
+  title?: string
+  amount?: number
+  categoryId?: string
+  belongingToMemberId?: string
+  isFamilyScope?: boolean
+  date?: string
+  receiptImageUrl?: string
+}
+
 export const financeService = {
   /**
    * Obtiene las cuentas fijas del hogar en Supabase
@@ -260,6 +270,67 @@ export const financeService = {
     }
 
     return typeof data === 'object' && data?.id ? data.id : String(data)
+  },
+
+  /**
+   * Actualiza un movimiento financiero existente en Supabase
+   */
+  async updateMovement(id: string, movementType: MovementType, params: UpdateMovementParams): Promise<void> {
+    if (id.startsWith('mov-') || id.startsWith('temp-')) return
+
+    let validCategoryId = params.categoryId
+    if (validCategoryId && validCategoryId.startsWith('cat-')) {
+      try {
+        const { data: catData } = await supabase.from('categories').select('id').limit(1)
+        if (catData && catData.length > 0) {
+          validCategoryId = catData[0].id
+        }
+      } catch (err: any) {
+        console.warn('⚠️ No se pudo resolver categoryId en update:', err?.message)
+      }
+    }
+
+    if (movementType === 'expense') {
+      const payload: any = {}
+      if (params.title !== undefined) payload.title = params.title
+      if (params.amount !== undefined) payload.amount = params.amount
+      if (validCategoryId !== undefined) payload.category_id = validCategoryId
+      if (params.isFamilyScope !== undefined) payload.is_family_expense = params.isFamilyScope
+      if (params.belongingToMemberId !== undefined) payload.belonging_to_member_id = params.belongingToMemberId || null
+      if (params.date !== undefined) payload.date = params.date
+      if (params.receiptImageUrl !== undefined) payload.receipt_image_url = params.receiptImageUrl
+
+      const { error } = await supabase.from('expenses').update(payload).eq('id', id)
+      if (error) {
+        console.error('❌ Error al actualizar gasto en Supabase:', error.message)
+        throw error
+      }
+    } else if (movementType === 'income') {
+      const payload: any = {}
+      if (params.title !== undefined) payload.title = params.title
+      if (params.amount !== undefined) payload.amount = params.amount
+      if (validCategoryId !== undefined) payload.category_id = validCategoryId
+      if (params.isFamilyScope !== undefined) payload.is_family_income = params.isFamilyScope
+      if (params.belongingToMemberId !== undefined) payload.belonging_to_member_id = params.belongingToMemberId || null
+      if (params.date !== undefined) payload.date = params.date
+
+      const { error } = await supabase.from('incomes').update(payload).eq('id', id)
+      if (error) {
+        console.error('❌ Error al actualizar ingreso en Supabase:', error.message)
+        throw error
+      }
+    } else if (movementType === 'transfer') {
+      const payload: any = {}
+      if (params.title !== undefined) payload.description = params.title
+      if (params.amount !== undefined) payload.amount = params.amount
+      if (params.date !== undefined) payload.date = params.date
+
+      const { error } = await supabase.from('transfers').update(payload).eq('id', id)
+      if (error) {
+        console.error('❌ Error al actualizar transferencia en Supabase:', error.message)
+        throw error
+      }
+    }
   },
 
   /**

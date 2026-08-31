@@ -19,8 +19,8 @@ export async function runTestBattery5D(): Promise<Test5DItem[]> {
 
   // 1. TEST 5D.1: Autenticación en Supabase Auth
   const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-    email: 'israel@familyhub.cl',
-    password: 'P#2?hqfa2WK5Y$M'
+    email: import.meta.env.VITE_TEST_USER_EMAIL || 'israel@familyhub.cl',
+    password: import.meta.env.VITE_TEST_USER_PASSWORD || ''
   })
 
   if (authErr || !authData.user) {

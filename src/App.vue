@@ -8,6 +8,10 @@ import PWAInstallBanner from './components/pwa/PWAInstallBanner.vue'
 import NotificationDrawer from './components/notifications/NotificationDrawer.vue'
 import LoginView from './views/LoginView.vue'
 import JoinFamilyModal from './components/common/JoinFamilyModal.vue'
+import VoiceCaptureButton from './components/voice/VoiceCaptureButton.vue'
+import VoiceCaptureSheet from './components/voice/VoiceCaptureSheet.vue'
+import VoiceIntentReviewSheet from './components/voice/VoiceIntentReviewSheet.vue'
+import ReminderPickerModal from './components/reminders/ReminderPickerModal.vue'
 
 const authStore = useAuthStore()
 
@@ -43,6 +47,14 @@ onMounted(async () => {
           <router-view />
         </main>
       </div>
+
+      <!-- Botón Flotante Global y Hojas de Captura de Voz -->
+      <VoiceCaptureButton />
+      <VoiceCaptureSheet />
+      <VoiceIntentReviewSheet />
+
+      <!-- Modal Global de Recordatorios de Dispositivo -->
+      <ReminderPickerModal />
 
       <!-- Panel Lateral de Notificaciones del Hogar -->
       <NotificationDrawer />

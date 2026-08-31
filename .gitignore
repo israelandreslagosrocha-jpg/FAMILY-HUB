@@ -30,3 +30,5 @@ Thumbs.db
 .vscode/
 .idea/
 spa.traineddata
+scratch/
+*.tsbuildinfo

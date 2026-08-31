@@ -1,8 +1,8 @@
 import { runFullTestBattery } from './runTest2C_FullSuite'
 
 async function runTestForUser() {
-  const email = 'israel@familyhub.cl'
-  const password = 'P#2?hqfa2WK5Y$M'
+  const email = import.meta.env.VITE_TEST_USER_EMAIL || 'israel@familyhub.cl'
+  const password = import.meta.env.VITE_TEST_USER_PASSWORD || ''
 
   console.log(`🚀 Iniciando Batería Completa de Pruebas ETAPA 2C para: ${email}...\n`)
 
