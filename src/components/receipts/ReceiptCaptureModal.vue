@@ -3,20 +3,26 @@ import { ref } from 'vue'
 import { useReceiptStore } from '../../stores/receiptStore'
 
 const receiptStore = useReceiptStore()
-const fileInput = ref<HTMLInputElement | null>(null)
+const cameraInput = ref<HTMLInputElement | null>(null)
+const galleryInput = ref<HTMLInputElement | null>(null)
 
 function handleClose() {
   receiptStore.closeScanner()
 }
 
-function triggerFileInput() {
-  fileInput.value?.click()
+function triggerCamera() {
+  cameraInput.value?.click()
+}
+
+function triggerGallery() {
+  galleryInput.value?.click()
 }
 
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     receiptStore.processRealFile(target.files[0])
+    target.value = '' // Reset input para permitir volver a seleccionar
   }
 }
 
@@ -34,12 +40,22 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
       </div>
 
       <p class="modal-desc">
-        Selecciona cómo deseas escanear la boleta físicamente o prueba uno de los casos reales simulados (ETAPA 7B):
+        Toma una foto clara de tu boleta o sube una imagen para extraer el comercio, total y lista de productos:
       </p>
 
-      <!-- Botones Principales de Entrada Móvil -->
+      <!-- Input para Cámara Trasera Directa en Teléfonos -->
       <input 
-        ref="fileInput" 
+        ref="cameraInput" 
+        type="file" 
+        accept="image/*" 
+        capture="environment"
+        style="display: none" 
+        @change="handleFileChange" 
+      />
+
+      <!-- Input para Galería / Archivos -->
+      <input 
+        ref="galleryInput" 
         type="file" 
         accept="image/*,application/pdf" 
         style="display: none" 
@@ -47,7 +63,7 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
       />
 
       <div class="capture-actions-grid">
-        <button class="capture-btn camera-btn" @click="triggerFileInput">
+        <button class="capture-btn camera-btn" @click="triggerCamera">
           <span class="btn-big-icon">📸</span>
           <div class="btn-text-col">
             <span class="btn-title">Tomar Foto con Cámara</span>
@@ -55,7 +71,7 @@ function handleSelectCase(caseType: 'high_confidence' | 'low_confidence' | 'fail
           </div>
         </button>
 
-        <button class="capture-btn gallery-btn" @click="triggerFileInput">
+        <button class="capture-btn gallery-btn" @click="triggerGallery">
           <span class="btn-big-icon">🖼️</span>
           <div class="btn-text-col">
             <span class="btn-title">Subir Imagen o PDF</span>
