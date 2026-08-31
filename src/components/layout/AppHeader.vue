@@ -3,14 +3,17 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useFamilyStore } from '../../stores/familyStore'
 import { useAuthStore } from '../../stores/authStore'
 import { useCalendarStore } from '../../stores/calendarStore'
+import { useVoiceStore } from '../../stores/voiceStore'
 import { getChileTimeString, getChileFormattedDate, getChileTodayString } from '../../utils/dateUtils'
 import AvatarImage from '../common/AvatarImage.vue'
 import NetworkStatusBadge from '../pwa/NetworkStatusBadge.vue'
 import NotificationBell from '../pwa/NotificationBell.vue'
+import { Mic, MicOff } from 'lucide-vue-next'
 
 const store = useFamilyStore()
 const authStore = useAuthStore()
 const calendarStore = useCalendarStore()
+const voiceStore = useVoiceStore()
 
 const showMemberSelector = ref(false)
 const currentTheme = ref<'dark' | 'light'>('dark')
@@ -110,6 +113,17 @@ async function handleLogout() {
 
         <!-- Campana de Notificaciones (Siempre visible en Móvil y Desktop) -->
         <NotificationBell />
+
+        <!-- Botón de Captura por Voz Rápida (Siempre visible en Móvil y Desktop) -->
+        <button 
+          class="header-voice-btn" 
+          :class="{ listening: voiceStore.isListening }"
+          :title="voiceStore.isListening ? 'Escuchando tu voz...' : 'Captura Rápida por Voz'"
+          @click="voiceStore.isListening ? voiceStore.stopCapture() : voiceStore.startCapture()"
+        >
+          <Mic v-if="!voiceStore.isListening" :size="19" />
+          <MicOff v-else :size="19" class="pulse-mic-icon" />
+        </button>
 
         <!-- Botón Conmutador Tema - Desktop -->
         <button 
@@ -254,6 +268,47 @@ async function handleLogout() {
   align-items: center;
   gap: 0.35rem;
   flex-shrink: 0;
+}
+
+.header-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 50%;
+  color: #3b82f6;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all var(--transition-fast);
+}
+
+:root[data-theme="dark"] .header-voice-btn {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.header-voice-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  transform: scale(1.05);
+}
+
+.header-voice-btn.listening {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  animation: pulse-ring-header 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-ring-header {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.6); }
+}
+
+.pulse-mic-icon {
+  animation: pulse-svg 1s infinite alternate ease-in-out;
 }
 
 /* Ocultar elementos desktop en vista móvil */
