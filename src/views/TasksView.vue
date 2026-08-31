@@ -65,10 +65,10 @@ function handleOpenCreateSheet() {
 
 .fab-add-button {
   position: fixed;
-  bottom: 5rem;
-  right: 1.5rem;
-  width: 56px;
-  height: 56px;
+  bottom: calc(var(--bottom-nav-height) + max(1rem, var(--sab)));
+  right: max(1.25rem, var(--sar));
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: #3b82f6;
   color: #ffffff;
@@ -79,6 +79,7 @@ function handleOpenCreateSheet() {
   align-items: center;
   justify-content: center;
   z-index: 900;
+  touch-action: manipulation;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s;
 }
 
@@ -95,5 +96,14 @@ function handleOpenCreateSheet() {
   font-size: 2rem;
   font-weight: 400;
   line-height: 1;
+}
+
+@media (min-width: 768px) {
+  .fab-add-button {
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+  }
 }
 </style>

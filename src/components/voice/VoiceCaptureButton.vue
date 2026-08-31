@@ -34,10 +34,11 @@ function handleClick() {
 <style scoped>
 .voice-floating-btn {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + max(1rem, var(--sab)));
-  right: max(1rem, var(--sar));
-  width: 52px;
-  height: 52px;
+  /* Stack vertical Apple: Ubicado arriba del botón contextual (+) con separación de 12px */
+  bottom: calc(var(--bottom-nav-height) + max(1rem, var(--sab)) + 54px + 12px);
+  right: max(1.25rem, var(--sar));
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.25);
   background: linear-gradient(135deg, #3b82f6, #2563eb);
@@ -47,20 +48,20 @@ function handleClick() {
   justify-content: center;
   box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
   cursor: pointer;
-  z-index: 1000;
+  z-index: 950;
   touch-action: manipulation;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, box-shadow 0.2s;
   min-width: var(--touch-target-min);
   min-height: var(--touch-target-min);
 }
 
 .voice-floating-btn:hover {
-  transform: scale(1.06);
+  transform: scale(1.08);
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
 .voice-floating-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.92);
 }
 
 .voice-floating-btn.listening {
@@ -75,7 +76,7 @@ function handleClick() {
 
 .pulse-ring {
   position: absolute;
-  inset: -8px;
+  inset: -6px;
   border-radius: 50%;
   border: 2px solid #ef4444;
   animation: ripple 1.5s infinite ease-out;
@@ -97,10 +98,10 @@ function handleClick() {
 
 @media (min-width: 768px) {
   .voice-floating-btn {
-    bottom: 2rem;
+    bottom: calc(2rem + 56px + 12px);
     right: 2rem;
-    width: 56px;
-    height: 56px;
+    width: 50px;
+    height: 50px;
   }
 }
 </style>

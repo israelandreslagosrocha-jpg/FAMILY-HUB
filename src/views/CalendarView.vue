@@ -71,10 +71,10 @@ function handleUniversalAdd() {
 /* Botón Flotante Universal '+' (Decisión #4) */
 .universal-fab-btn {
   position: fixed;
-  bottom: 5rem;
-  right: 1.5rem;
-  width: 56px;
-  height: 56px;
+  bottom: calc(var(--bottom-nav-height) + max(1rem, var(--sab)));
+  right: max(1.25rem, var(--sar));
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   border: none;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -88,6 +88,7 @@ function handleUniversalAdd() {
   box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
   cursor: pointer;
   z-index: 900;
+  touch-action: manipulation;
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
 }
 
@@ -102,10 +103,10 @@ function handleUniversalAdd() {
 
 @media (min-width: 768px) {
   .universal-fab-btn {
-    bottom: 2.5rem;
-    right: 2.5rem;
-    width: 60px;
-    height: 60px;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
   }
 }
 </style>
