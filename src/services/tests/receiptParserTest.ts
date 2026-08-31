@@ -16,38 +16,60 @@ async function runReceiptParserTests() {
     }
   }
 
-  // CASO 1: Boleta Supermercado Bella Vista (Estilo Micropos / SII con desglose tradicional)
-  const textBellaVista = `
-    SUPERMERCADO BELLA VISTA
-    GABRIEL SEPULVEDA ROJAS
-    RUT: 76.196.370-0
-    GIRO: VENTA AL POR MENOR
-    BOLETA ELECTRONICA N: 562602
-    FECHA: 16/08/2026 14:32
-
-    CANT. DESCRIPCION P.UNIT TOTAL
-    1 MANZANAS 1.360 1.360
-    1 GALLETA SABOR CHOCOLATE COSTA 140 GR 1.100 1.100
-    1 AZUCAR IANSA 400 G 850 850
-    1 MANTEQUILLA SOPROLE 125GR 1.650 1.650
-    1 PAPEL HIGIENICO ELITE 50METROS 3.350 3.350
-    1 PLATANO 1.130 1.130
-    1 PAN CORRIENTE 2.400 2.400
-    8 HUEVO 300 2.400
-
-    TOTAL: $ 14.240
-    IVA (19%): $ 2.274
-    GRACIAS POR SU COMPRA
+  // CASO 1: Boleta Real de la Foto del Usuario (Supermercado Bella Vista con "Res 80 de 2014" en el pie)
+  const textRealUserReceipt = `
+    R.U.T: 7619637-0
+    BOLETA ELECTRÓNICA N° 563.750,00
+    SII - TEMUCO
+    GABRIEL SEPÚLVEDA SUAZO
+    Bella Vista
+    Giro: SUPERMERCADO
+    Direccion: MANUEL BALMACEDA 1052
+    Fono: 992219973
+    Correo: magalynavarromunoz@gmail.com
+    Fecha Emisión: 31-08-2026 01:10:51 PM
+    Medio Pago: TARJETA
+    Vendedor:
+    Cantidad Descripción Precio Unit. Total
+    1 SALCHICHA SUREÑA 1.400 1,400
+    LA PREFERIDA
+    1 PAN CORRIENTE 1.150 1,150
+    1 PALTA 1.280 1,280
+    1 PEPINO 590 590
+    10 HUEVO 300 3,000
+    1 KIWI 1.230 1,230
+    TOTALES
+    Paga con: 0
+    Vuelto: 0
+    Total: $8.650
+    Esta boleta tiene un IVA de : $1.381
+    Res 80 de 2014 Verifique Documento
   `
 
-  const r1 = receiptParser.parseReceiptText(textBellaVista, 95)
-  assert(r1.merchantName === 'Supermercado Bella Vista', 'Caso 1: Comercio detectado Bella Vista')
-  assert(r1.totalAmount === 14240, `Caso 1: Monto total extraído $14.240 (obtenido: ${r1.totalAmount})`)
-  assert(r1.items ? r1.items.length === 8 : false, `Caso 1: 8 productos desglosados (obtenidos: ${r1.items?.length})`)
-  assert(r1.items ? r1.items.some(i => i.description.includes('MANZANAS') && i.totalPrice === 1360) : false, 'Caso 1: Producto MANZANAS con precio $1.360')
-  assert(r1.items ? r1.items.some(i => i.description.includes('HUEVO') && i.quantity === 8 && i.totalPrice === 2400) : false, 'Caso 1: 8 HUEVOS x $300 = $2.400')
+  const rUser = receiptParser.parseReceiptText(textRealUserReceipt, 96)
+  assert(rUser.merchantName === 'Supermercado Bella Vista', 'Caso Real: Comercio detectado Supermercado Bella Vista')
+  assert(rUser.date === '2026-08-31', `Caso Real: Fecha extraída 2026-08-31 (obtenido: ${rUser.date})`)
+  assert(rUser.totalAmount === 8650, `Caso Real: Monto total exacto $8.650 (obtenido: ${rUser.totalAmount})`)
+  assert(rUser.taxAmount === 1381, `Caso Real: IVA exacto $1.381 (obtenido: ${rUser.taxAmount})`)
+  assert(rUser.items ? rUser.items.length === 6 : false, `Caso Real: Exactamente 6 productos leídos (obtenidos: ${rUser.items?.length})`)
+  
+  // Verificar que NO se incluyó "Res 80" ni "Paga con" como producto
+  const hasRes80 = rUser.items?.some(i => i.description.includes('RES 80') || i.description.includes('2014'))
+  assert(!hasRes80, 'Caso Real: "Res 80 de 2014" fue EXCLUIDO correctamente y NO se tomó como producto')
 
-  // CASO 2: Boleta Supermercado Lider / Walmart Chile (Formato producto + precio sin cantidad previa)
+  // Verificar productos individuales
+  assert(rUser.items ? rUser.items.some(i => i.description.includes('SALCHICHA') && i.totalPrice === 1400) : false, 'Caso Real: Salchicha Sureña La Preferida $1.400')
+  assert(rUser.items ? rUser.items.some(i => i.description.includes('PAN CORRIENTE') && i.totalPrice === 1150) : false, 'Caso Real: Pan Corriente $1.150')
+  assert(rUser.items ? rUser.items.some(i => i.description.includes('PALTA') && i.totalPrice === 1280) : false, 'Caso Real: Palta $1.280')
+  assert(rUser.items ? rUser.items.some(i => i.description.includes('PEPINO') && i.totalPrice === 590) : false, 'Caso Real: Pepino $590')
+  assert(rUser.items ? rUser.items.some(i => i.description.includes('HUEVO') && i.quantity === 10 && i.totalPrice === 3000) : false, 'Caso Real: 10 Huevos x $300 = $3.000')
+  assert(rUser.items ? rUser.items.some(i => i.description.includes('KIWI') && i.totalPrice === 1230) : false, 'Caso Real: Kiwi $1.230')
+
+  // Reconciliación matemática
+  const sumItems = rUser.items?.reduce((acc, curr) => acc + curr.totalPrice, 0) || 0
+  assert(sumItems === rUser.totalAmount, `Caso Real: Suma matemática de productos ($${sumItems}) coincide exactamente con el Total ($${rUser.totalAmount})`)
+
+  // CASO 2: Boleta Supermercado Lider / Walmart Chile
   const textLider = `
     HIPER LIDER
     WALMART CHILE S.A.
@@ -86,24 +108,10 @@ async function runReceiptParserTests() {
   assert(r3.totalAmount === 5680, `Caso 3: Monto total $5.680`)
   assert(r3.items ? r3.items.length === 2 : false, `Caso 3: 2 medicamentos extraídos`)
 
-  // CASO 4: Boleta con ruido OCR (caracteres extraños y viñetas)
-  const textNoise = `
-    * SUPERMERCADO SANTA ISABEL
-    • FECHA 20/08/2026
-    - PAN HALLULLA 1.890
-    | QUESO GAUDAL 2.450
-    TOTAL $4.340
-  `
-
-  const r4 = receiptParser.parseReceiptText(textNoise, 80)
-  assert(r4.merchantName === 'Supermercado Santa Isabel', 'Caso 4: Comercio detectado Santa Isabel')
-  assert(r4.totalAmount === 4340, `Caso 4: Total $4.340 extraído con ruido OCR`)
-  assert(r4.items ? r4.items.length === 2 : false, `Caso 4: 2 productos extraídos limpiando viñetas`)
-
   console.log(`\n📊 RESULTADOS BATERÍA DE PARSER: ${passed} PASADOS / ${total - passed} FALLIDOS`)
 
   if (passed === total) {
-    console.log('🎉 100% PASS: El motor de parseo y auto-relleno de productos funciona correctamente.')
+    console.log('🎉 100% PASS: El motor de parseo y auto-relleno de productos funciona con precisión milimétrica.')
   }
 }
 

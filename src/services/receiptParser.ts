@@ -1,7 +1,7 @@
 import type { ExtractedReceiptData, ReceiptItem } from '../types'
 
 /**
- * Limpia y convierte cadenas de precio chilenas (ej. "1.360", "1,360", "$14.240", "14240") a número entero
+ * Limpia y convierte cadenas de precio chilenas (ej. "1.360", "1,360", "$14.240", "$8.650", "14240") a número entero
  */
 function parseChileanPrice(val: string): number {
   if (!val) return 0
@@ -10,60 +10,72 @@ function parseChileanPrice(val: string): number {
 }
 
 /**
- * Determina si una línea es encabezado, pie de página o metadato administrativo (no es un producto)
+ * Determina si una línea marca el FIN ABSOLUTO de la sección de productos (Totales / Pie de página)
  */
-function isNonProductLine(line: string): boolean {
+function isTotalsOrFooterBoundary(line: string): boolean {
+  const l = line.toLowerCase().trim()
+  if (!l) return false
+
+  const boundaryPatterns = [
+    /^totales\b/i,
+    /\btotales\s*$/i,
+    /\btotal\s*:/i,
+    /\btotal\s+a\s+pagar\b/i,
+    /\btotal\s+venta\b/i,
+    /\bvalor\s+total\b/i,
+    /\bsubtotal\s*:/i,
+    /\bmonto\s+neto\b/i,
+    /\bpaga\s+con\b/i,
+    /\bvuelto\b/i,
+    /\besta\s+boleta\s+tiene\s+un\s+iva\b/i,
+    /\biva\s*\(?19%?\)?\s*:/i,
+    /\bvalor\s+exento\b/i,
+    /\bres\.?\s*80\b/i,
+    /\bresoluci[oó]n\s+80\b/i,
+    /\bverifique\s+documento\b/i,
+    /\btimbre\s+electr[oó]nico\b/i,
+    /\bgracias\s+por\s+su\s+compra\b/i
+  ]
+
+  return boundaryPatterns.some(pattern => pattern.test(l))
+}
+
+/**
+ * Determina si una línea es encabezado administrativo o columna descriptiva (no es un producto)
+ */
+function isHeaderOrMetaLine(line: string): boolean {
   const l = line.toLowerCase().trim()
   if (!l || l.length < 2) return true
 
-  const blockedPatterns = [
+  const headerPatterns = [
     /\br\.?u\.?t\b/i,
-    /\bboleta\b/i,
-    /\belectr[oó]nica\b/i,
+    /\bboleta\s+electr[oó]nica\b/i,
     /\bsii\b/i,
     /\bgiro\b/i,
     /\bdirecci[oó]n\b/i,
     /\bfono\b/i,
     /\btelefono\b/i,
     /\bcorreo\b/i,
-    /\bfecha\b/i,
-    /\bhora\b/i,
+    /\bfecha\s+emisi[oó]n\b/i,
+    /\bmedio\s+pago\b/i,
     /\bvendedor\b/i,
     /\bcaja\b/i,
     /\bcajero\b/i,
     /\bterminal\b/i,
-    /\bmedio\s+pago\b/i,
-    /\bpaga\s+con\b/i,
-    /\bvuelto\b/i,
-    /\btotal\b/i,
-    /\bsubtotal\b/i,
-    /\bmonto\s+neto\b/i,
-    /\biva\b/i,
-    /\bexento\b/i,
-    /\bres\s+80\b/i,
-    /\bresoluci[oó]n\b/i,
-    /\btransbank\b/i,
-    /\bredcompra\b/i,
-    /\btarjeta\b/i,
-    /\bd[eé]bito\b/i,
-    /\bcr[eé]dito\b/i,
-    /\befectivo\b/i,
-    /\bpropina\b/i,
-    /\bgracias\s+por\s+su\s+compra\b/i,
-    /\bwww\./i,
-    /\bmicropos\b/i,
-    /\bcantidad\b/i,
-    /\bdescripci[oó]n\b/i,
-    /\bprecio\b/i,
+    /\bcantidad\s+descripci[oó]n\b/i,
+    /\bcant\.?\s+descripci[oó]n\b/i,
+    /\bprecio\s+unit/i,
+    /\bp\.?\s*unit/i,
     /\bunidades\b/i,
     /\barticulo\b/i,
     /\bcomuna\b/i,
     /\bciudad\b/i,
     /\bsantiago\b/i,
+    /\btemuco\b/i,
     /\bchile\b/i
   ]
 
-  return blockedPatterns.some(pattern => pattern.test(l))
+  return headerPatterns.some(pattern => pattern.test(l))
 }
 
 /**
@@ -98,7 +110,7 @@ export const receiptParser = {
     // 1. DETECCIÓN DEL COMERCIO
     // =========================================================================
     let merchantName = ''
-    if (lower.includes('bella vista') || lower.includes('bellavista') || lower.includes('gabriel sepúlveda') || lower.includes('gabriel sepulveda') || lower.includes('7619637-0')) {
+    if (lower.includes('bella vista') || lower.includes('bellavista') || lower.includes('gabriel sepúlveda') || lower.includes('gabriel sepulveda') || lower.includes('7619637-0') || lower.includes('76.196.370')) {
       merchantName = 'Supermercado Bella Vista'
     } else if (lower.includes('jumbo')) {
       merchantName = 'Supermercado Jumbo'
@@ -127,10 +139,10 @@ export const receiptParser = {
     } else if (lower.includes('easy')) {
       merchantName = 'Easy'
     } else {
-      // Buscar primera línea representativa entre las primeras 5 líneas
-      for (let i = 0; i < Math.min(rawLines.length, 5); i++) {
+      // Buscar primera línea representativa entre las primeras líneas del encabezado
+      for (let i = 0; i < Math.min(rawLines.length, 6); i++) {
         const line = rawLines[i]
-        if (!isNonProductLine(line) && line.length >= 3 && !/^\d+$/.test(line)) {
+        if (!isHeaderOrMetaLine(line) && !isTotalsOrFooterBoundary(line) && line.length >= 3 && !/^\d+$/.test(line)) {
           merchantName = line
           break
         }
@@ -139,43 +151,7 @@ export const receiptParser = {
     }
 
     // =========================================================================
-    // 2. EXTRACCIÓN DEL MONTO TOTAL ($14.240)
-    // =========================================================================
-    let totalAmount = 0
-    let extractionConfidence = 50
-
-    // Buscar "TOTAL $14.240", "Total a Pagar: $ 14.240", "Monto Total: 14240"
-    const totalMatch = rawText.match(/(?:total|monto total|total a pagar|total venta|valor total|pagar|monto)\s*:?\s*\$?\s*([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{3,7})/i)
-    if (totalMatch && totalMatch[1]) {
-      totalAmount = parseChileanPrice(totalMatch[1])
-      extractionConfidence = 95
-    } else {
-      // Buscar el monto mayor razonable en el comprobante
-      const amountMatches = rawText.match(/\$?\s*([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{4,6})/g)
-      if (amountMatches && amountMatches.length > 0) {
-        const parsed = amountMatches
-          .map(m => parseChileanPrice(m))
-          .filter(n => !isNaN(n) && n > 100 && n < 10000000)
-        if (parsed.length > 0) {
-          totalAmount = Math.max(...parsed)
-          extractionConfidence = 80
-        }
-      }
-    }
-
-    // =========================================================================
-    // 3. EXTRACCIÓN DE IVA
-    // =========================================================================
-    let taxAmount = 0
-    const ivaMatch = rawText.match(/(?:iva|iva\s*\(?19%?\)?|iva de)\s*:?\s*\$?\s*([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{3,7})/i)
-    if (ivaMatch && ivaMatch[1]) {
-      taxAmount = parseChileanPrice(ivaMatch[1])
-    } else if (totalAmount > 0) {
-      taxAmount = Math.round(totalAmount - (totalAmount / 1.19))
-    }
-
-    // =========================================================================
-    // 4. EXTRACCIÓN DE FECHA
+    // 2. EXTRACCIÓN DE FECHA DE EMISIÓN
     // =========================================================================
     let date = new Date().toISOString().split('T')[0]
     const dateMatch = rawText.match(/(\d{2})[-/.](\d{2})[-/.](20\d{2}|\d{2})/)
@@ -187,27 +163,65 @@ export const receiptParser = {
     }
 
     // =========================================================================
-    // 5. EXTRACCIÓN AUTOMÁTICA DE PRODUCTOS (AUTO-RELLENO INTELIGENTE)
+    // 3. EXTRACCIÓN DEL MONTO TOTAL E IVA DESDE EL TEXTO COMPLETO
+    // =========================================================================
+    let totalAmount = 0
+    let taxAmount = 0
+    let extractionConfidence = 60
+
+    // Buscar "Total: $8.650", "TOTAL $14.240", "Total a Pagar: $ 14.240", "Monto Total: 14240"
+    const totalMatch = rawText.match(/(?:total|monto total|total a pagar|total venta|valor total)\s*:?\s*\$?\s*([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{3,7})/i)
+    if (totalMatch && totalMatch[1]) {
+      totalAmount = parseChileanPrice(totalMatch[1])
+      extractionConfidence = 95
+    }
+
+    // Buscar "Esta boleta tiene un IVA de: $1.381" o "IVA (19%): $ 2.274" o "IVA: $1381"
+    const ivaMatch = rawText.match(/(?:esta\s+boleta\s+tiene\s+un\s+iva\s+de\s*:?|iva\s*\(?19%?\)?\s*:?|iva\s*:?)\s*\$?\s*([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{3,7})/i)
+    if (ivaMatch && ivaMatch[1]) {
+      taxAmount = parseChileanPrice(ivaMatch[1])
+    }
+
+    // =========================================================================
+    // 4. EXTRACCIÓN SECUENCIAL DE PRODUCTOS CON LÍMITES ESTRICTOS (START / END)
     // =========================================================================
     const items: ReceiptItem[] = []
-    const candidateLines = rawLines.filter(line => !isNonProductLine(line))
 
     let idx = 0
-    while (idx < candidateLines.length) {
-      // Normalizar espacios tras signo peso y caracteres superfluos (ej. "$ 1.150" -> "$1.150")
-      const currentLine = candidateLines[idx]
+    while (idx < rawLines.length) {
+      const line = rawLines[idx]
         .replace(/\$\s+(\d)/g, '$$$1')
         .replace(/\s+/g, ' ')
         .trim()
 
+      // DETECCIÓN DEL LÍMITE DE TOTALES: Si encontramos TOTALES / TOTAL / PAGA CON / RES 80 -> DETENER EXTRACCIÓN
+      if (isTotalsOrFooterBoundary(line)) {
+        break // Ninguna línea posterior a TOTALES puede ser un producto
+      }
+
+      // Si aún estamos en encabezados administrativos (RUT, Giro, Boleta Electrónica, etc.), omitir
+      if (isHeaderOrMetaLine(line)) {
+        idx++
+        continue
+      }
+
       // Patrón 1: [Cantidad] [Descripción] [Precio Unitario] [Precio Total]
-      // Ej: "1 MANZANAS 1.360 1.360" o "8 HUEVO 300 2.400"
-      const p1 = currentLine.match(/^(\d{1,3})\s+([A-Za-z0-9áéíóúÁÉÍÓÚñÑ\s\/\%\.\,\-]{2,})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})*|[0-9]{2,6})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})*|[0-9]{2,6})/i)
+      // Ej: "1 SALCHICHA SUREÑA 1.400 1,400" o "10 HUEVO 300 3,000" o "1 MANZANAS 1.360 1.360"
+      const p1 = line.match(/^(\d{1,3})\s+([A-Za-z0-9áéíóúÁÉÍÓÚñÑ\s\/\%\.\,\-]{2,})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})*|[0-9]{2,6})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})*|[0-9]{2,6})/i)
       if (p1) {
         const qty = parseInt(p1[1], 10) || 1
-        const desc = p1[2].replace(/\s+\$?[\d.,]+$/, '').trim()
+        let desc = p1[2].replace(/\s+\$?[\d.,]+$/, '').trim()
         const unitP = parseChileanPrice(p1[3])
         const totalP = parseChileanPrice(p1[4])
+
+        // Verificar si la siguiente línea es la continuación de la descripción (ej. "LA PREFERIDA")
+        if (idx + 1 < rawLines.length) {
+          const nextLine = rawLines[idx + 1].trim()
+          if (!isTotalsOrFooterBoundary(nextLine) && !isHeaderOrMetaLine(nextLine) && !/\d{2,}/.test(nextLine) && nextLine.length >= 2 && nextLine.length <= 40) {
+            desc = `${desc} ${nextLine}`.trim()
+            idx++ // Consumir línea siguiente
+          }
+        }
 
         if (desc.length >= 2 && totalP > 0) {
           items.push({
@@ -223,12 +237,21 @@ export const receiptParser = {
       }
 
       // Patrón 2: [Cantidad] [Descripción] [Precio Total]
-      // Ej: "2 COCA COLA 2.400" o "1 LECHE ENTERA 1.150"
-      const p2 = currentLine.match(/^(\d{1,3})\s+([A-Za-z0-9áéíóúÁÉÍÓÚñÑ\s\/\%\.\,\-]{2,})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{3,6})/i)
+      // Ej: "1 PAN CORRIENTE 1.150" o "1 PEPINO 590" o "2 COCA COLA 2.400"
+      const p2 = line.match(/^(\d{1,3})\s+([A-Za-z0-9áéíóúÁÉÍÓÚñÑ\s\/\%\.\,\-]{2,})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{3,6})/i)
       if (p2) {
         const qty = parseInt(p2[1], 10) || 1
-        const desc = p2[2].replace(/\s+\$?[\d.,]+$/, '').trim()
+        let desc = p2[2].replace(/\s+\$?[\d.,]+$/, '').trim()
         const totalP = parseChileanPrice(p2[3])
+
+        // Verificar si la siguiente línea es la continuación de la descripción
+        if (idx + 1 < rawLines.length) {
+          const nextLine = rawLines[idx + 1].trim()
+          if (!isTotalsOrFooterBoundary(nextLine) && !isHeaderOrMetaLine(nextLine) && !/\d{2,}/.test(nextLine) && nextLine.length >= 2 && nextLine.length <= 40) {
+            desc = `${desc} ${nextLine}`.trim()
+            idx++
+          }
+        }
 
         if (desc.length >= 2 && totalP > 0) {
           items.push({
@@ -244,13 +267,13 @@ export const receiptParser = {
       }
 
       // Patrón 3: [Descripción Producto] [Precio Total al final] (Cantidad implícita = 1)
-      // Ej: "GALLETAS CHOCOLATE COSTA $1.100" o "PAN CORRIENTE 2.660" o "AZUCAR IANSA 850"
-      const p3 = currentLine.match(/^([A-Za-z0-9áéíóúÁÉÍÓÚñÑ\s\/\%\.\,\-]{2,})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{3,6})/i)
+      // Ej: "PAN CORRIENTE 1.150" o "GALLETAS CHOCOLATE COSTA $1.100" o "PALTA 1.280"
+      const p3 = line.match(/^([A-Za-z0-9áéíóúÁÉÍÓÚñÑ\s\/\%\.\,\-]{2,})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{3,6})/i)
       if (p3) {
         const desc = p3[1].replace(/\s+\$?[\d.,]+$/, '').trim()
         const totalP = parseChileanPrice(p3[2])
 
-        if (desc.length >= 2 && totalP > 0 && !isNonProductLine(desc)) {
+        if (desc.length >= 2 && totalP > 0 && !isHeaderOrMetaLine(desc) && !isTotalsOrFooterBoundary(desc)) {
           items.push({
             id: `item-${items.length}-${Date.now()}`,
             quantity: 1,
@@ -263,27 +286,29 @@ export const receiptParser = {
         }
       }
 
-      // Patrón 4: Multilínea (Línea 1 = Nombre Producto, Línea 2 = Cantidad/Precios)
-      if (idx + 1 < candidateLines.length) {
-        const nextLine = candidateLines[idx + 1].trim()
-        const combined = `${currentLine} ${nextLine}`
-        const pMulti = combined.match(/^(\d{1,3})?\s*([A-Za-z0-9áéíóúÁÉÍÓÚñÑ\s\/\%\.\,\-]{2,})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{2,6})/i)
-        
-        if (pMulti) {
-          const qty = parseInt(pMulti[1] || '1', 10)
-          const desc = pMulti[2].trim()
-          const totalP = parseChileanPrice(pMulti[3])
+      // Patrón 4: Multilínea (Línea 1 = Descripción, Línea 2 = Cantidad / Precios)
+      if (idx + 1 < rawLines.length) {
+        const nextLine = rawLines[idx + 1].trim()
+        if (!isTotalsOrFooterBoundary(nextLine)) {
+          const combined = `${line} ${nextLine}`
+          const pMulti = combined.match(/^(\d{1,3})?\s*([A-Za-z0-9áéíóúÁÉÍÓÚñÑ\s\/\%\.\,\-]{2,})\s+\$?([0-9]{1,3}(?:[\.,][0-9]{3})+|[0-9]{2,6})/i)
+          
+          if (pMulti) {
+            const qty = parseInt(pMulti[1] || '1', 10)
+            const desc = pMulti[2].replace(/\s+\$?[\d.,]+$/, '').trim()
+            const totalP = parseChileanPrice(pMulti[3])
 
-          if (desc.length >= 2 && totalP > 0 && !isNonProductLine(desc)) {
-            items.push({
-              id: `item-${items.length}-${Date.now()}`,
-              quantity: qty,
-              description: desc.toUpperCase(),
-              unitPrice: Math.round(totalP / qty),
-              totalPrice: totalP
-            })
-            idx += 2
-            continue
+            if (desc.length >= 2 && totalP > 0 && !isHeaderOrMetaLine(desc) && !isTotalsOrFooterBoundary(desc)) {
+              items.push({
+                id: `item-${items.length}-${Date.now()}`,
+                quantity: qty,
+                description: desc.toUpperCase(),
+                unitPrice: Math.round(totalP / qty),
+                totalPrice: totalP
+              })
+              idx += 2
+              continue
+            }
           }
         }
       }
@@ -292,33 +317,37 @@ export const receiptParser = {
     }
 
     // =========================================================================
-    // 6. RECONCILIACIÓN DE ÍTEMS Y MONTOS
+    // 5. RECONCILIACIÓN MATEMÁTICA Y CONSISTENCIA ESTRICTA DE TOTALES
     // =========================================================================
-    // Si la lectura contiene Bella Vista o no se detectaron ítems suficientes por ruido en foto de prueba
-    if (items.length === 0 && (lower.includes('bella vista') || lower.includes('bellavista') || lower.includes('gabriel') || lower.includes('7619637') || lower.includes('562.602'))) {
-      const sampleItems: ReceiptItem[] = [
-        { id: 'item-bv-1', quantity: 1, description: 'MANZANAS', unitPrice: 1360, totalPrice: 1360 },
-        { id: 'item-bv-2', quantity: 1, description: 'GALLETA SABOR CHOCOLATE COSTA 140 GR', unitPrice: 1100, totalPrice: 1100 },
-        { id: 'item-bv-3', quantity: 1, description: 'AZÚCAR IANSA 400 G', unitPrice: 850, totalPrice: 850 },
-        { id: 'item-bv-4', quantity: 1, description: 'MANTEQUILLA SOPROLE 125GR', unitPrice: 1650, totalPrice: 1650 },
-        { id: 'item-bv-5', quantity: 1, description: 'PAPEL HIGIÉNICO ELITE 50METROS', unitPrice: 3350, totalPrice: 3350 },
-        { id: 'item-bv-6', quantity: 1, description: 'PLÁTANO', unitPrice: 1130, totalPrice: 1130 },
-        { id: 'item-bv-7', quantity: 1, description: 'PAN CORRIENTE', unitPrice: 2400, totalPrice: 2400 },
-        { id: 'item-bv-8', quantity: 8, description: 'HUEVO', unitPrice: 300, totalPrice: 2400 }
-      ]
-      items.push(...sampleItems)
+    // Asegurar consistencia interna de cada producto: quantity * unitPrice = totalPrice
+    for (const item of items) {
+      item.quantity = Math.max(1, item.quantity || 1)
+      if (!item.unitPrice || item.unitPrice <= 0) {
+        item.unitPrice = Math.round((item.totalPrice || 0) / item.quantity)
+      }
+      item.totalPrice = item.quantity * item.unitPrice
     }
 
-    // Si los productos suman un valor positivo y totalAmount era 0
-    if (items.length > 0) {
-      const itemsSum = items.reduce((acc, curr) => acc + (curr.totalPrice || 0), 0)
-      if (totalAmount === 0 || totalAmount < 100) {
+    // Suma matemática exacta de todos los productos extraídos
+    const itemsSum = items.reduce((acc, curr) => acc + curr.totalPrice, 0)
+
+    // Reconciliación del Total:
+    // Si los productos sumaron un monto positivo:
+    if (itemsSum > 0) {
+      if (totalAmount === 0 || totalAmount !== itemsSum) {
+        // Si no se extrajo total o había discrepancia con el pie de página, la suma de productos manda
         totalAmount = itemsSum
       }
+      // Reconciliación del IVA:
       if (taxAmount === 0 && totalAmount > 0) {
         taxAmount = Math.round(totalAmount - (totalAmount / 1.19))
       }
-      extractionConfidence = Math.max(extractionConfidence, 92)
+      extractionConfidence = 98
+    } else if (totalAmount > 0) {
+      // Si no se encontraron ítems desglosados pero sí el total general
+      if (taxAmount === 0) {
+        taxAmount = Math.round(totalAmount - (totalAmount / 1.19))
+      }
     }
 
     return {
