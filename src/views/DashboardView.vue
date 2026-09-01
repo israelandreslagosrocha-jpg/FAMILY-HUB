@@ -124,22 +124,22 @@ function formatCurrency(val: number): string {
         </div>
       </div>
 
-      <!-- 📌 BENTO CARD STAT CYAN (5 COLS): Balance del Mes -->
+      <!-- 📌 BENTO CARD STAT CYAN (5 COLS): Dinero Disponible Real del Hogar -->
       <div 
         class="bento-card bento-col-5"
-        :class="financeStore.netBalance >= 0 ? 'bento-card-cyan' : 'bento-card-warning'"
+        :class="financeStore.totalAvailableFunds >= 0 ? 'bento-card-cyan' : 'bento-card-warning'"
       >
         <div class="bento-card-top">
           <div class="bento-title-group">
-            <span class="bento-metric-title">💡 Balance del Mes</span>
+            <span class="bento-metric-title">💡 Dinero Disponible</span>
           </div>
           <router-link to="/finance" class="bento-arrow-link">Ver todo →</router-link>
         </div>
 
         <div class="bento-metric-col">
-          <span class="bento-metric-large">{{ formatCurrency(financeStore.netBalance) }}</span>
+          <span class="bento-metric-large">{{ formatCurrency(financeStore.totalAvailableFunds) }}</span>
           <span class="bento-metric-sub">
-            {{ financeStore.netBalance > 0 ? '✓ Superávit a favor del hogar' : (financeStore.netBalance === 0 ? '✓ Al día sin saldo pendiente' : '⚠️ Déficit registrado este mes') }}
+            {{ financeStore.totalAvailableFunds > 0 ? '✓ Saldo acumulado real a favor del hogar' : (financeStore.totalAvailableFunds === 0 ? '✓ Al día sin saldo pendiente' : '⚠️ Saldo negativo en cuentas') }}
           </span>
         </div>
 

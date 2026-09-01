@@ -18,15 +18,15 @@ function formatCurrency(val: number): string {
 }
 
 const totalCommitted = computed(() => {
-  return financeStore.fixedExpenses.reduce((sum, item) => sum + item.amount, 0)
+  return financeStore.displayedFixedExpenses.reduce((sum, item) => sum + item.amount, 0)
 })
 
 const totalPaid = computed(() => {
-  return financeStore.fixedExpenses.filter(item => item.isPaid).reduce((sum, item) => sum + item.amount, 0)
+  return financeStore.displayedFixedExpenses.filter(item => item.isPaid).reduce((sum, item) => sum + item.amount, 0)
 })
 
 const totalPending = computed(() => {
-  return financeStore.fixedExpenses.filter(item => !item.isPaid).reduce((sum, item) => sum + item.amount, 0)
+  return financeStore.displayedFixedExpenses.filter(item => !item.isPaid).reduce((sum, item) => sum + item.amount, 0)
 })
 
 function togglePaid(id: string) {
@@ -78,13 +78,13 @@ function handleAddFixedExpense() {
       <div class="bento-card summary-card bento-card-green">
         <span class="card-label">Pagado en el Mes</span>
         <span class="card-value">✓ {{ formatCurrency(totalPaid) }}</span>
-        <span class="card-sub">{{ financeStore.fixedExpenses.filter(i => i.isPaid).length }} Cuentas al día</span>
+        <span class="card-sub">{{ financeStore.displayedFixedExpenses.filter(i => i.isPaid).length }} Cuentas al día</span>
       </div>
 
       <div class="bento-card summary-card bento-card-amber">
         <span class="card-label">Pendiente por Pagar</span>
         <span class="card-value">⌛ {{ formatCurrency(totalPending) }}</span>
-        <span class="card-sub">{{ financeStore.fixedExpenses.filter(i => !i.isPaid).length }} Cuentas pendientes</span>
+        <span class="card-sub">{{ financeStore.displayedFixedExpenses.filter(i => !i.isPaid).length }} Cuentas pendientes</span>
       </div>
     </div>
 
@@ -102,7 +102,7 @@ function handleAddFixedExpense() {
     </div>
 
     <!-- ESTADO VACÍO CUANDO NO HAY CUENTAS -->
-    <div v-if="financeStore.fixedExpenses.length === 0" class="empty-fixed-card bento-card">
+    <div v-if="financeStore.displayedFixedExpenses.length === 0" class="empty-fixed-card bento-card">
       <span class="empty-icon">📌</span>
       <h3 class="empty-title">Sin cuentas fijas registradas</h3>
       <p class="empty-sub">Comienza agregando las cuentas fijas de tu hogar (ej: Luz, Agua, Gas, Arriendo/Dividendo, Colegio) haciendo clic en "+ Nueva Cuenta Fija".</p>
@@ -114,7 +114,7 @@ function handleAddFixedExpense() {
     <!-- LISTA DE CUENTAS FIJAS EN BENTO GRID (RESPONSIVE) -->
     <div v-else class="fixed-items-grid">
       <div 
-        v-for="item in financeStore.fixedExpenses" 
+        v-for="item in financeStore.displayedFixedExpenses" 
         :key="item.id"
         class="fixed-item-card glass-card"
         :class="{ 'is-paid': item.isPaid }"

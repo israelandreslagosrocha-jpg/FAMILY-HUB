@@ -107,7 +107,24 @@ export const useFinanceStore = defineStore('financeStore', () => {
     })
   })
 
-  // Cómputo de Totales Financieros del Mes Seleccionado (Globales del Hogar Sincronizados)
+  // Mes en curso en tiempo real de Chile
+  const currentMonthCode = computed(() => getChileTodayString().substring(0, 7))
+
+  // Dinero Disponible Real del Hogar (Saldo Histórico Total Acumulado)
+  // Permite que el 1 de septiembre inicie con el saldo acumulado real de agosto ($154.366)
+  const totalAvailableFunds = computed(() => {
+    const allIncomes = movements.value
+      .filter(m => m.type === 'income' && (filterScope.value === 'all' || m.scope === filterScope.value))
+      .reduce((sum, m) => sum + m.amount, 0)
+
+    const allExpenses = movements.value
+      .filter(m => m.type === 'expense' && (filterScope.value === 'all' || m.scope === filterScope.value))
+      .reduce((sum, m) => sum + m.amount, 0)
+
+    return allIncomes - allExpenses
+  })
+
+  // Cómputo de Totales Financieros del Mes Seleccionado (Flujo Mensual)
   const totalIncome = computed(() => {
     return movements.value
       .filter(m => m.type === 'income' && (filterScope.value === 'all' || m.scope === filterScope.value) && (m.date ? m.date.startsWith(selectedMonth.value) : true))
@@ -120,8 +137,25 @@ export const useFinanceStore = defineStore('financeStore', () => {
       .reduce((sum, m) => sum + m.amount, 0)
   })
 
-  const netBalance = computed(() => {
+  // Flujo Neto del Mes Seleccionado (Ingresos del Mes - Gastos del Mes)
+  const monthlyNetBalance = computed(() => {
     return totalIncome.value - totalExpenses.value
+  })
+
+  const netBalance = computed(() => {
+    return monthlyNetBalance.value
+  })
+
+  // Cuentas Fijas con Ciclo Mensual Inteligente:
+  // Una cuenta fija solo se considera 'pagada' en el mes seleccionado si paidAt pertenece a dicho mes
+  const displayedFixedExpenses = computed<FixedExpenseItem[]>(() => {
+    return fixedExpenses.value.map(item => {
+      const isPaidInSelectedMonth = Boolean(item.paidAt && item.paidAt.startsWith(selectedMonth.value))
+      return {
+        ...item,
+        isPaid: isPaidInSelectedMonth
+      }
+    })
   })
 
   // Acciones
@@ -215,34 +249,39 @@ export const useFinanceStore = defineStore('financeStore', () => {
 
   async function toggleFixedExpensePaid(id: string) {
     const item = fixedExpenses.value.find(f => f.id === id)
-    if (item) {
-      item.isPaid = !item.isPaid
-      item.paidAt = item.isPaid ? new Date().toISOString() : null
+    if (!item) return
 
-      if (!id.startsWith('fix-') && !id.startsWith('temp-')) {
-        try {
-          await financeService.updateFixedExpensePaid(id, item.isPaid)
-        } catch (err: any) {
-          console.error('❌ Error al actualizar cuenta fija en Supabase:', err.message)
-        }
-      }
+    const isCurrentlyPaidInMonth = Boolean(item.paidAt && item.paidAt.startsWith(selectedMonth.value))
+    const willBePaid = !isCurrentlyPaidInMonth
+    const today = getChileTodayString()
+    const paidDate = selectedMonth.value === currentMonthCode.value ? today : `${selectedMonth.value}-01`
 
-      // Si se marca pagada, registrar el movimiento de gasto automáticamente
-      if (item.isPaid) {
-        addMovement({
-          title: `Pago Cuenta: ${item.title}`,
-          amount: item.amount,
-          currency: 'CLP',
-          type: 'expense',
-          scope: 'family',
-          categoryId: `cat-fixed-${item.id}`,
-          categoryName: item.categoryName,
-          categoryIcon: item.icon,
-          categoryColor: item.color,
-          registeredByMemberId: 'm-1',
-          date: getChileTodayString()
-        })
+    item.isPaid = willBePaid
+    item.paidAt = willBePaid ? (selectedMonth.value === currentMonthCode.value ? new Date().toISOString() : `${selectedMonth.value}-01T12:00:00.000Z`) : null
+
+    if (!id.startsWith('fix-') && !id.startsWith('temp-')) {
+      try {
+        await financeService.updateFixedExpensePaid(id, willBePaid)
+      } catch (err: any) {
+        console.error('❌ Error al actualizar cuenta fija en Supabase:', err.message)
       }
+    }
+
+    // Si se marca pagada, registrar el movimiento de gasto automáticamente en el mes activo
+    if (willBePaid) {
+      addMovement({
+        title: `Pago Cuenta: ${item.title}`,
+        amount: item.amount,
+        currency: 'CLP',
+        type: 'expense',
+        scope: 'family',
+        categoryId: `cat-fixed-${item.id}`,
+        categoryName: item.categoryName,
+        categoryIcon: item.icon,
+        categoryColor: item.color,
+        registeredByMemberId: authStore.activeMemberId || 'm-1',
+        date: paidDate
+      })
     }
   }
 
@@ -333,14 +372,18 @@ export const useFinanceStore = defineStore('financeStore', () => {
     filterScope,
     filterMemberId,
     selectedMonth,
+    currentMonthCode,
     fixedExpenses,
+    displayedFixedExpenses,
     isCreateSheetOpen,
     isLoading,
     movements,
     budgets,
     displayedMovements,
+    totalAvailableFunds,
     totalIncome,
     totalExpenses,
+    monthlyNetBalance,
     netBalance,
     loadDataFromSupabase,
     setTab,

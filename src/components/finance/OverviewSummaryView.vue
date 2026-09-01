@@ -35,18 +35,38 @@ const categoryBreakdown = computed(() => {
   })).sort((a, b) => b.total - a.total)
 })
 
-// Cómputo de comparativa de histórico mensual (últimos 4 meses real)
+// Lista dinámica de meses para selector y comparativas
+const availableMonths = computed(() => {
+  const result = []
+  const today = new Date()
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+    const code = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const rawName = d.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })
+    const label = rawName.charAt(0).toUpperCase() + rawName.slice(1)
+    result.push({
+      code,
+      label: i === 0 ? `${label} (Actual)` : label
+    })
+  }
+  return result
+})
+
+// Cómputo de comparativa de histórico mensual (últimos 4 meses dinámicos)
 const monthlyComparisonData = computed(() => {
-  const months = [
-    { code: '2026-05', name: 'Mayo' },
-    { code: '2026-06', name: 'Junio' },
-    { code: '2026-07', name: 'Julio' },
-    { code: '2026-08', name: 'Agosto' }
-  ]
+  const today = new Date()
+  const months: { code: string; name: string }[] = []
+  for (let i = 3; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+    const code = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const rawName = d.toLocaleDateString('es-CL', { month: 'short' })
+    const name = rawName.charAt(0).toUpperCase() + rawName.slice(1)
+    months.push({ code, name })
+  }
 
   let maxVal = 1
   months.forEach(m => {
-    const monthMovements = financeStore.movements.filter(mov => mov.date.startsWith(m.code))
+    const monthMovements = financeStore.movements.filter(mov => mov.date && mov.date.startsWith(m.code))
     const inc = monthMovements.filter(mov => mov.type === 'income').reduce((sum, mov) => sum + mov.amount, 0)
     const exp = monthMovements.filter(mov => mov.type === 'expense').reduce((sum, mov) => sum + mov.amount, 0)
     if (inc > maxVal) maxVal = inc
@@ -54,7 +74,7 @@ const monthlyComparisonData = computed(() => {
   })
 
   return months.map(m => {
-    const monthMovements = financeStore.movements.filter(mov => mov.date.startsWith(m.code))
+    const monthMovements = financeStore.movements.filter(mov => mov.date && mov.date.startsWith(m.code))
     const income = monthMovements.filter(mov => mov.type === 'income').reduce((sum, mov) => sum + mov.amount, 0)
     const expense = monthMovements.filter(mov => mov.type === 'expense').reduce((sum, mov) => sum + mov.amount, 0)
 
@@ -81,10 +101,9 @@ const monthlyComparisonData = computed(() => {
         </div>
 
         <select v-model="financeStore.selectedMonth" class="month-select-pill">
-          <option value="2026-08">Agosto 2026 (Actual)</option>
-          <option value="2026-07">Julio 2026</option>
-          <option value="2026-06">Junio 2026</option>
-          <option value="2026-05">Mayo 2026</option>
+          <option v-for="m in availableMonths" :key="m.code" :value="m.code">
+            {{ m.label }}
+          </option>
         </select>
       </div>
 
