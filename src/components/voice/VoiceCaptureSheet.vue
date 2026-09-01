@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useVoiceStore } from '../../stores/voiceStore'
 
 const voiceStore = useVoiceStore()
+const manualText = ref('')
 
 function handleStop() {
   voiceStore.stopCapture()
@@ -9,6 +11,13 @@ function handleStop() {
 
 function handleCancel() {
   voiceStore.cancelCapture()
+}
+
+function handleSendManual() {
+  if (manualText.value.trim()) {
+    voiceStore.processTypedText(manualText.value.trim())
+    manualText.value = ''
+  }
 }
 </script>
 
@@ -24,16 +33,40 @@ function handleCancel() {
             {{ voiceStore.captureState === 'error' ? 'Aviso' : 'Escuchando tu voz...' }}
           </span>
         </div>
-        <button class="sheet-close-btn" @click="handleCancel" title="Cerrar">✕</button>
+        <button class="sheet-close-btn" @click.stop="handleCancel" title="Cerrar">✕</button>
       </div>
 
       <!-- Estado de Error -->
       <div v-if="voiceStore.captureState === 'error'" class="voice-error-box">
         <span class="error-icon">⚠️</span>
         <p class="error-msg">{{ voiceStore.errorMessage }}</p>
-        <button class="retry-btn" @click="voiceStore.startCapture()">
-          🔄 Reintentar
-        </button>
+
+        <!-- Entrada alternativa en caso de que el micrófono falle -->
+        <div class="voice-fallback-input-row">
+          <input 
+            v-model="manualText" 
+            type="text" 
+            class="manual-voice-input"
+            placeholder="O escribe/dicta aquí con tu teclado..."
+            @keyup.enter="handleSendManual"
+          />
+          <button 
+            class="btn-send-manual" 
+            :disabled="!manualText.trim()"
+            @click.stop="handleSendManual"
+          >
+            Enviar ➔
+          </button>
+        </div>
+
+        <div class="error-actions-row">
+          <button class="retry-btn" @click.stop="voiceStore.startCapture()">
+            🔄 Reintentar Micrófono
+          </button>
+          <button class="cancel-btn-subtle" @click.stop="handleCancel">
+            Cerrar
+          </button>
+        </div>
       </div>
 
       <!-- Estado de Escucha Activa -->
@@ -52,15 +85,33 @@ function handleCancel() {
             "{{ voiceStore.interimTranscript }}"
           </span>
           <span v-else class="placeholder-text">
-            Ej: "Comprar pan mañana", "Pagué 48 mil de luz", "Reunión el viernes a las siete"...
+            Habla claro, ej: "Comprar leche hoy", "Pagué 45 mil de luz", "Dentista el viernes a las 10"...
           </span>
         </p>
 
+        <!-- Entrada manual alternativa accesible en todo momento -->
+        <div class="voice-fallback-input-row">
+          <input 
+            v-model="manualText" 
+            type="text" 
+            class="manual-voice-input"
+            placeholder="O escribe aquí si prefieres..."
+            @keyup.enter="handleSendManual"
+          />
+          <button 
+            v-if="manualText.trim()"
+            class="btn-send-manual" 
+            @click.stop="handleSendManual"
+          >
+            Enviar ➔
+          </button>
+        </div>
+
         <div class="actions-row">
-          <button class="btn-cancel" @click="handleCancel">
+          <button class="btn-cancel" @click.stop="handleCancel">
             Cancelar
           </button>
-          <button class="btn-stop" @click="handleStop">
+          <button class="btn-stop" @click.stop="handleStop">
             ✓ Listo / Terminar
           </button>
         </div>
@@ -249,24 +300,60 @@ function handleCancel() {
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.voice-error-box {
+.voice-fallback-input-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 0;
-  text-align: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 0.75rem;
 }
 
-.error-icon { font-size: 2rem; }
-.error-msg { font-size: 0.88rem; color: #ef4444; margin: 0; }
+.manual-voice-input {
+  flex: 1;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
 
-.retry-btn {
-  padding: 0.6rem 1.2rem;
+.manual-voice-input:focus {
+  border-color: #3b82f6;
+}
+
+.btn-send-manual {
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  border: none;
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.btn-send-manual:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.cancel-btn-subtle {
+  padding: 0.6rem 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;

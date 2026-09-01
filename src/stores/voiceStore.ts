@@ -73,21 +73,35 @@ export const useVoiceStore = defineStore('voiceStore', () => {
   }
 
   /**
-   * Detiene la escucha activa y procede al procesamiento
+   * Detiene la escucha activa y procede al procesamiento de inmediato
    */
   function stopCapture() {
-    voiceService.stopListening()
+    try {
+      voiceService.stopListening()
+    } catch {}
+
+    // Si ya se acumuló texto parcial, resolverlo de inmediato sin esperar al navegador
+    if (interimTranscript.value.trim()) {
+      const res = voiceService.resolveText(interimTranscript.value.trim(), authStore.familyMembers)
+      resolvedProposal.value = res
+      captureState.value = 'review'
+    } else {
+      captureState.value = 'idle'
+    }
   }
 
   /**
-   * Cancela la sesión de captura de voz
+   * Cancela la sesión de captura de voz de forma sincrónica e inmediata (cero cuelgues)
    */
   function cancelCapture() {
-    voiceService.cancelListening()
     captureState.value = 'idle'
     interimTranscript.value = ''
     resolvedProposal.value = null
     errorMessage.value = null
+
+    try {
+      voiceService.cancelListening()
+    } catch {}
   }
 
   /**
