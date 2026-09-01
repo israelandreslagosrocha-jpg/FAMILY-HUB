@@ -146,16 +146,26 @@ export const useFinanceStore = defineStore('financeStore', () => {
     return monthlyNetBalance.value
   })
 
-  // Cuentas Fijas con Ciclo Mensual Inteligente:
-  // Una cuenta fija solo se considera 'pagada' en el mes seleccionado si paidAt pertenece a dicho mes
+  // Cuentas Fijas con Ciclo Mensual Inteligente y Ordenación por Vencimiento:
+  // 1. Las cuentas pendientes van primero, ordenadas ascendentemente por día de vencimiento (dueDay: 1 -> 31)
+  // 2. Las cuentas ya pagadas van abajo, también ordenadas por día de vencimiento
   const displayedFixedExpenses = computed<FixedExpenseItem[]>(() => {
-    return fixedExpenses.value.map(item => {
-      const isPaidInSelectedMonth = Boolean(item.paidAt && item.paidAt.startsWith(selectedMonth.value))
-      return {
-        ...item,
-        isPaid: isPaidInSelectedMonth
-      }
-    })
+    return fixedExpenses.value
+      .map(item => {
+        const isPaidInSelectedMonth = Boolean(item.paidAt && item.paidAt.startsWith(selectedMonth.value))
+        return {
+          ...item,
+          isPaid: isPaidInSelectedMonth
+        }
+      })
+      .sort((a, b) => {
+        // Prioridad 1: No pagadas (false) antes que las pagadas (true)
+        if (a.isPaid !== b.isPaid) {
+          return a.isPaid ? 1 : -1
+        }
+        // Prioridad 2: Orden cronológico por día de vencimiento (1 al 31)
+        return a.dueDay - b.dueDay
+      })
   })
 
   // Acciones
@@ -323,6 +333,25 @@ export const useFinanceStore = defineStore('financeStore', () => {
     }
   }
 
+  /**
+   * Actualiza el monto mensual de una cuenta fija (para cuentas de consumo variable como Luz, Agua, Gas)
+   */
+  async function updateFixedExpenseAmount(id: string, newAmount: number) {
+    if (!newAmount || newAmount <= 0) return
+    const item = fixedExpenses.value.find(f => f.id === id)
+    if (!item) return
+
+    item.amount = Math.round(newAmount)
+
+    if (!id.startsWith('fix-') && !id.startsWith('temp-')) {
+      try {
+        await financeService.updateFixedExpenseAmount(id, item.amount)
+      } catch (err: any) {
+        console.error('❌ Error al actualizar monto de cuenta fija en Supabase:', err.message)
+      }
+    }
+  }
+
   async function updateMovement(id: string, payload: Partial<FinancialMovement>) {
     const mov = movements.value.find(m => m.id === id)
     if (!mov) return
@@ -396,6 +425,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
     deleteMovement,
     toggleFixedExpensePaid,
     addFixedExpense,
-    deleteFixedExpense
+    deleteFixedExpense,
+    updateFixedExpenseAmount
   }
 })

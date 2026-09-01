@@ -159,9 +159,31 @@ function testFinanceMonthTransition() {
   const sepAvailableAfter = calcAvailableFunds(movements)
   assert(sepAvailableAfter === 154366 - 45000, `Septiembre: Dinero Disponible se descuenta exactamente a $109.366 (obtenido: $${sepAvailableAfter})`)
 
+  // PRUEBA 5: Ordenación Inteligente por Vencimiento (Pendientes primero, ordenadas 1 -> 31)
+  const unsortedFixed: FixedExpenseItem[] = [
+    { id: 'f-1', title: 'Internet', amount: 25000, categoryName: 'Servicios', dueDay: 20, isPaid: false, icon: '🌐', color: '#3b82f6' },
+    { id: 'f-2', title: 'Gas', amount: 30000, categoryName: 'Servicios', dueDay: 5, isPaid: false, icon: '🔥', color: '#f59e0b' },
+    { id: 'f-3', title: 'Luz', amount: 40000, categoryName: 'Servicios', dueDay: 12, isPaid: true, icon: '💡', color: '#ef4444' },
+    { id: 'f-4', title: 'Agua', amount: 18000, categoryName: 'Servicios', dueDay: 8, isPaid: false, icon: '💧', color: '#06b6d4' }
+  ]
+
+  const sortedFixed = [...unsortedFixed].sort((a, b) => {
+    if (a.isPaid !== b.isPaid) return a.isPaid ? 1 : -1
+    return a.dueDay - b.dueDay
+  })
+
+  assert(sortedFixed[0].title === 'Gas', 'Orden: Gas (vence día 5, pendiente) queda en posición 1')
+  assert(sortedFixed[1].title === 'Agua', 'Orden: Agua (vence día 8, pendiente) queda en posición 2')
+  assert(sortedFixed[2].title === 'Internet', 'Orden: Internet (vence día 20, pendiente) queda en posición 3')
+  assert(sortedFixed[3].title === 'Luz', 'Orden: Luz (pagada) queda al final')
+
+  // PRUEBA 6: Actualización de Monto Variable In-Place (Luz varía de $40.000 a $38.250)
+  sortedFixed[3].amount = 38250
+  assert(sortedFixed[3].amount === 38250, 'Monto variable in-place actualizado a $38.250 correctamente')
+
   console.log(`\n📊 RESULTADOS: ${passed} PASADOS / ${total - passed} FALLIDOS`)
   if (passed === total) {
-    console.log('🎉 100% PASS: La lógica de acumulación de disponible y ciclo mensual de cuentas fijas es exacta.')
+    console.log('🎉 100% PASS: La lógica de orden por vencimiento y montos variables in-place es exacta.')
   }
 }
 

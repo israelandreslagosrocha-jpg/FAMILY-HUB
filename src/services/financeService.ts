@@ -103,6 +103,21 @@ export const financeService = {
   },
 
   /**
+   * Actualiza el monto mensual de una cuenta fija (para cuentas con consumo variable como Luz, Agua, Gas)
+   */
+  async updateFixedExpenseAmount(id: string, amount: number): Promise<void> {
+    const { error } = await supabase
+      .from('fixed_expenses')
+      .update({ amount })
+      .eq('id', id)
+
+    if (error) {
+      console.error('❌ Error al actualizar monto de cuenta fija en Supabase:', error.message)
+      throw error
+    }
+  },
+
+  /**
    * Elimina una cuenta fija de Supabase
    */
   async deleteFixedExpense(id: string): Promise<void> {

@@ -13,6 +13,47 @@ const dueDay = ref<number>(10)
 const icon = ref('💡')
 const color = ref('#3b82f6')
 
+const editingItemId = ref<string | null>(null)
+const editingAmount = ref<number | null>(null)
+
+function startEditingAmount(item: any) {
+  editingItemId.value = item.id
+  editingAmount.value = item.amount
+}
+
+function saveEditingAmount(id: string) {
+  if (editingAmount.value && editingAmount.value > 0) {
+    financeStore.updateFixedExpenseAmount(id, editingAmount.value)
+  }
+  editingItemId.value = null
+  editingAmount.value = null
+}
+
+function cancelEditingAmount() {
+  editingItemId.value = null
+  editingAmount.value = null
+}
+
+function getDueDayBadge(dueDay: number, isPaid: boolean): { text: string; type: 'urgent' | 'warning' | 'normal' | 'done' } {
+  if (isPaid) {
+    return { text: `Venció día ${dueDay}`, type: 'done' }
+  }
+  const today = new Date().getDate()
+  const diff = dueDay - today
+
+  if (diff === 0) {
+    return { text: '🚨 Vence hoy', type: 'urgent' }
+  } else if (diff > 0 && diff <= 3) {
+    return { text: `⌛ Vence en ${diff} día${diff > 1 ? 's' : ''}`, type: 'urgent' }
+  } else if (diff > 3 && diff <= 7) {
+    return { text: `🗓️ Vence en ${diff} días`, type: 'warning' }
+  } else if (diff < 0) {
+    return { text: `⚠️ Vencida hace ${Math.abs(diff)} día${Math.abs(diff) > 1 ? 's' : ''}`, type: 'urgent' }
+  } else {
+    return { text: `📅 Vence día ${dueDay}`, type: 'normal' }
+  }
+}
+
 function formatCurrency(val: number): string {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(val)
 }
@@ -126,15 +167,47 @@ function handleAddFixedExpense() {
             <div class="item-details">
               <h3 class="item-title">{{ item.title }}</h3>
               <div class="item-tags">
-                <span class="tag-chip">Vence día {{ item.dueDay }}</span>
+                <span 
+                  class="tag-chip due-tag" 
+                  :class="`due-${getDueDayBadge(item.dueDay, item.isPaid).type}`"
+                >
+                  {{ getDueDayBadge(item.dueDay, item.isPaid).text }}
+                </span>
                 <span class="tag-chip category-chip">{{ item.categoryName }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Monto visible en la cabecera del ítem en móvil -->
-          <div class="item-amount-badge">
-            {{ formatCurrency(item.amount) }}
+          <!-- Monto con Edición In-Place (1 toque para boletas variables como Luz/Agua) -->
+          <div class="item-amount-wrapper">
+            <div v-if="editingItemId === item.id" class="amount-inline-editor" @click.stop>
+              <span class="currency-prefix">$</span>
+              <input 
+                v-model.number="editingAmount" 
+                type="number" 
+                class="amount-inline-input"
+                min="1"
+                autofocus
+                placeholder="Monto"
+                @keyup.enter="saveEditingAmount(item.id)"
+                @keyup.esc="cancelEditingAmount"
+              />
+              <button class="amount-inline-btn btn-save" title="Guardar monto" @click="saveEditingAmount(item.id)">
+                ✓
+              </button>
+              <button class="amount-inline-btn btn-cancel" title="Cancelar" @click="cancelEditingAmount">
+                ✕
+              </button>
+            </div>
+            <div 
+              v-else 
+              class="item-amount-badge editable-badge" 
+              title="Toca para definir el monto de la boleta de este mes (Luz, Agua, etc.)"
+              @click.stop="startEditingAmount(item)"
+            >
+              <span>{{ formatCurrency(item.amount) }}</span>
+              <span class="edit-hint-icon" title="Editar monto">✏️</span>
+            </div>
           </div>
         </div>
 
@@ -403,12 +476,116 @@ function handleAddFixedExpense() {
   border-radius: 8px;
 }
 
+.due-tag.due-urgent {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-weight: 800;
+}
+
+.due-tag.due-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-weight: 700;
+}
+
+.due-tag.due-done {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.item-amount-wrapper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .item-amount-badge {
   font-size: 1.1rem;
   font-weight: 900;
   color: var(--text-primary);
   white-space: nowrap;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.editable-badge {
+  cursor: pointer;
+  border: 1px dashed transparent;
+}
+
+.editable-badge:hover {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: scale(1.02);
+}
+
+.edit-hint-icon {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.editable-badge:hover .edit-hint-icon {
+  opacity: 1;
+}
+
+.amount-inline-editor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface, rgba(0, 0, 0, 0.2));
+  padding: 2px 4px 2px 8px;
+  border-radius: 10px;
+  border: 1.5px solid #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.currency-prefix {
+  font-weight: 800;
+  color: #3b82f6;
+  font-size: 0.95rem;
+}
+
+.amount-inline-input {
+  width: 90px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 800;
+  outline: none;
+  font-family: inherit;
+}
+
+.amount-inline-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  font-size: 0.85rem;
+}
+
+.amount-inline-btn.btn-save {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.amount-inline-btn.btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
 }
 
 .item-actions-row {
