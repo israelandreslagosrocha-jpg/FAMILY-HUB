@@ -244,6 +244,7 @@ export const useFinanceStore = defineStore('financeStore', () => {
           date: payload.date,
           sourceAccount: payload.type === 'transfer' ? 'Cuenta Corriente' : undefined,
           destinationAccount: payload.type === 'transfer' ? 'Caja Efectivo' : undefined,
+          receiptImageUrl: payload.receiptImageUrl,
           idempotencyKey: payload.idempotencyKey
         })
 

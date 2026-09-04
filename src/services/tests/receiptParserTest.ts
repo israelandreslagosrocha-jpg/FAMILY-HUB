@@ -108,6 +108,80 @@ async function runReceiptParserTests() {
   assert(r3.totalAmount === 5680, `Caso 3: Monto total $5.680`)
   assert(r3.items ? r3.items.length === 2 : false, `Caso 3: 2 medicamentos extraídos`)
 
+  // CASO 4: Boleta Nueva 1 del Usuario (Azúcar La Patrona 1KG, $1.100, IVA $176)
+  const textBoleta1 = `
+    ue BOLETA ELECTRÓNICA N° 564,424.00 |
+    {i 7 SIETEMUCO — ——
+    Ad GABRIEL SEPÚLVEDA SUAZO
+    Giro: SUPERMERCADO
+    Direccion: MANUEL BALMACEDA 1052
+    Fecha Emisión: 04-09-2026 10:16:00 AM
+    Medio Pago: TARJETA
+    Vendedor:
+    CantidadDescripción Precio Unit. Total
+    1 AZÚCAR LAPATRONA 1.100 1,100
+    1KG
+    EET ThoTAles
+    Paga con: 1.100
+    Vuelto: 0
+    Total: $1.100
+    Esta boleta tiene un IVA de : $176
+    Res 80 de 2014 Verifique Documento
+  `
+
+  const r4 = receiptParser.parseReceiptText(textBoleta1, 95)
+  assert(r4.merchantName === 'Supermercado Bella Vista', 'Caso 4: Comercio detectado Supermercado Bella Vista')
+  assert(r4.totalAmount === 1100, `Caso 4: Total exacto $1.100 (obtenido: ${r4.totalAmount})`)
+  assert(r4.taxAmount === 176, `Caso 4: IVA exacto $176 (obtenido: ${r4.taxAmount})`)
+  assert(r4.items?.length === 1, `Caso 4: Exactamente 1 producto extraído (obtenidos: ${r4.items?.length})`)
+  assert(r4.items ? r4.items[0].description.includes('AZÚCAR') && r4.items[0].description.includes('1KG') : false, 'Caso 4: Glosa extendida combinada con 1KG')
+  assert(r4.items ? r4.items[0].totalPrice === 1100 : false, 'Caso 4: Precio del azúcar $1.100')
+
+  // CASO 5: Boleta Nueva 2 del Usuario (7 productos, Total $10.130, IVA $1.617)
+  const textBoleta2 = `
+    GABRIEL SEPÚLVEDA SUAZO
+    Bella Vista
+    Vendedor:
+    CantidadDescripción Precio Unit. Total
+    ox Rad 1 MANDARINAS 1.570 1,570
+    ER 1 CREMADE LECHE 1.490 1,490
+    NESTLE 200ML
+    1 MANJAR SOPROLE 2.250 2,250
+    500GR
+    1 BONOBONBLANCO 650 650
+    40 GR
+    2 NIKOLO 430 860
+    1 OBLEACHOCMAN 300 300
+    COSTA
+    1 QUESOS MITADES 3010 3010
+    TOTALES
+    Paga con: 0
+    Vuelto: 0
+    Total: $10.130
+    Esta boleta tiene un IVA de : $1.617
+    Res 80 de 2014 Verifique Documento
+  `
+
+  const r5 = receiptParser.parseReceiptText(textBoleta2, 95)
+  assert(r5.merchantName === 'Supermercado Bella Vista', 'Caso 5: Comercio detectado Supermercado Bella Vista')
+  assert(r5.totalAmount === 10130, `Caso 5: Total exacto $10.130 (obtenido: ${r5.totalAmount})`)
+  assert(r5.taxAmount === 1617, `Caso 5: IVA exacto $1.617 (obtenido: ${r5.taxAmount})`)
+  assert(r5.items?.length === 7, `Caso 5: Exactamente 7 productos leídos (obtenidos: ${r5.items?.length})`)
+  
+  // Reconciliación matemática exacta
+  const sum5 = r5.items?.reduce((acc, curr) => acc + curr.totalPrice, 0) || 0
+  assert(sum5 === 10130, `Caso 5: Suma de los 7 productos ($${sum5}) coincide al 100% con el Total $10.130`)
+
+  // Verificar producto con cantidad > 1 (2 Nikolo x $430 = $860)
+  const nikolo = r5.items?.find(i => i.description.includes('NIKOLO'))
+  assert(nikolo ? nikolo.quantity === 2 && nikolo.unitPrice === 430 && nikolo.totalPrice === 860 : false, 'Caso 5: 2 Nikolos x $430 = $860')
+
+  // Glosas extendidas con marcas y pesos
+  assert(r5.items ? r5.items.some(i => i.description.includes('CREMA') && i.description.includes('200ML')) : false, 'Caso 5: Crema con 200ML')
+  assert(r5.items ? r5.items.some(i => i.description.includes('MANJAR') && i.description.includes('500GR')) : false, 'Caso 5: Manjar con 500GR')
+  assert(r5.items ? r5.items.some(i => i.description.includes('BONOBON') && i.description.includes('40 GR')) : false, 'Caso 5: Bon o Bon con 40 GR')
+  assert(r5.items ? r5.items.some(i => i.description.includes('CHOCMAN') && i.description.includes('COSTA')) : false, 'Caso 5: Chocman con Costa')
+
   console.log(`\n📊 RESULTADOS BATERÍA DE PARSER: ${passed} PASADOS / ${total - passed} FALLIDOS`)
 
   if (passed === total) {

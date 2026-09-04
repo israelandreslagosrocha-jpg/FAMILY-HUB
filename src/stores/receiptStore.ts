@@ -237,36 +237,29 @@ export const useReceiptStore = defineStore('receiptStore', () => {
     if (!currentSession.value) return
 
     currentSession.value.status = 'confirmed'
+    const storagePath = currentSession.value.storagePath || ''
 
-    // Intentar confirmación real con receiptService si existe storagePath en Supabase
-    if (currentSession.value.storagePath && !currentSession.value.storagePath.includes('scan-')) {
-      try {
-        await receiptService.confirmAndRegisterExpense(currentSession.value, finalData, isFamilyScope)
-        await financeStore.loadDataFromSupabase()
-      } catch (e: any) {
-        console.warn('⚠️ Error al registrar en Supabase vía receiptService, aplicando fallback local:', e?.message)
-      }
-    } else {
-      // Integración conceptual con el store financiero de la Etapa 6
-      financeStore.addMovement({
-        title: `${finalData.merchantName} (Boleta Escaneada)`,
-        amount: finalData.totalAmount,
-        currency: 'CLP',
-        type: 'expense',
-        scope: isFamilyScope ? 'family' : 'personal',
-        categoryId: `cat-ocr-${Date.now()}`,
-        categoryName: finalData.suggestedCategory,
-        categoryIcon: '🧾',
-        categoryColor: '#3b82f6',
-        registeredByMemberId: authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1'),
-        date: finalData.date,
-        receiptImageUrl: currentSession.value.storagePath
-      })
-    }
+    // 1. Optimistic UI: Registrar INMEDIATAMENTE en financeStore para garantizar que nunca se pierda
+    await financeStore.addMovement({
+      title: `${finalData.merchantName} (Boleta Escaneada)`,
+      amount: finalData.totalAmount,
+      currency: 'CLP',
+      type: 'expense',
+      scope: isFamilyScope ? 'family' : 'personal',
+      categoryId: finalData.suggestedCategoryId || `cat-ocr-${Date.now()}`,
+      categoryName: finalData.suggestedCategory || 'Supermercado',
+      categoryIcon: '🧾',
+      categoryColor: '#3b82f6',
+      registeredByMemberId: authStore.activeMemberId || (authStore.familyMembers[0]?.id || 'm-1'),
+      date: finalData.date,
+      receiptImageUrl: storagePath
+    })
 
+    // 2. Guardar en el historial de boletas escaneadas local
     currentSession.value.status = 'saved'
     savedReceipts.value.unshift({ ...currentSession.value, extractedData: finalData })
 
+    // 3. Cerrar la hoja de revisión
     isReviewSheetOpen.value = false
     currentSession.value = null
   }
