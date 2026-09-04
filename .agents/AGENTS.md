@@ -129,3 +129,6 @@ Durante las primeras etapas, cuando una funcionalidad todavía no tenga implemen
 
 ## 29. Principio de diseño consciente e inspired
 Antes de implementar componentes visuales importantes, presentar la propuesta de estructura visual y justificarla según los principios UX definidos. No asumir que "estilo Apple" significa copiar interfaces de Apple ni utilizar componentes genéricos con apariencia similar.
+
+## 30. Flujo Git: Rama de Actualizaciones y Protección de Main
+Todo commit, actualización y push debe realizarse exclusivamente sobre la rama `ACTUALIZACIONES`. Está estrictamente prohibido fusionar, modificar o hacer push a la rama `main` sin la aprobación previa y explícita del usuario para cada pase a producción.
